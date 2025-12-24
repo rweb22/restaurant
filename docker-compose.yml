@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: restaurant_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-restaurant_db}
+      POSTGRES_USER: ${DB_USER:-restaurant_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-restaurant_password}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    networks:
+      - restaurant_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-restaurant_user} -d ${DB_NAME:-restaurant_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Node.js Application
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: ${NODE_ENV:-development}
+    container_name: restaurant_app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: ${PORT:-3000}
+      
+      # Database
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-restaurant_db}
+      DB_USER: ${DB_USER:-restaurant_user}
+      DB_PASSWORD: ${DB_PASSWORD:-restaurant_password}
+      
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-30d}
+      
+      # OTP Service
+      OTP_SERVICE_URL: ${OTP_SERVICE_URL}
+      OTP_SERVICE_API_KEY: ${OTP_SERVICE_API_KEY}
+      OTP_SERVICE_TIMEOUT: ${OTP_SERVICE_TIMEOUT:-10000}
+      
+      # CORS
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      
+      # Admin
+      ADMIN_PHONE: ${ADMIN_PHONE}
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - ./app:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - restaurant_network
+    depends_on:
+      db:
+        condition: service_healthy
+    command: npm run dev
+
+networks:
+  restaurant_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+

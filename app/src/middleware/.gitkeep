@@ -1,0 +1,3 @@
+# Middleware directory
+# Express middleware (auth, validation, etc.) will be defined here
+
