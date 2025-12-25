@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions } from 'react-native';
 import {
   Text,
@@ -50,6 +50,18 @@ const ItemDetailScreen = ({ route, navigation }) => {
     }),
     enabled: !!item?.item?.categoryId,
   });
+
+  // Auto-select size if there's only one available size
+  useEffect(() => {
+    if (item?.item?.sizes && item.item.sizes.length > 0) {
+      const availableSizes = item.item.sizes.filter(size => size.isAvailable);
+
+      // If there's only one available size, select it automatically
+      if (availableSizes.length === 1 && !selectedSize) {
+        setSelectedSize(availableSizes[0]);
+      }
+    }
+  }, [item?.item?.sizes]);
 
   const handleAddOnToggle = (addOn) => {
     setSelectedAddOns((prev) => {
