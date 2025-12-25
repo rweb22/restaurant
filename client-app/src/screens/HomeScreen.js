@@ -314,12 +314,13 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
   },
   headerContent: {
-    gap: spacing.md,
+    // No gap needed, marginBottom on children handles spacing
   },
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    marginBottom: spacing.md,
   },
   greetingSection: {
     flex: 1,
@@ -332,7 +333,6 @@ const styles = StyleSheet.create({
   addressButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
@@ -343,6 +343,7 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: '600',
     maxWidth: 150,
+    marginHorizontal: spacing.xs,
   },
   searchBar: {
     backgroundColor: colors.white,
@@ -405,10 +406,12 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.md,
+    marginHorizontal: -spacing.xs,
   },
   foodCard: {
     width: '48%',
+    marginHorizontal: spacing.xs,
+    marginBottom: spacing.md,
   },
   fab: {
     position: 'absolute',

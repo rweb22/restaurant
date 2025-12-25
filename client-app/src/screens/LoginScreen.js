@@ -204,11 +204,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
   },
   trustText: {
     color: colors.text.secondary,
     textAlign: 'center',
+    marginLeft: spacing.sm,
   },
   snackbar: {
     backgroundColor: colors.error,
