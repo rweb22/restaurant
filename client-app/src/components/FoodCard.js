@@ -66,22 +66,22 @@ const FoodCard = ({
           <Text style={styles.name} numberOfLines={1}>
             {name}
           </Text>
-          {description && (
+          {description ? (
             <Text style={styles.description} numberOfLines={2}>
               {description}
             </Text>
-          )}
+          ) : null}
 
           {/* Price and Add Button */}
           <View style={styles.footer}>
             <View style={styles.priceContainer}>
               <Text style={styles.price}>₹{price}</Text>
-              {originalPrice && originalPrice > price && (
+              {(originalPrice && originalPrice > price) ? (
                 <Text style={styles.originalPrice}>₹{originalPrice}</Text>
-              )}
+              ) : null}
             </View>
 
-            {onAddPress && (
+            {onAddPress ? (
               <TouchableOpacity
                 style={styles.addButton}
                 onPress={handleAddPress}
@@ -89,7 +89,7 @@ const FoodCard = ({
               >
                 <Text style={styles.addButtonText}>+</Text>
               </TouchableOpacity>
-            )}
+            ) : null}
           </View>
         </View>
       </TouchableOpacity>
