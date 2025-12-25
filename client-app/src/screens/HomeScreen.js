@@ -130,9 +130,11 @@ const HomeScreen = ({ navigation }) => {
             <Badge style={styles.cartBadge}>{getItemCount()}</Badge>
           )}
         </View>
-        <Button mode="text" onPress={handleLogout}>
-          Logout
-        </Button>
+        <IconButton
+          icon="logout"
+          size={24}
+          onPress={handleLogout}
+        />
       </Appbar.Header>
 
       {/* Delivery Address Bar */}
