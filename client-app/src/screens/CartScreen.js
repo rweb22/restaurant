@@ -335,7 +335,7 @@ const CartScreen = ({ navigation }) => {
           </Text>
           <Button
             mode="contained"
-            onPress={() => navigation.navigate('HomeTab')}
+            onPress={() => navigation.getParent().navigate('HomeTab')}
             style={styles.browseButton}
           >
             Browse Menu

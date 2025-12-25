@@ -264,7 +264,7 @@ const OrderDetailsScreen = ({ route, navigation }) => {
           </Text>
           <Button
             mode="contained"
-            onPress={() => navigation.navigate('Home')}
+            onPress={() => navigation.navigate('Main', { screen: 'HomeTab' })}
             style={styles.button}
             buttonColor={colors.primary[500]}
           >
@@ -407,7 +407,7 @@ const OrderDetailsScreen = ({ route, navigation }) => {
 
           <Button
             mode="outlined"
-            onPress={() => navigation.navigate('Home')}
+            onPress={() => navigation.navigate('Main', { screen: 'HomeTab' })}
             style={styles.button}
             contentStyle={styles.buttonContent}
           >
