@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
-import { Text, Surface, Appbar, Divider, ActivityIndicator, Button, IconButton } from 'react-native-paper';
+import { Text, Surface, Appbar, Divider, ActivityIndicator, Button, IconButton, Icon } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import notificationService from '../services/notificationService';
+import { colors, spacing, fontSize, borderRadius, shadows } from '../styles/theme';
 
 const NotificationsScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
@@ -79,53 +80,93 @@ const NotificationsScreen = ({ navigation }) => {
 
   const getNotificationIcon = (template) => {
     const icons = {
-      ORDER_CREATED: '📝',
-      PAYMENT_COMPLETED: '✅',
-      PAYMENT_FAILED: '❌',
-      ORDER_CONFIRMED: '✔️',
-      ORDER_PREPARING: '👨‍🍳',
-      ORDER_READY: '🔔',
-      ORDER_COMPLETED: '🎉',
-      ORDER_CANCELLED: '🚫',
-      REFUND_PROCESSED: '💰',
+      ORDER_CREATED: 'receipt-text',
+      PAYMENT_COMPLETED: 'check-circle',
+      PAYMENT_FAILED: 'close-circle',
+      ORDER_CONFIRMED: 'check-circle-outline',
+      ORDER_PREPARING: 'chef-hat',
+      ORDER_READY: 'bell-ring',
+      ORDER_COMPLETED: 'party-popper',
+      ORDER_CANCELLED: 'cancel',
+      REFUND_PROCESSED: 'cash-refund',
     };
-    return icons[template] || '📬';
+    return icons[template] || 'bell';
+  };
+
+  const getNotificationIconColor = (template) => {
+    const iconColors = {
+      ORDER_CREATED: colors.info,
+      PAYMENT_COMPLETED: colors.success,
+      PAYMENT_FAILED: colors.error,
+      ORDER_CONFIRMED: colors.success,
+      ORDER_PREPARING: colors.primary[600],
+      ORDER_READY: colors.success,
+      ORDER_COMPLETED: colors.success,
+      ORDER_CANCELLED: colors.error,
+      REFUND_PROCESSED: colors.success,
+    };
+    return iconColors[template] || colors.text.secondary;
+  };
+
+  const getNotificationIconBg = (template) => {
+    const bgColors = {
+      ORDER_CREATED: colors.info + '20',
+      PAYMENT_COMPLETED: colors.success + '20',
+      PAYMENT_FAILED: colors.error + '20',
+      ORDER_CONFIRMED: colors.success + '20',
+      ORDER_PREPARING: colors.primary[50],
+      ORDER_READY: colors.success + '20',
+      ORDER_COMPLETED: colors.success + '20',
+      ORDER_CANCELLED: colors.error + '20',
+      REFUND_PROCESSED: colors.success + '20',
+    };
+    return bgColors[template] || colors.secondary[100];
   };
 
   const renderNotificationItem = ({ item: notification }) => {
     return (
-      <TouchableOpacity onPress={() => handleNotificationPress(notification)}>
-        <Surface 
+      <TouchableOpacity onPress={() => handleNotificationPress(notification)} activeOpacity={0.7}>
+        <Surface
           style={[
             styles.notificationCard,
             !notification.isRead && styles.unreadCard
-          ]} 
-          elevation={0}
+          ]}
+          elevation={!notification.isRead ? 1 : 0}
         >
           <View style={styles.notificationContent}>
-            <View style={styles.iconContainer}>
-              <Text style={styles.icon}>{getNotificationIcon(notification.template)}</Text>
+            <View style={[
+              styles.iconContainer,
+              { backgroundColor: getNotificationIconBg(notification.template) }
+            ]}>
+              <Icon
+                source={getNotificationIcon(notification.template)}
+                size={24}
+                color={getNotificationIconColor(notification.template)}
+              />
             </View>
             <View style={styles.textContainer}>
               <View style={styles.headerRow}>
-                <Text 
-                  variant="titleSmall" 
+                <Text
+                  variant="titleMedium"
                   style={[styles.title, !notification.isRead && styles.unreadText]}
+                  numberOfLines={1}
                 >
                   {notification.title}
                 </Text>
-                {!notification.isRead && <View style={styles.unreadDot} />}
+                {!notification.isRead ? <View style={styles.unreadDot} /> : null}
               </View>
-              <Text variant="bodyMedium" style={styles.message}>
+              <Text variant="bodyMedium" style={styles.message} numberOfLines={2}>
                 {notification.message}
               </Text>
-              <Text variant="bodySmall" style={styles.time}>
-                {formatDate(notification.createdAt)}
-              </Text>
+              <View style={styles.footer}>
+                <Icon source="clock-outline" size={14} color={colors.text.secondary} />
+                <Text variant="bodySmall" style={styles.time}>
+                  {formatDate(notification.createdAt)}
+                </Text>
+              </View>
             </View>
           </View>
         </Surface>
-        <Divider />
       </TouchableOpacity>
     );
   };
@@ -133,11 +174,16 @@ const NotificationsScreen = ({ navigation }) => {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <Appbar.Header>
-          <Appbar.Content title="Notifications" />
-        </Appbar.Header>
+        <View style={styles.header}>
+          <Text variant="headlineSmall" style={styles.headerTitle}>
+            Notifications
+          </Text>
+        </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color={colors.primary[500]} />
+          <Text variant="bodyLarge" style={styles.loadingText}>
+            Loading notifications...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -146,15 +192,22 @@ const NotificationsScreen = ({ navigation }) => {
   if (error) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <Appbar.Header>
-          <Appbar.Content title="Notifications" />
-        </Appbar.Header>
+        <View style={styles.header}>
+          <Text variant="headlineSmall" style={styles.headerTitle}>
+            Notifications
+          </Text>
+        </View>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorEmoji}>😕</Text>
-          <Text variant="bodyLarge" style={styles.errorText}>
+          <Icon source="alert-circle" size={64} color={colors.error} />
+          <Text variant="titleLarge" style={styles.errorText}>
             Failed to load notifications
           </Text>
-          <Button mode="contained" onPress={refetch} style={styles.retryButton}>
+          <Button
+            mode="contained"
+            onPress={refetch}
+            style={styles.retryButton}
+            buttonColor={colors.primary[500]}
+          >
             Retry
           </Button>
         </View>
@@ -164,25 +217,38 @@ const NotificationsScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <Appbar.Header>
-        <Appbar.Content title="Notifications" />
-        {notifications.some(n => !n.isRead) && (
-          <Appbar.Action
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Text variant="headlineSmall" style={styles.headerTitle}>
+            Notifications
+          </Text>
+          {notifications.length > 0 ? (
+            <Text variant="bodyMedium" style={styles.headerSubtitle}>
+              {notifications.filter(n => !n.isRead).length} unread
+            </Text>
+          ) : null}
+        </View>
+        {notifications.some(n => !n.isRead) ? (
+          <IconButton
             icon="check-all"
+            iconColor={colors.primary[500]}
+            size={24}
             onPress={handleMarkAllAsRead}
             disabled={markAllAsReadMutation.isPending}
           />
-        )}
-      </Appbar.Header>
+        ) : null}
+      </View>
 
       {notifications.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyEmoji}>🔔</Text>
+          <View style={styles.emptyIconContainer}>
+            <Icon source="bell-outline" size={80} color={colors.secondary[300]} />
+          </View>
           <Text variant="headlineSmall" style={styles.emptyTitle}>
             No Notifications
           </Text>
-          <Text variant="bodyMedium" style={styles.emptyText}>
-            You don't have any notifications yet.
+          <Text variant="bodyLarge" style={styles.emptyText}>
+            You don't have any notifications yet
           </Text>
         </View>
       ) : (
@@ -191,7 +257,12 @@ const NotificationsScreen = ({ navigation }) => {
           renderItem={renderNotificationItem}
           keyExtractor={(item) => item.id.toString()}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[colors.primary[500]]}
+              tintColor={colors.primary[500]}
+            />
           }
           contentContainerStyle={styles.listContent}
         />
@@ -203,74 +274,106 @@ const NotificationsScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fafaf9',
+    backgroundColor: colors.background,
   },
+  // Header
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.secondary[200],
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontWeight: 'bold',
+    color: colors.text.primary,
+  },
+  headerSubtitle: {
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
+  },
+  // Loading & Error States
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingText: {
+    marginTop: spacing.lg,
+    color: colors.text.secondary,
+  },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
-  },
-  errorEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
+    padding: spacing.xl,
   },
   errorText: {
     textAlign: 'center',
-    marginBottom: 24,
-    color: '#666',
+    marginTop: spacing.md,
+    marginBottom: spacing.xl,
+    color: colors.error,
   },
   retryButton: {
-    borderRadius: 8,
+    borderRadius: borderRadius.md,
   },
+  // Empty State
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: spacing.xl,
   },
-  emptyEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: colors.secondary[100],
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
   },
   emptyTitle: {
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
+    color: colors.text.primary,
   },
   emptyText: {
     textAlign: 'center',
-    color: '#666',
+    color: colors.text.secondary,
   },
+  // List
   listContent: {
-    paddingBottom: 16,
+    paddingBottom: spacing.lg,
   },
+  // Notification Card
   notificationCard: {
-    backgroundColor: '#fff',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    backgroundColor: colors.white,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.secondary[100],
   },
   unreadCard: {
-    backgroundColor: '#f0f9ff',
+    backgroundColor: colors.primary[50] + '40',
   },
   notificationContent: {
     flexDirection: 'row',
-    gap: 12,
+    alignItems: 'flex-start',
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f5f5f4',
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.xl,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  icon: {
-    fontSize: 20,
+    marginRight: spacing.md,
   },
   textContainer: {
     flex: 1,
@@ -278,29 +381,37 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
   },
   title: {
     flex: 1,
     fontWeight: '600',
+    color: colors.text.primary,
+    marginRight: spacing.sm,
   },
   unreadText: {
     fontWeight: 'bold',
+    color: colors.text.primary,
   },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#3b82f6',
+    backgroundColor: colors.primary[500],
   },
   message: {
-    color: '#666',
-    marginBottom: 4,
+    color: colors.text.secondary,
+    marginBottom: spacing.xs,
     lineHeight: 20,
   },
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   time: {
-    color: '#999',
+    color: colors.text.secondary,
+    marginLeft: spacing.xs,
   },
 });
 

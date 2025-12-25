@@ -8,11 +8,13 @@ import {
   Surface,
   Chip,
   ActivityIndicator,
+  Icon,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import addressService from '../services/addressService';
 import useDeliveryStore from '../store/deliveryStore';
+import { colors, spacing, fontSize, borderRadius, shadows } from '../styles/theme';
 
 const AddressesScreen = ({ navigation }) => {
   const queryClient = useQueryClient();
@@ -70,63 +72,72 @@ const AddressesScreen = ({ navigation }) => {
   };
 
   const renderAddressItem = ({ item }) => (
-    <Surface style={styles.addressCard} elevation={1}>
+    <Surface style={styles.addressCard} elevation={2}>
       <View style={styles.addressHeader}>
         <View style={styles.addressTitleRow}>
+          <Icon source="map-marker" size={20} color={colors.primary[500]} />
           <Text variant="titleMedium" style={styles.addressLabel}>
             {item.label || 'Address'}
           </Text>
-          {item.isDefault && (
+          {item.isDefault ? (
             <Chip mode="flat" style={styles.defaultChip} textStyle={styles.defaultChipText}>
               Default
             </Chip>
-          )}
+          ) : null}
         </View>
         <View style={styles.addressActions}>
           <IconButton
             icon="pencil"
             size={20}
+            iconColor={colors.primary[500]}
             onPress={() => handleEditPress(item)}
           />
           <IconButton
             icon="delete"
             size={20}
-            iconColor="#dc2626"
+            iconColor={colors.error}
             onPress={() => handleDeletePress(item)}
           />
         </View>
       </View>
 
-      <Text variant="bodyMedium" style={styles.addressText}>
-        {item.addressLine1}
-      </Text>
-      {item.addressLine2 && (
+      <View style={styles.addressContent}>
         <Text variant="bodyMedium" style={styles.addressText}>
-          {item.addressLine2}
+          {item.addressLine1}
         </Text>
-      )}
-      {item.landmark && (
-        <Text variant="bodySmall" style={styles.landmark}>
-          Landmark: {item.landmark}
-        </Text>
-      )}
-      {item.location && (
-        <Text variant="bodySmall" style={styles.location}>
-          {item.location.area}, {item.location.city} - {item.location.pincode}
-        </Text>
-      )}
+        {item.addressLine2 ? (
+          <Text variant="bodyMedium" style={styles.addressText}>
+            {item.addressLine2}
+          </Text>
+        ) : null}
+        {item.landmark ? (
+          <View style={styles.landmarkRow}>
+            <Icon source="map-marker-radius" size={16} color={colors.text.secondary} />
+            <Text variant="bodySmall" style={styles.landmark}>
+              {item.landmark}
+            </Text>
+          </View>
+        ) : null}
+        {item.location ? (
+          <Text variant="bodySmall" style={styles.location}>
+            {item.location.area}, {item.location.city} - {item.location.pincode}
+          </Text>
+        ) : null}
+      </View>
 
-      {!item.isDefault && (
+      {!item.isDefault ? (
         <Button
           mode="outlined"
           onPress={() => handleSetDefault(item)}
           style={styles.setDefaultButton}
+          buttonColor={colors.white}
+          textColor={colors.primary[500]}
           loading={setDefaultMutation.isPending}
           disabled={setDefaultMutation.isPending}
         >
           Set as Default
         </Button>
-      )}
+      ) : null}
     </Surface>
   );
 
@@ -138,7 +149,10 @@ const AddressesScreen = ({ navigation }) => {
           <Appbar.Content title="My Addresses" />
         </Appbar.Header>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#dc2626" />
+          <ActivityIndicator size="large" color={colors.primary[500]} />
+          <Text variant="bodyLarge" style={styles.loadingText}>
+            Loading addresses...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -148,16 +162,20 @@ const AddressesScreen = ({ navigation }) => {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header>
+          <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="My Addresses" />
         </Appbar.Header>
         <View style={styles.errorContainer}>
-          <Text variant="headlineMedium" style={styles.errorEmoji}>
-            ⚠️
-          </Text>
-          <Text variant="titleMedium" style={styles.errorText}>
+          <Icon source="alert-circle" size={64} color={colors.error} />
+          <Text variant="titleLarge" style={styles.errorText}>
             Failed to load addresses
           </Text>
-          <Button mode="contained" onPress={() => refetch()} style={styles.retryButton}>
+          <Button
+            mode="contained"
+            onPress={() => refetch()}
+            style={styles.retryButton}
+            buttonColor={colors.primary[500]}
+          >
             Retry
           </Button>
         </View>
@@ -168,28 +186,31 @@ const AddressesScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header>
+        <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="My Addresses" subtitle={`${addresses.length} saved`} />
         <Appbar.Action
           icon="plus"
+          iconColor={colors.primary[500]}
           onPress={() => navigation.navigate('AddAddress')}
         />
       </Appbar.Header>
 
       {addresses.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text variant="headlineMedium" style={styles.emptyEmoji}>
-            📍
-          </Text>
-          <Text variant="titleLarge" style={styles.emptyTitle}>
+          <View style={styles.emptyIconContainer}>
+            <Icon source="map-marker-outline" size={80} color={colors.secondary[300]} />
+          </View>
+          <Text variant="headlineSmall" style={styles.emptyTitle}>
             No Addresses Saved
           </Text>
-          <Text variant="bodyMedium" style={styles.emptyText}>
+          <Text variant="bodyLarge" style={styles.emptyText}>
             Add a delivery address to place orders
           </Text>
           <Button
             mode="contained"
             onPress={() => navigation.navigate('AddAddress')}
             style={styles.addButton}
+            buttonColor={colors.primary[500]}
           >
             Add Address
           </Button>
@@ -262,153 +283,182 @@ const AddressesScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fafaf9',
+    backgroundColor: colors.background,
   },
+  // Loading & Error States
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingText: {
+    marginTop: spacing.lg,
+    color: colors.text.secondary,
+  },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
-  },
-  errorEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
+    padding: spacing.xl,
   },
   errorText: {
-    color: '#78716c',
-    marginBottom: 24,
+    color: colors.error,
+    marginTop: spacing.md,
+    marginBottom: spacing.xl,
     textAlign: 'center',
   },
   retryButton: {
-    marginTop: 8,
+    marginTop: spacing.sm,
+    borderRadius: borderRadius.md,
   },
+  // Empty State
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: spacing.xl,
   },
-  emptyEmoji: {
-    fontSize: 80,
-    marginBottom: 16,
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: colors.secondary[100],
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
   },
   emptyTitle: {
     fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#292524',
+    marginBottom: spacing.sm,
+    color: colors.text.primary,
   },
   emptyText: {
-    color: '#78716c',
-    marginBottom: 24,
+    color: colors.text.secondary,
+    marginBottom: spacing.xl,
     textAlign: 'center',
   },
   addButton: {
-    marginTop: 8,
+    marginTop: spacing.sm,
+    borderRadius: borderRadius.md,
   },
+  // List
   listContent: {
-    padding: 16,
-    gap: 12,
+    padding: spacing.lg,
   },
+  // Address Card
   addressCard: {
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: '#ffffff',
-    marginBottom: 12,
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.white,
+    marginBottom: spacing.md,
+    ...shadows.md,
   },
   addressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   addressTitleRow: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
   addressLabel: {
     fontWeight: 'bold',
-    color: '#292524',
+    color: colors.text.primary,
+    marginLeft: spacing.xs,
+    marginRight: spacing.sm,
   },
   defaultChip: {
-    backgroundColor: '#dcfce7',
+    backgroundColor: colors.success + '20',
     height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   defaultChipText: {
-    fontSize: 11,
-    color: '#16a34a',
+    fontSize: fontSize.xs,
+    color: colors.success,
     marginVertical: 0,
+    textAlign: 'center',
   },
   addressActions: {
     flexDirection: 'row',
-    marginRight: -12,
+    marginRight: -spacing.md,
+  },
+  addressContent: {
+    marginTop: spacing.xs,
   },
   addressText: {
-    color: '#57534e',
-    marginBottom: 4,
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
+  },
+  landmarkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.xs,
   },
   landmark: {
-    color: '#78716c',
-    marginTop: 4,
+    color: colors.text.secondary,
+    marginLeft: spacing.xs,
   },
   location: {
-    color: '#78716c',
-    marginTop: 2,
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
   },
   setDefaultButton: {
-    marginTop: 12,
+    marginTop: spacing.md,
+    borderRadius: borderRadius.md,
+    borderColor: colors.primary[500],
   },
+  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: spacing.xl,
   },
   modalContent: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 24,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
     width: '100%',
     maxWidth: 400,
   },
   modalTitle: {
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
     textAlign: 'center',
-    color: '#292524',
+    color: colors.text.primary,
   },
   modalMessage: {
-    color: '#78716c',
+    color: colors.text.secondary,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   addressPreview: {
-    backgroundColor: '#f5f5f4',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 24,
+    backgroundColor: colors.secondary[100],
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.xl,
   },
   addressPreviewText: {
     fontWeight: 'bold',
-    color: '#292524',
-    marginBottom: 4,
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
   },
   addressPreviewSubtext: {
-    color: '#78716c',
+    color: colors.text.secondary,
   },
   modalButtons: {
     flexDirection: 'row',
-    gap: 12,
+    marginHorizontal: -spacing.xs,
   },
   modalButton: {
     flex: 1,
+    marginHorizontal: spacing.xs,
+    borderRadius: borderRadius.md,
   },
 });
 
