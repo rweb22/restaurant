@@ -7,19 +7,25 @@ import {
   Appbar,
   Surface,
   Divider,
+  Icon,
+  Chip,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery } from '@tanstack/react-query';
 import useCartStore from '../store/cartStore';
 import useDeliveryStore from '../store/deliveryStore';
 import AddressSelectionModal from '../components/AddressSelectionModal';
 import OffersModal from '../components/OffersModal';
+import QuantitySelector from '../components/QuantitySelector';
+import PriceBreakdown from '../components/PriceBreakdown';
 import orderService from '../services/orderService';
 import paymentService from '../services/paymentService';
 import addressService from '../services/addressService';
 import restaurantService from '../services/restaurantService';
 import { initializeRazorpayPayment, getRazorpayConfig, handlePaymentSuccess, handlePaymentFailure, handlePaymentCancel, getPaymentOptions } from '../utils/razorpay';
 import { API_CONFIG } from '../constants/config';
+import { colors, spacing, fontSize, borderRadius, shadows } from '../styles/theme';
 
 const CartScreen = ({ navigation }) => {
   const { items, updateQuantity, removeItem, clearCart, getTotal, getItemCount } = useCartStore();
@@ -341,249 +347,248 @@ const CartScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <Appbar.Header>
-        <Appbar.Content title="Cart" subtitle={`${getItemCount()} items`} />
-        <Appbar.Action
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Text variant="headlineSmall" style={styles.headerTitle}>
+            My Cart
+          </Text>
+          <Text variant="bodyMedium" style={styles.headerSubtitle}>
+            {getItemCount()} {getItemCount() === 1 ? 'item' : 'items'}
+          </Text>
+        </View>
+        <IconButton
           icon="trash-can-outline"
+          iconColor={colors.error}
+          size={24}
           onPress={handleClearCart}
-          accessibilityLabel="Clear cart"
+          style={styles.clearButton}
         />
-      </Appbar.Header>
+      </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Cart Items */}
         <View style={styles.section}>
-          <Text variant="titleMedium" style={styles.sectionTitle}>Items</Text>
-          {items.map((item, index) => (
-            <View key={`${item.id}-${item.sizeName}-${index}`}>
-              <Surface style={styles.itemContainer} elevation={0}>
+          {items.map((item, index) => {
+            const itemTotal = (parseFloat(item.sizePrice) +
+              (item.addOns?.reduce((sum, a) => sum + parseFloat(a.price), 0) || 0)) * item.quantity;
+
+            return (
+              <Surface key={`${item.id}-${item.sizeName}-${index}`} style={styles.cartItemCard} elevation={1}>
+                {/* Item Image */}
                 <Image
                   source={{
                     uri: item.imageUrl
                       ? `${API_CONFIG.BASE_URL.replace('/api', '')}${item.imageUrl}`
                       : 'https://via.placeholder.com/80'
                   }}
-                  style={styles.itemImage}
+                  style={styles.cartItemImage}
                 />
-                <View style={styles.itemDetails}>
-                  <Text variant="titleMedium" style={styles.itemName}>
-                    {item.name}
-                  </Text>
-                  {item.sizeName && (
-                    <Text variant="bodySmall" style={styles.itemMeta}>
-                      Size: {item.sizeName.charAt(0).toUpperCase() + item.sizeName.slice(1)}
-                    </Text>
-                  )}
-                  {item.addOns && item.addOns.length > 0 && (
-                    <Text variant="bodySmall" style={styles.itemMeta}>
-                      Add-ons: {item.addOns.map((a) => a.name).join(', ')}
-                    </Text>
-                  )}
-                  <View style={styles.itemPriceRow}>
-                    <Text variant="titleMedium" style={styles.itemPrice}>
-                      ₹{item.sizePrice}
-                    </Text>
-                    {item.addOns && item.addOns.length > 0 && (
-                      <Text variant="bodySmall" style={styles.addOnsPrice}>
-                        + ₹{item.addOns.reduce((sum, a) => sum + parseFloat(a.price), 0).toFixed(2)}
+
+                {/* Item Details */}
+                <View style={styles.cartItemContent}>
+                  <View style={styles.cartItemHeader}>
+                    <View style={styles.cartItemInfo}>
+                      <Text variant="titleSmall" style={styles.cartItemName} numberOfLines={1}>
+                        {item.name}
                       </Text>
-                    )}
-                  </View>
-                  <View style={styles.quantityContainer}>
+                      {item.sizeName ? (
+                        <Chip
+                          mode="flat"
+                          style={styles.sizeChip}
+                          textStyle={styles.sizeChipText}
+                        >
+                          {item.sizeName.charAt(0).toUpperCase() + item.sizeName.slice(1)}
+                        </Chip>
+                      ) : null}
+                    </View>
                     <IconButton
-                      icon="minus"
+                      icon="delete-outline"
+                      iconColor={colors.error}
                       size={20}
-                      mode="contained-tonal"
-                      onPress={() => updateQuantity(index, item.quantity - 1)}
-                    />
-                    <Text variant="titleMedium" style={styles.quantity}>
-                      {item.quantity}
-                    </Text>
-                    <IconButton
-                      icon="plus"
-                      size={20}
-                      mode="contained-tonal"
-                      onPress={() => updateQuantity(index, item.quantity + 1)}
-                    />
-                    <IconButton
-                      icon="delete"
-                      size={20}
-                      iconColor="#dc2626"
                       onPress={() => removeItem(index)}
-                      style={styles.deleteButton}
+                      style={styles.removeButton}
+                    />
+                  </View>
+
+                  {(item.addOns && item.addOns.length > 0) ? (
+                    <Text variant="bodySmall" style={styles.cartItemAddOns} numberOfLines={1}>
+                      + {item.addOns.map((a) => a.name).join(', ')}
+                    </Text>
+                  ) : null}
+
+                  {/* Price and Quantity Row */}
+                  <View style={styles.cartItemFooter}>
+                    <Text variant="titleMedium" style={styles.cartItemPrice}>
+                      ₹{itemTotal.toFixed(2)}
+                    </Text>
+                    <QuantitySelector
+                      quantity={item.quantity}
+                      onIncrement={() => updateQuantity(index, item.quantity + 1)}
+                      onDecrement={() => updateQuantity(index, item.quantity - 1)}
+                      min={1}
+                      max={99}
+                      size="sm"
                     />
                   </View>
                 </View>
               </Surface>
-              <Divider />
-            </View>
-          ))}
+            );
+          })}
         </View>
 
         {/* Delivery Address Section */}
         <View style={styles.section}>
           <Text variant="titleMedium" style={styles.sectionTitle}>Delivery Address</Text>
           {selectedAddress ? (
+            <Surface style={styles.addressCard} elevation={2}>
+              <View style={styles.addressCardHeader}>
+                <Icon source="map-marker" size={24} color={colors.primary[500]} />
+                <Chip
+                  mode="flat"
+                  style={styles.addressTypeChip}
+                  textStyle={styles.addressTypeChipText}
+                >
+                  {selectedAddress.label || 'Address'}
+                </Chip>
+              </View>
+              <View style={styles.addressCardContent}>
+                <Text variant="bodyMedium" style={styles.addressFullText}>
+                  {selectedAddress.addressLine1}
+                  {selectedAddress.addressLine2 ? `, ${selectedAddress.addressLine2}` : ''}
+                </Text>
+                {selectedLocation ? (
+                  <Text variant="bodySmall" style={styles.addressLocationText}>
+                    {selectedLocation.area}, {selectedLocation.city} - {selectedLocation.pincode}
+                  </Text>
+                ) : null}
+              </View>
+              <Button
+                mode="text"
+                onPress={() => setAddressModalVisible(true)}
+                textColor={colors.primary[500]}
+                style={styles.changeAddressButton}
+              >
+                Change Address
+              </Button>
+            </Surface>
+          ) : (
             <TouchableOpacity
               onPress={() => setAddressModalVisible(true)}
               activeOpacity={0.7}
             >
-              <Surface style={styles.addressCard} elevation={0}>
-                <View style={styles.addressContent}>
-                  <Text variant="labelSmall" style={styles.deliverTo}>
-                    DELIVERING TO
-                  </Text>
-                  <Text variant="titleSmall" style={styles.addressLabel}>
-                    {selectedAddress.label || 'Address'}
-                  </Text>
-                  <Text variant="bodySmall" style={styles.addressText}>
-                    {selectedAddress.addressLine1}
-                  </Text>
-                  {selectedAddress.addressLine2 && (
-                    <Text variant="bodySmall" style={styles.addressText}>
-                      {selectedAddress.addressLine2}
-                    </Text>
-                  )}
-                  {selectedLocation && (
-                    <Text variant="bodySmall" style={styles.locationText}>
-                      📍 {selectedLocation.area}, {selectedLocation.city} - {selectedLocation.pincode}
-                    </Text>
-                  )}
-                </View>
-                <Button mode="text" compact onPress={() => setAddressModalVisible(true)}>
-                  Change
-                </Button>
+              <Surface style={styles.selectAddressCard} elevation={1}>
+                <Icon source="map-marker-plus" size={32} color={colors.primary[500]} />
+                <Text variant="titleSmall" style={styles.selectAddressText}>
+                  Add Delivery Address
+                </Text>
+                <Text variant="bodySmall" style={styles.selectAddressHint}>
+                  Tap to select or add a new address
+                </Text>
               </Surface>
             </TouchableOpacity>
-          ) : (
-            <Button
-              mode="outlined"
-              icon="map-marker"
-              onPress={() => setAddressModalVisible(true)}
-              style={styles.selectAddressButton}
-            >
-              Select Delivery Address
-            </Button>
           )}
         </View>
 
         {/* Offers Section */}
         <View style={styles.section}>
-          <Text variant="titleMedium" style={styles.sectionTitle}>Offers & Discounts</Text>
           {appliedOffer ? (
-            <Surface style={styles.appliedOfferCard} elevation={0}>
-              <View style={styles.appliedOfferContent}>
-                <View style={styles.offerIconContainer}>
-                  <Text style={styles.offerIcon}>🎉</Text>
-                </View>
-                <View style={styles.appliedOfferDetails}>
-                  <Text variant="titleSmall" style={styles.appliedOfferCode}>
+            <Surface style={styles.appliedOfferCard} elevation={2}>
+              <View style={styles.appliedOfferHeader}>
+                <Icon source="tag" size={20} color={colors.success} />
+                <Text variant="titleSmall" style={styles.appliedOfferTitle}>
+                  Offer Applied
+                </Text>
+              </View>
+              <View style={styles.appliedOfferBody}>
+                <View style={styles.appliedOfferInfo}>
+                  <Text variant="titleMedium" style={styles.appliedOfferCode}>
                     {appliedOffer.code}
                   </Text>
                   <Text variant="bodySmall" style={styles.appliedOfferSavings}>
                     {appliedOffer.freeDelivery
-                      ? 'Free Delivery Applied!'
-                      : `You saved ₹${appliedOffer.discountAmount}`}
+                      ? '🎉 Free Delivery Applied!'
+                      : `💰 You saved ₹${appliedOffer.discountAmount}`}
                   </Text>
-                  {appliedOffer.description && (
-                    <Text variant="bodySmall" style={styles.appliedOfferDescription}>
-                      {appliedOffer.description}
-                    </Text>
-                  )}
                 </View>
                 <IconButton
-                  icon="close"
-                  size={20}
+                  icon="close-circle"
+                  iconColor={colors.text.secondary}
+                  size={24}
                   onPress={handleRemoveOffer}
+                  style={styles.removeOfferButton}
                 />
               </View>
             </Surface>
           ) : (
-            <Button
-              mode="outlined"
-              icon="tag"
+            <TouchableOpacity
               onPress={() => setOffersModalVisible(true)}
-              style={styles.viewOffersButton}
+              activeOpacity={0.7}
             >
-              View Available Offers
-            </Button>
+              <Surface style={styles.applyCouponCard} elevation={1}>
+                <Icon source="ticket-percent" size={24} color={colors.primary[500]} />
+                <Text variant="titleSmall" style={styles.applyCouponText}>
+                  Apply Coupon
+                </Text>
+                <Icon source="chevron-right" size={24} color={colors.text.secondary} />
+              </Surface>
+            </TouchableOpacity>
           )}
         </View>
 
         {/* Price Breakdown Section */}
         <View style={styles.section}>
           <Text variant="titleMedium" style={styles.sectionTitle}>Bill Details</Text>
-          <Surface style={styles.billCard} elevation={0}>
-
-            <View style={styles.priceRow}>
-              <Text variant="bodyMedium" style={styles.priceLabel}>Item Total</Text>
-              <Text variant="bodyMedium">₹{priceBreakdown.subtotal}</Text>
-            </View>
-            <View style={styles.priceRow}>
-              <Text variant="bodyMedium" style={styles.priceLabel}>GST</Text>
-              <Text variant="bodyMedium">₹{priceBreakdown.gstAmount}</Text>
-            </View>
-            <View style={styles.priceRow}>
-              <Text variant="bodyMedium" style={styles.priceLabel}>
-                Delivery Charge
-                {!selectedLocation && <Text style={styles.warningText}> *</Text>}
-              </Text>
-              <Text variant="bodyMedium">₹{priceBreakdown.deliveryCharge}</Text>
-            </View>
-            {appliedOffer && parseFloat(priceBreakdown.discountAmount) > 0 && (
-              <View style={styles.priceRow}>
-                <Text variant="bodyMedium" style={styles.discountLabel}>Discount</Text>
-                <Text variant="bodyMedium" style={styles.discountAmount}>
-                  - ₹{priceBreakdown.discountAmount}
-                </Text>
-              </View>
-            )}
-            {!selectedLocation && (
-              <Text variant="bodySmall" style={styles.warningText}>
-                * Select delivery address to see delivery charge
-              </Text>
-            )}
-          </Surface>
+          <PriceBreakdown
+            subtotal={priceBreakdown.subtotal}
+            gst={priceBreakdown.gstAmount}
+            deliveryCharge={priceBreakdown.deliveryCharge}
+            discount={appliedOffer && parseFloat(priceBreakdown.discountAmount) > 0 ? priceBreakdown.discountAmount : null}
+            total={priceBreakdown.grandTotal}
+            showWarning={!selectedLocation}
+            warningText="Select delivery address to see accurate delivery charge"
+          />
         </View>
       </ScrollView>
 
-      {/* Clear Cart Button */}
-      <View style={styles.clearCartContainer}>
-        <Button
-          mode="text"
-          onPress={handleClearCart}
-          icon="trash-can-outline"
-          textColor="#dc2626"
-        >
-          Clear Cart
-        </Button>
-      </View>
-
-      {/* Bottom Bar - Only Total and Checkout */}
-      <Surface style={styles.bottomBar} elevation={4}>
-        <View style={styles.bottomBarContent}>
-          <View style={styles.totalSection}>
-            <Text variant="titleMedium" style={styles.bottomTotalLabel}>Total</Text>
-            <Text variant="headlineMedium" style={styles.bottomTotal}>
+      {/* Sticky Checkout Button */}
+      <LinearGradient
+        colors={[colors.primary[500], colors.primary[600]]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.checkoutBar}
+      >
+        <View style={styles.checkoutBarContent}>
+          <View style={styles.checkoutTotalSection}>
+            <Text variant="bodySmall" style={styles.checkoutTotalLabel}>
+              Total Amount
+            </Text>
+            <Text variant="headlineSmall" style={styles.checkoutTotal}>
               ₹{priceBreakdown.grandTotal}
             </Text>
           </View>
-          <Button
-            mode="contained"
+          <TouchableOpacity
             onPress={handleCheckout}
             style={styles.checkoutButton}
-            contentStyle={styles.checkoutButtonContent}
-            disabled={isCheckingOut || !restaurantStatus?.isOpen}
-            loading={isCheckingOut}
+            activeOpacity={0.8}
           >
-            {!restaurantStatus?.isOpen
-              ? 'Restaurant Closed'
-              : isCheckingOut
-                ? 'Processing...'
-                : 'Checkout'}
-          </Button>
+            {isCheckingOut ? (
+              <ActivityIndicator color={colors.white} size="small" />
+            ) : (
+              <View style={styles.checkoutButtonInner}>
+                <Text variant="titleMedium" style={styles.checkoutButtonText}>
+                  {!restaurantStatus?.isOpen
+                    ? 'Restaurant Closed'
+                    : !selectedAddress
+                      ? 'Select Address'
+                      : 'Place Order'}
+                </Text>
+                <Icon source="arrow-right" size={20} color={colors.white} />
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
-      </Surface>
+      </LinearGradient>
 
       {/* Address Selection Modal */}
       <AddressSelectionModal
@@ -760,275 +765,339 @@ const CartScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fafaf9',
+    backgroundColor: colors.secondary[50],
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: spacing.xl,
   },
   emptyEmoji: {
     fontSize: 80,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   emptyText: {
-    color: '#78716c',
-    marginBottom: 24,
+    color: colors.text.secondary,
+    marginBottom: spacing.xl,
   },
   browseButton: {
-    paddingHorizontal: 24,
+    paddingHorizontal: spacing.xl,
   },
+
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.secondary[200],
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontWeight: 'bold',
+    color: colors.text.primary,
+  },
+  headerSubtitle: {
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
+  },
+  clearButton: {
+    margin: 0,
+  },
+
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 16,
+    paddingBottom: spacing.lg,
   },
   section: {
-    marginTop: 16,
+    marginTop: spacing.lg,
   },
   sectionTitle: {
     fontWeight: 'bold',
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    color: '#292524',
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+    color: colors.text.primary,
   },
-  itemContainer: {
+
+  // Cart Item Card
+  cartItemCard: {
     flexDirection: 'row',
-    padding: 16,
-    backgroundColor: '#ffffff',
+    padding: spacing.md,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    ...shadows.sm,
   },
-  itemImage: {
+  cartItemImage: {
     width: 80,
     height: 80,
-    borderRadius: 8,
+    borderRadius: borderRadius.md,
   },
-  itemDetails: {
+  cartItemContent: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: spacing.md,
   },
-  itemName: {
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  itemMeta: {
-    color: '#78716c',
-    marginBottom: 2,
-  },
-  itemPriceRow: {
+  cartItemHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-    marginBottom: 8,
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
   },
-  itemPrice: {
-    color: '#dc2626',
-    fontWeight: 'bold',
-  },
-  addOnsPrice: {
-    color: '#78716c',
-    marginLeft: 4,
-  },
-  quantityContainer: {
+  cartItemInfo: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
   },
-  quantity: {
-    marginHorizontal: 8,
-    minWidth: 30,
-    textAlign: 'center',
+  cartItemName: {
+    fontWeight: '600',
+    color: colors.text.primary,
+    flex: 1,
+    marginRight: spacing.xs,
   },
-  deleteButton: {
-    marginLeft: 'auto',
+  sizeChip: {
+    height: 24,
+    backgroundColor: colors.primary[50],
   },
+  sizeChipText: {
+    fontSize: fontSize.xs,
+    color: colors.primary[700],
+  },
+  removeButton: {
+    margin: 0,
+  },
+  cartItemAddOns: {
+    color: colors.text.secondary,
+    marginBottom: spacing.sm,
+  },
+  cartItemFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.xs,
+  },
+  cartItemPrice: {
+    fontWeight: 'bold',
+    color: colors.primary[500],
+  },
+
+  // Address Card
   addressCard: {
-    backgroundColor: '#ffffff',
-    padding: 16,
-    marginHorizontal: 16,
-    borderRadius: 8,
+    backgroundColor: colors.white,
+    padding: spacing.lg,
+    marginHorizontal: spacing.lg,
+    borderRadius: borderRadius.lg,
+    ...shadows.md,
+  },
+  addressCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  addressTypeChip: {
+    height: 24,
+    backgroundColor: colors.primary[50],
+    marginLeft: spacing.sm,
+  },
+  addressTypeChipText: {
+    fontSize: fontSize.xs,
+    color: colors.primary[700],
+    fontWeight: '600',
+  },
+  addressCardContent: {
+    marginBottom: spacing.md,
+  },
+  addressFullText: {
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
+    lineHeight: 20,
+  },
+  addressLocationText: {
+    color: colors.text.secondary,
+  },
+  changeAddressButton: {
+    alignSelf: 'flex-start',
+  },
+  selectAddressCard: {
+    backgroundColor: colors.white,
+    padding: spacing.xl,
+    marginHorizontal: spacing.lg,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.primary[200],
+    borderStyle: 'dashed',
+  },
+  selectAddressText: {
+    color: colors.text.primary,
+    fontWeight: '600',
+    marginTop: spacing.md,
+  },
+  selectAddressHint: {
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
+  },
+
+  // Offers Section
+  appliedOfferCard: {
+    backgroundColor: colors.success + '15',
+    padding: spacing.lg,
+    marginHorizontal: spacing.lg,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.success + '40',
+    ...shadows.sm,
+  },
+  appliedOfferHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  appliedOfferTitle: {
+    fontWeight: '600',
+    color: colors.success,
+    marginLeft: spacing.xs,
+  },
+  appliedOfferBody: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  addressContent: {
-    flex: 1,
-  },
-  deliverTo: {
-    color: '#78716c',
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  addressLabel: {
-    fontWeight: 'bold',
-    color: '#292524',
-    marginBottom: 4,
-  },
-  addressText: {
-    color: '#57534e',
-    marginBottom: 2,
-  },
-  locationText: {
-    color: '#78716c',
-    marginTop: 4,
-  },
-  selectAddressButton: {
-    marginHorizontal: 16,
-  },
-  viewOffersButton: {
-    marginHorizontal: 16,
-  },
-  appliedOfferCard: {
-    backgroundColor: '#dcfce7',
-    padding: 12,
-    marginHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#86efac',
-  },
-  appliedOfferContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  offerIconContainer: {
-    marginRight: 12,
-  },
-  offerIcon: {
-    fontSize: 24,
-  },
-  appliedOfferDetails: {
+  appliedOfferInfo: {
     flex: 1,
   },
   appliedOfferCode: {
     fontWeight: 'bold',
-    color: '#166534',
-    marginBottom: 2,
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
   },
   appliedOfferSavings: {
-    color: '#15803d',
-    marginBottom: 4,
+    color: colors.success,
+    fontWeight: '600',
   },
-  appliedOfferDescription: {
-    color: '#166534',
-    fontSize: 12,
+  removeOfferButton: {
+    margin: 0,
   },
-  billCard: {
-    backgroundColor: '#ffffff',
-    padding: 16,
-    marginHorizontal: 16,
-    borderRadius: 8,
-  },
-  priceRow: {
+  applyCouponCard: {
+    backgroundColor: colors.white,
+    padding: spacing.lg,
+    marginHorizontal: spacing.lg,
+    borderRadius: borderRadius.lg,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: colors.primary[200],
+    ...shadows.sm,
   },
-  priceLabel: {
-    color: '#78716c',
-  },
-  discountLabel: {
-    color: '#15803d',
+  applyCouponText: {
+    flex: 1,
+    marginLeft: spacing.md,
+    color: colors.text.primary,
     fontWeight: '600',
   },
-  discountAmount: {
-    color: '#15803d',
-    fontWeight: '600',
+
+  // Checkout Bar
+  checkoutBar: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    ...shadows.lg,
   },
-  warningText: {
-    color: '#dc2626',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  bottomBar: {
-    backgroundColor: '#ffffff',
-    borderTopWidth: 1,
-    borderTopColor: '#e7e5e4',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  bottomBarContent: {
+  checkoutBarContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  totalSection: {
+  checkoutTotalSection: {
     flex: 1,
   },
-  bottomTotalLabel: {
-    color: '#78716c',
-    marginBottom: 2,
+  checkoutTotalLabel: {
+    color: colors.white,
+    opacity: 0.9,
   },
-  bottomTotal: {
-    color: '#dc2626',
+  checkoutTotal: {
+    color: colors.white,
     fontWeight: 'bold',
-  },
-  clearCartContainer: {
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#e7e5e4',
-    alignItems: 'center',
+    marginTop: spacing.xs,
   },
   checkoutButton: {
-    marginLeft: 16,
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.xl,
+    minWidth: 140,
   },
-  checkoutButtonContent: {
-    paddingHorizontal: 24,
-    paddingVertical: 8,
+  checkoutButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  checkoutButtonText: {
+    color: colors.primary[500],
+    fontWeight: 'bold',
+    marginRight: spacing.xs,
+  },
+
+  // Modals
   paymentModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: spacing.lg,
   },
   paymentModalContent: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 24,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
     width: '100%',
     maxWidth: 400,
   },
   paymentModalTitle: {
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
     textAlign: 'center',
-    color: '#292524',
+    color: colors.text.primary,
   },
   paymentModalDetails: {
-    marginBottom: 24,
+    marginBottom: spacing.xl,
   },
   paymentModalLabel: {
-    color: '#78716c',
-    marginBottom: 8,
+    color: colors.text.secondary,
+    marginBottom: spacing.sm,
   },
   paymentModalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   paymentModalValue: {
-    color: '#292524',
+    color: colors.text.primary,
     fontFamily: 'monospace',
   },
   paymentModalAmount: {
-    color: '#dc2626',
+    color: colors.primary[500],
     fontWeight: 'bold',
   },
   paymentModalInstruction: {
-    color: '#78716c',
-    marginTop: 16,
+    color: colors.text.secondary,
+    marginTop: spacing.lg,
     textAlign: 'center',
   },
   paymentModalButtons: {
-    gap: 12,
+    marginTop: spacing.md,
   },
   paymentModalButton: {
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
 });
 
