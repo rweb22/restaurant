@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { Text, TextInput, Button, Surface, Snackbar } from 'react-native-paper';
+import { Text, TextInput, Button, Surface, Snackbar, Icon } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import authService from '../services/authService';
 import useAuthStore from '../store/authStore';
+import { colors, spacing, fontSize } from '../styles/theme';
 
 const LoginScreen = ({ navigation }) => {
   const [phone, setPhone] = useState('');
@@ -32,50 +34,82 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <LinearGradient
+        colors={[colors.primary[500], colors.primary[700], colors.primary[900]]}
+        style={styles.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
       >
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <Text variant="displaySmall" style={styles.title}>
-              Welcome
-            </Text>
-            <Text variant="bodyLarge" style={styles.subtitle}>
-              Sign in to continue
-            </Text>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+        >
+          <View style={styles.content}>
+            {/* Hero Section */}
+            <View style={styles.heroSection}>
+              <View style={styles.iconContainer}>
+                <Icon source="food" size={80} color={colors.white} />
+              </View>
+              <Text variant="displayMedium" style={styles.appName}>
+                FoodHub
+              </Text>
+              <Text variant="titleMedium" style={styles.tagline}>
+                Delicious food, delivered fast 🍕
+              </Text>
+            </View>
+
+            {/* Form Section */}
+            <Surface style={styles.formCard} elevation={4}>
+              <Text variant="headlineSmall" style={styles.formTitle}>
+                Welcome Back!
+              </Text>
+              <Text variant="bodyMedium" style={styles.formSubtitle}>
+                Sign in to continue
+              </Text>
+
+              <View style={styles.inputContainer}>
+                <TextInput
+                  label="Phone Number"
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                  mode="outlined"
+                  placeholder="Enter your phone number"
+                  autoFocus
+                  left={<TextInput.Icon icon="phone" color={colors.primary[500]} />}
+                  style={styles.input}
+                  outlineColor={colors.secondary[300]}
+                  activeOutlineColor={colors.primary[500]}
+                  theme={{
+                    roundness: 12,
+                  }}
+                />
+              </View>
+
+              <Button
+                mode="contained"
+                onPress={handleSendOTP}
+                loading={loading}
+                disabled={loading}
+                style={styles.button}
+                contentStyle={styles.buttonContent}
+                buttonColor={colors.primary[500]}
+                labelStyle={styles.buttonLabel}
+              >
+                Send OTP
+              </Button>
+
+              <View style={styles.trustSection}>
+                <Icon source="shield-check" size={16} color={colors.secondary[600]} />
+                <Text variant="bodySmall" style={styles.trustText}>
+                  We'll send you a verification code
+                </Text>
+              </View>
+            </Surface>
           </View>
-
-          <Surface style={styles.formContainer} elevation={0}>
-            <TextInput
-              label="Phone Number"
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              mode="outlined"
-              placeholder="Enter your phone number"
-              autoFocus
-              style={styles.input}
-            />
-
-            <Button
-              mode="contained"
-              onPress={handleSendOTP}
-              loading={loading}
-              disabled={loading}
-              style={styles.button}
-              contentStyle={styles.buttonContent}
-            >
-              Send OTP
-            </Button>
-
-            <Text variant="bodySmall" style={styles.helperText}>
-              We'll send you a verification code
-            </Text>
-          </Surface>
-        </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </LinearGradient>
 
       <Snackbar
         visible={!!error}
@@ -85,6 +119,7 @@ const LoginScreen = ({ navigation }) => {
           label: 'Dismiss',
           onPress: () => setError(''),
         }}
+        style={styles.snackbar}
       >
         {error}
       </Snackbar>
@@ -95,41 +130,88 @@ const LoginScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fafaf9',
+    backgroundColor: colors.primary[500],
+  },
+  gradient: {
+    flex: 1,
   },
   keyboardView: {
     flex: 1,
   },
   content: {
     flex: 1,
+    justifyContent: 'space-between',
+    padding: spacing.xl,
+    paddingTop: spacing['3xl'],
+  },
+  heroSection: {
+    alignItems: 'center',
+    marginTop: spacing['2xl'],
+  },
+  iconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
-    padding: 24,
+    alignItems: 'center',
+    marginBottom: spacing.xl,
   },
-  header: {
-    marginBottom: 48,
-  },
-  title: {
+  appName: {
+    color: colors.white,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
   },
-  subtitle: {
-    color: '#78716c',
+  tagline: {
+    color: colors.white,
+    opacity: 0.9,
+    textAlign: 'center',
   },
-  formContainer: {
-    backgroundColor: 'transparent',
+  formCard: {
+    backgroundColor: colors.white,
+    borderRadius: 24,
+    padding: spacing.xl,
+    marginBottom: spacing.xl,
+  },
+  formTitle: {
+    fontWeight: 'bold',
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
+  },
+  formSubtitle: {
+    color: colors.text.secondary,
+    marginBottom: spacing.xl,
+  },
+  inputContainer: {
+    marginBottom: spacing.lg,
   },
   input: {
-    marginBottom: 16,
+    backgroundColor: colors.white,
   },
   button: {
-    marginBottom: 16,
+    borderRadius: 12,
+    marginBottom: spacing.lg,
   },
   buttonContent: {
-    paddingVertical: 8,
+    paddingVertical: 12,
   },
-  helperText: {
+  buttonLabel: {
+    fontSize: fontSize.base,
+    fontWeight: '600',
+  },
+  trustSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  trustText: {
+    color: colors.text.secondary,
     textAlign: 'center',
-    color: '#78716c',
+  },
+  snackbar: {
+    backgroundColor: colors.error,
   },
 });
 

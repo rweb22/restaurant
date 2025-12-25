@@ -9,8 +9,12 @@ import {
   Button,
   ActivityIndicator,
   Appbar,
+  Searchbar,
+  FAB,
+  Icon,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery } from '@tanstack/react-query';
 import menuService from '../services/menuService';
 import notificationService from '../services/notificationService';
@@ -19,14 +23,20 @@ import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
 import useDeliveryStore from '../store/deliveryStore';
 import AddressSelectionModal from '../components/AddressSelectionModal';
+import FoodCard from '../components/FoodCard';
+import CategoryChip from '../components/CategoryChip';
 import { API_CONFIG } from '../constants/config';
+import { colors, spacing, fontSize } from '../styles/theme';
 
 const HomeScreen = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const { getItemCount, clearCart } = useCartStore();
   const { logout, user } = useAuthStore();
   const { selectedAddress, loadDeliveryInfo, clearDeliveryInfo } = useDeliveryStore();
+
+  const cartItemCount = getItemCount();
 
   // Fetch unread notification count
   const { data: unreadCountData } = useQuery({
@@ -90,34 +100,48 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Combined Header with Greeting and Address */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text variant="bodyMedium" style={styles.greeting}>
-            {user?.name ? `Hi, ${user.name}! 👋` : "Welcome! 👋"}
-          </Text>
-        </View>
-
-        {selectedAddress && (
-          <TouchableOpacity
-            onPress={() => setAddressModalVisible(true)}
-            activeOpacity={0.7}
-            style={styles.headerRight}
-          >
-            <View style={styles.addressInfo}>
-              <Text variant="bodySmall" style={styles.deliverTo}>
-                Deliver to
+      {/* Header with Gradient */}
+      <LinearGradient
+        colors={[colors.primary[500], colors.primary[600]]}
+        style={styles.headerGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+      >
+        <View style={styles.headerContent}>
+          {/* Greeting and Address Row */}
+          <View style={styles.topRow}>
+            <View style={styles.greetingSection}>
+              <Text variant="bodySmall" style={styles.greetingLabel}>
+                {user?.name ? `Hi, ${user.name}! 👋` : "Welcome! 👋"}
               </Text>
-              <View style={styles.addressRow}>
-                <Text variant="bodyMedium" style={styles.addressLabel} numberOfLines={1}>
-                  {selectedAddress.label || 'Address'}
-                </Text>
-                <IconButton icon="chevron-down" size={16} style={styles.chevron} />
-              </View>
+              {selectedAddress && (
+                <TouchableOpacity
+                  onPress={() => setAddressModalVisible(true)}
+                  activeOpacity={0.7}
+                  style={styles.addressButton}
+                >
+                  <Icon source="map-marker" size={16} color={colors.white} />
+                  <Text variant="bodyMedium" style={styles.addressText} numberOfLines={1}>
+                    {selectedAddress.label || 'Select Address'}
+                  </Text>
+                  <Icon source="chevron-down" size={16} color={colors.white} />
+                </TouchableOpacity>
+              )}
             </View>
-          </TouchableOpacity>
-        )}
-      </View>
+          </View>
+
+          {/* Search Bar */}
+          <Searchbar
+            placeholder="Search for dishes..."
+            onChangeText={setSearchQuery}
+            value={searchQuery}
+            style={styles.searchBar}
+            inputStyle={styles.searchInput}
+            iconColor={colors.primary[500]}
+            placeholderTextColor={colors.secondary[500]}
+          />
+        </View>
+      </LinearGradient>
 
       {/* Restaurant Status Banner */}
       {restaurantStatus && !restaurantStatus.isOpen && (
@@ -153,85 +177,109 @@ const HomeScreen = ({ navigation }) => {
 
       {/* Categories */}
       <View style={styles.categoriesContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <Chip
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoriesContent}
+        >
+          <CategoryChip
+            label="All"
+            icon="🍽️"
             selected={selectedCategory === null}
             onPress={() => setSelectedCategory(null)}
-            style={styles.chip}
-          >
-            All
-          </Chip>
+          />
           {categoriesLoading ? (
-            <ActivityIndicator size="small" style={styles.chip} />
+            <ActivityIndicator size="small" style={styles.categoryLoader} />
           ) : (
-            categories?.categories?.map((category) => (
-              <Chip
-                key={category.id}
-                selected={selectedCategory === category.id}
-                onPress={() => setSelectedCategory(category.id)}
-                style={styles.chip}
-              >
-                {category.name}
-              </Chip>
-            ))
+            categories?.categories?.map((category) => {
+              // Map category names to emojis
+              const categoryIcons = {
+                'Pizza': '🍕',
+                'Burgers': '🍔',
+                'Noodles': '🍜',
+                'Khichdi': '🍛',
+                'Desserts': '🍰',
+                'Beverages': '🥤',
+              };
+
+              return (
+                <CategoryChip
+                  key={category.id}
+                  label={category.name}
+                  icon={categoryIcons[category.name] || '🍴'}
+                  selected={selectedCategory === category.id}
+                  onPress={() => setSelectedCategory(category.id)}
+                />
+              );
+            })
           )}
         </ScrollView>
       </View>
 
       {/* Items Grid */}
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {itemsLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" />
+            <ActivityIndicator size="large" color={colors.primary[500]} />
           </View>
         ) : (
           <View style={styles.grid}>
-            {items?.items?.map((item) => (
-              <Card
-                key={item.id}
-                style={[
-                  styles.card,
-                  (!item.isAvailable || !restaurantStatus?.isOpen) && styles.unavailableCard
-                ]}
-                onPress={() => {
-                  if (item.isAvailable && restaurantStatus?.isOpen) {
-                    navigation.navigate('ItemDetail', { itemId: item.id });
-                  }
-                }}
-              >
-                <Card.Cover
-                  source={{
-                    uri: item.imageUrl
-                      ? `${API_CONFIG.BASE_URL.replace('/api', '')}${item.imageUrl}`
-                      : 'https://via.placeholder.com/150'
-                  }}
-                  style={[styles.cardImage, !item.isAvailable && styles.unavailableImage]}
-                />
-                {!item.isAvailable && (
-                  <View style={styles.unavailableBadge}>
-                    <Text variant="labelSmall" style={styles.unavailableText}>
-                      UNAVAILABLE
-                    </Text>
-                  </View>
-                )}
-                <Card.Content style={styles.cardContent}>
-                  <Text variant="titleMedium" numberOfLines={1} style={[styles.itemName, !item.isAvailable && styles.unavailableItemName]}>
-                    {item.name}
-                  </Text>
-                  <Text variant="bodySmall" numberOfLines={2} style={[styles.itemDescription, !item.isAvailable && styles.unavailableItemDescription]}>
-                    {item.description}
-                  </Text>
-                  {item.sizes && item.sizes.length > 0 && (
-                    <Text variant="titleLarge" style={[styles.itemPrice, !item.isAvailable && styles.unavailableItemPrice]}>
-                      ₹{Math.min(...item.sizes.map(s => s.price))}+
-                    </Text>
-                  )}
-                </Card.Content>
-              </Card>
-            ))}
+            {items?.items
+              ?.filter(item =>
+                searchQuery === '' ||
+                item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                item.description.toLowerCase().includes(searchQuery.toLowerCase())
+              )
+              ?.map((item) => {
+                const isAvailable = item.isAvailable && restaurantStatus?.isOpen;
+                const minPrice = item.sizes && item.sizes.length > 0
+                  ? Math.min(...item.sizes.map(s => s.price))
+                  : 0;
+
+                return (
+                  <FoodCard
+                    key={item.id}
+                    imageUrl={
+                      item.imageUrl
+                        ? `${API_CONFIG.BASE_URL.replace('/api', '')}${item.imageUrl}`
+                        : 'https://via.placeholder.com/300x200'
+                    }
+                    name={item.name}
+                    description={item.description}
+                    price={minPrice}
+                    badge={!isAvailable ? 'UNAVAILABLE' : null}
+                    onPress={() => {
+                      if (isAvailable) {
+                        navigation.navigate('ItemDetail', { itemId: item.id });
+                      }
+                    }}
+                    onAddPress={() => {
+                      if (isAvailable) {
+                        navigation.navigate('ItemDetail', { itemId: item.id });
+                      }
+                    }}
+                    style={styles.foodCard}
+                  />
+                );
+              })}
           </View>
         )}
       </ScrollView>
+
+      {/* Floating Cart Button */}
+      {cartItemCount > 0 && (
+        <FAB
+          icon="cart"
+          label={`${cartItemCount} ${cartItemCount === 1 ? 'item' : 'items'}`}
+          style={styles.fab}
+          color={colors.white}
+          onPress={() => navigation.navigate('CartTab')}
+        />
+      )}
 
       {/* Address Selection Modal */}
       <AddressSelectionModal
@@ -258,173 +306,116 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fafaf9',
+    backgroundColor: colors.background,
   },
-  header: {
+  headerGradient: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
+  },
+  headerContent: {
+    gap: spacing.md,
+  },
+  topRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#f5f5f4',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e7e5e4',
-  },
-  headerLeft: {
-    flex: 1,
-  },
-  greeting: {
-    color: '#1c1917',
-    fontWeight: '500',
-  },
-  headerRight: {
-    flexShrink: 1,
-    maxWidth: '50%',
-  },
-  addressInfo: {
     alignItems: 'flex-start',
   },
-  deliverTo: {
-    color: '#78716c',
-    fontSize: 11,
+  greetingSection: {
+    flex: 1,
   },
-  addressRow: {
+  greetingLabel: {
+    color: colors.white,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
+  },
+  addressButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
   },
-  addressLabel: {
+  addressText: {
+    color: colors.white,
     fontWeight: '600',
-    color: '#292524',
-    fontSize: 14,
+    maxWidth: 150,
   },
-  chevron: {
-    margin: 0,
-    marginLeft: -8,
+  searchBar: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    elevation: 2,
+  },
+  searchInput: {
+    fontSize: fontSize.sm,
   },
   statusBanner: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#e7e5e4',
+    borderBottomColor: colors.secondary[200],
   },
   statusContent: {
     alignItems: 'flex-start',
   },
   closedChip: {
-    backgroundColor: '#f44336',
-    marginBottom: 8,
+    backgroundColor: colors.error,
+    marginBottom: spacing.sm,
   },
   closedChipText: {
-    color: 'white',
+    color: colors.white,
     fontWeight: 'bold',
   },
   statusReason: {
-    color: '#c62828',
+    color: colors.error,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   nextOpenTime: {
-    color: '#666',
+    color: colors.text.secondary,
   },
   categoriesContainer: {
-    backgroundColor: '#ffffff',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    backgroundColor: colors.white,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#e7e5e4',
+    borderBottomColor: colors.secondary[200],
   },
-  chip: {
-    marginRight: 8,
+  categoriesContent: {
+    paddingHorizontal: spacing.lg,
+  },
+  categoryLoader: {
+    marginLeft: spacing.md,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    padding: spacing.lg,
+    paddingBottom: 100, // Extra padding for FAB
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 48,
+    paddingVertical: spacing['3xl'],
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginHorizontal: -8,
+    gap: spacing.md,
   },
-  card: {
+  foodCard: {
     width: '48%',
-    margin: '1%',
-    marginBottom: 16,
-    position: 'relative',
   },
-  unavailableCard: {
-    opacity: 0.6,
-  },
-  cardImage: {
-    height: 120,
-  },
-  unavailableImage: {
-    opacity: 0.5,
-  },
-  unavailableBadge: {
+  fab: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: '#dc2626',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    zIndex: 1,
-  },
-  unavailableText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-    fontSize: 10,
-  },
-  cardContent: {
-    paddingTop: 12,
-  },
-  itemName: {
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  unavailableItemName: {
-    color: '#a8a29e',
-  },
-  itemDescription: {
-    color: '#78716c',
-    marginBottom: 8,
-  },
-  unavailableItemDescription: {
-    color: '#d6d3d1',
-  },
-  itemPrice: {
-    color: '#dc2626',
-    fontWeight: 'bold',
-  },
-  unavailableItemPrice: {
-    color: '#a8a29e',
-  },
-  iconContainer: {
-    position: 'relative',
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    fontSize: 10,
-    minWidth: 18,
-    height: 18,
-  },
-  cartBadge: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    fontSize: 10,
-    minWidth: 18,
-    height: 18,
+    bottom: 80, // Above bottom tab bar
+    right: spacing.lg,
+    backgroundColor: colors.primary[500],
+    borderRadius: 28,
   },
 });
 

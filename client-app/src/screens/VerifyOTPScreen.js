@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { Text, TextInput, Button, Surface, Snackbar } from 'react-native-paper';
+import { Text, TextInput, Button, Surface, Snackbar, Icon, IconButton } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import authService from '../services/authService';
 import useAuthStore from '../store/authStore';
+import { colors, spacing, fontSize } from '../styles/theme';
 
 const VerifyOTPScreen = ({ navigation }) => {
   const [otp, setOtp] = useState('');
@@ -48,63 +50,110 @@ const VerifyOTPScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <LinearGradient
+        colors={[colors.primary[500], colors.primary[700], colors.primary[900]]}
+        style={styles.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
       >
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <Text variant="displaySmall" style={styles.title}>
-              Verify OTP
-            </Text>
-            <Text variant="bodyLarge" style={styles.subtitle}>
-              Enter the code sent to {tempPhone}
-            </Text>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+        >
+          <View style={styles.content}>
+            {/* Back Button */}
+            <View style={styles.backButtonContainer}>
+              <IconButton
+                icon="arrow-left"
+                iconColor={colors.white}
+                size={24}
+                onPress={() => navigation.goBack()}
+                style={styles.backButton}
+              />
+            </View>
+
+            {/* Hero Section */}
+            <View style={styles.heroSection}>
+              <View style={styles.iconContainer}>
+                <Icon source="lock-check" size={64} color={colors.white} />
+              </View>
+              <Text variant="displaySmall" style={styles.title}>
+                Verify OTP
+              </Text>
+              <Text variant="bodyLarge" style={styles.subtitle}>
+                Enter the code sent to
+              </Text>
+              <Text variant="titleMedium" style={styles.phoneNumber}>
+                {tempPhone}
+              </Text>
+            </View>
+
+            {/* Form Section */}
+            <Surface style={styles.formCard} elevation={4}>
+              <View style={styles.inputContainer}>
+                <TextInput
+                  label="OTP Code"
+                  value={otp}
+                  onChangeText={setOtp}
+                  keyboardType="number-pad"
+                  mode="outlined"
+                  placeholder="Enter 6-digit code"
+                  maxLength={6}
+                  autoFocus
+                  left={<TextInput.Icon icon="shield-key" color={colors.primary[500]} />}
+                  style={styles.input}
+                  outlineColor={colors.secondary[300]}
+                  activeOutlineColor={colors.primary[500]}
+                  theme={{
+                    roundness: 12,
+                  }}
+                />
+              </View>
+
+              <Button
+                mode="contained"
+                onPress={handleVerifyOTP}
+                loading={loading}
+                disabled={loading}
+                style={styles.button}
+                contentStyle={styles.buttonContent}
+                buttonColor={colors.primary[500]}
+                labelStyle={styles.buttonLabel}
+              >
+                Verify & Continue
+              </Button>
+
+              <View style={styles.actionsContainer}>
+                <Button
+                  mode="text"
+                  onPress={handleResendOTP}
+                  textColor={colors.primary[600]}
+                  labelStyle={styles.textButtonLabel}
+                >
+                  Resend OTP
+                </Button>
+
+                <Button
+                  mode="text"
+                  onPress={() => navigation.goBack()}
+                  textColor={colors.secondary[600]}
+                  labelStyle={styles.textButtonLabel}
+                >
+                  Change Number
+                </Button>
+              </View>
+
+              <View style={styles.trustSection}>
+                <Icon source="information" size={16} color={colors.secondary[600]} />
+                <Text variant="bodySmall" style={styles.trustText}>
+                  Code expires in 5 minutes
+                </Text>
+              </View>
+            </Surface>
           </View>
-
-          <Surface style={styles.formContainer} elevation={0}>
-            <TextInput
-              label="OTP"
-              value={otp}
-              onChangeText={setOtp}
-              keyboardType="number-pad"
-              mode="outlined"
-              placeholder="Enter 6-digit OTP"
-              maxLength={6}
-              autoFocus
-              style={styles.input}
-            />
-
-            <Button
-              mode="contained"
-              onPress={handleVerifyOTP}
-              loading={loading}
-              disabled={loading}
-              style={styles.button}
-              contentStyle={styles.buttonContent}
-            >
-              Verify
-            </Button>
-
-            <Button
-              mode="text"
-              onPress={handleResendOTP}
-              style={styles.textButton}
-            >
-              Resend OTP
-            </Button>
-
-            <Button
-              mode="text"
-              onPress={() => navigation.goBack()}
-              style={styles.textButton}
-            >
-              Change Number
-            </Button>
-          </Surface>
-        </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </LinearGradient>
 
       <Snackbar
         visible={!!error}
@@ -114,6 +163,7 @@ const VerifyOTPScreen = ({ navigation }) => {
           label: 'Dismiss',
           onPress: () => setError(''),
         }}
+        style={styles.errorSnackbar}
       >
         {error}
       </Snackbar>
@@ -122,6 +172,7 @@ const VerifyOTPScreen = ({ navigation }) => {
         visible={!!success}
         onDismiss={() => setSuccess('')}
         duration={3000}
+        style={styles.successSnackbar}
       >
         {success}
       </Snackbar>
@@ -132,40 +183,102 @@ const VerifyOTPScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fafaf9',
+    backgroundColor: colors.primary[500],
+  },
+  gradient: {
+    flex: 1,
   },
   keyboardView: {
     flex: 1,
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
-    padding: 24,
+    justifyContent: 'space-between',
+    padding: spacing.xl,
   },
-  header: {
-    marginBottom: 48,
+  backButtonContainer: {
+    marginTop: spacing.md,
+  },
+  backButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  heroSection: {
+    alignItems: 'center',
+    marginTop: spacing.xl,
+  },
+  iconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
   },
   title: {
+    color: colors.white,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
   },
   subtitle: {
-    color: '#78716c',
+    color: colors.white,
+    opacity: 0.9,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
   },
-  formContainer: {
-    backgroundColor: 'transparent',
+  phoneNumber: {
+    color: colors.white,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  formCard: {
+    backgroundColor: colors.white,
+    borderRadius: 24,
+    padding: spacing.xl,
+    marginBottom: spacing.xl,
+  },
+  inputContainer: {
+    marginBottom: spacing.lg,
   },
   input: {
-    marginBottom: 16,
+    backgroundColor: colors.white,
   },
   button: {
-    marginBottom: 8,
+    borderRadius: 12,
+    marginBottom: spacing.lg,
   },
   buttonContent: {
-    paddingVertical: 8,
+    paddingVertical: 12,
   },
-  textButton: {
-    marginTop: 8,
+  buttonLabel: {
+    fontSize: fontSize.base,
+    fontWeight: '600',
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: spacing.lg,
+  },
+  textButtonLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+  },
+  trustSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  trustText: {
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  errorSnackbar: {
+    backgroundColor: colors.error,
+  },
+  successSnackbar: {
+    backgroundColor: colors.success,
   },
 });
 
