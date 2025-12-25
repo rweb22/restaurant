@@ -31,11 +31,11 @@ router.get('/transactions/:id', authenticate, requireRole('admin'), paymentContr
 router.post('/initiate', authenticate, paymentController.initiatePayment);
 
 /**
- * @route   POST /api/payments/verify
- * @desc    Verify payment after user completes payment
+ * @route   POST /api/payments/check-status
+ * @desc    Check payment status (for polling)
  * @access  Private (Client)
  */
-router.post('/verify', authenticate, paymentController.verifyPayment);
+router.post('/check-status', authenticate, paymentController.checkPaymentStatus);
 
 /**
  * @route   GET /api/payments/status/:orderId

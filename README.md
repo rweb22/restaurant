@@ -29,6 +29,7 @@ A comprehensive restaurant management system built with Node.js, Express, Postgr
 - Multiple delivery addresses
 - Place orders with customizations
 - View order history
+- UPI payment integration via UPIGateway
 
 ### Order Management
 - Order lifecycle: Pending → Confirmed → Preparing → Ready → Completed
@@ -60,6 +61,9 @@ A comprehensive restaurant management system built with Node.js, Express, Postgr
    - `OTP_SERVICE_URL`: Your OTP service URL
    - `OTP_SERVICE_API_KEY`: Your OTP service API key
    - `ADMIN_PHONE`: Admin phone number
+   - `UPIGATEWAY_MERCHANT_KEY`: Your UPIGateway merchant key
+   - `UPIGATEWAY_WEBHOOK_SECRET`: Your UPIGateway webhook secret
+   - `UPIGATEWAY_CALLBACK_URL`: Your webhook callback URL
 
 3. **Start the application**
    ```bash
@@ -76,7 +80,13 @@ A comprehensive restaurant management system built with Node.js, Express, Postgr
    docker-compose exec app npm run db:seed
    ```
 
-6. **Access the API**
+6. **Setup UPIGateway (Optional)**
+   - Sign up at https://upigateway.com
+   - Get your merchant key and webhook secret
+   - Update `.env` with your credentials
+   - Configure webhook URL: `https://your-domain.com/api/webhooks/upigateway`
+
+7. **Access the API**
    - API: http://localhost:3000
    - Health check: http://localhost:3000/health
 

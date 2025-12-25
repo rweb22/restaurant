@@ -49,35 +49,37 @@ const initiatePayment = async (req, res) => {
 };
 
 /**
- * Verify payment after user completes payment
- * POST /api/payments/verify
+ * Check payment status (for polling)
+ * POST /api/payments/check-status
+ *
+ * UPIGateway uses webhooks for payment confirmation, but this endpoint
+ * allows clients to poll for status updates if needed.
  */
-const verifyPayment = async (req, res) => {
+const checkPaymentStatus = async (req, res) => {
   try {
-    // Validate request body
-    const { error, value } = verifyPaymentSchema.validate(req.body);
-    if (error) {
+    const { orderId } = req.body;
+
+    if (!orderId) {
       return res.status(400).json({
         success: false,
-        message: 'Validation error',
-        errors: error.details.map(detail => detail.message)
+        message: 'Order ID is required'
       });
     }
 
-    // Verify payment
-    const result = await paymentService.verifyPayment(
-      value.razorpay_order_id,
-      value.razorpay_payment_id,
-      value.razorpay_signature
-    );
+    // Check payment status (with gateway check)
+    const result = await paymentService.getPaymentStatus(orderId, true);
 
     // Send response
-    res.status(200).json(formatVerifyPaymentResponse(result));
+    res.status(200).json({
+      success: true,
+      data: result,
+      message: 'Payment status retrieved successfully'
+    });
   } catch (error) {
-    logger.error('Error verifying payment:', error);
+    logger.error('Error checking payment status:', error);
     res.status(400).json({
       success: false,
-      message: error.message || 'Payment verification failed'
+      message: error.message || 'Failed to check payment status'
     });
   }
 };
@@ -248,7 +250,7 @@ module.exports = {
   getAllTransactions,
   getTransactionById,
   initiatePayment,
-  verifyPayment,
+  checkPaymentStatus,
   getPaymentStatus,
   processRefund
 };

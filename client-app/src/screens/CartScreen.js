@@ -19,12 +19,12 @@ import AddressSelectionModal from '../components/AddressSelectionModal';
 import OffersModal from '../components/OffersModal';
 import QuantitySelector from '../components/QuantitySelector';
 import PriceBreakdown from '../components/PriceBreakdown';
-import RazorpayCheckout from '../components/RazorpayCheckout';
+import UPIGatewayCheckout from '../components/UPIGatewayCheckout';
 import orderService from '../services/orderService';
 import paymentService from '../services/paymentService';
 import addressService from '../services/addressService';
 import restaurantService from '../services/restaurantService';
-import { initializeRazorpayPayment, getRazorpayConfig, handlePaymentSuccess, handlePaymentFailure, handlePaymentCancel } from '../utils/razorpay';
+import { initiatePayment } from '../utils/upigateway';
 import { API_CONFIG } from '../constants/config';
 import { colors, spacing, fontSize, borderRadius, shadows } from '../styles/theme';
 
@@ -219,73 +219,34 @@ const CartScreen = ({ navigation }) => {
       console.log('[CartScreen] Backend calculated total:', order.totalPrice);
       console.log('[CartScreen] Difference:', parseFloat(priceBreakdown.grandTotal) - parseFloat(order.totalPrice));
 
-      // Step 2: Initiate payment
-      console.log('[CartScreen] Initiating payment for order:', orderId);
-      const paymentInitResponse = await paymentService.initiatePayment(orderId);
-      console.log('[CartScreen] Payment initiated:', paymentInitResponse);
+      // Step 2: Initiate UPIGateway payment
+      console.log('[CartScreen] Initiating UPIGateway payment for order:', orderId);
+      const paymentInitResponse = await initiatePayment(orderId);
+      console.log('[CartScreen] UPIGateway payment initiated:', paymentInitResponse);
 
-      const paymentData = paymentInitResponse.data || paymentInitResponse;
-      const razorpayOrderId = paymentData.gatewayOrderId;
-      const amount = paymentData.amount;
-      const currency = paymentData.currency;
-      const key = paymentData.razorpayKeyId;
-
-      console.log('[CartScreen] Payment details:', { razorpayOrderId, amount, currency, key });
-
-      // Step 3: Open Razorpay checkout
-      console.log('[CartScreen] Opening Razorpay checkout...');
-      const razorpayConfig = getRazorpayConfig();
-
-      // Prepare Razorpay options
-      const paymentOptions = {
-        orderId: razorpayOrderId,
-        amount: amount,
-        currency: currency,
-        key: key,
-        name: razorpayConfig.name,
-        description: razorpayConfig.description,
+      // Prepare payment data for UPIGatewayCheckout component
+      const paymentData = {
+        orderId: paymentInitResponse.orderId,
+        transactionId: paymentInitResponse.transactionId,
+        gatewayOrderId: paymentInitResponse.gatewayOrderId,
+        clientTxnId: paymentInitResponse.clientTxnId,
+        qrCode: paymentInitResponse.qrCode,
+        qrString: paymentInitResponse.qrString,
+        paymentUrl: paymentInitResponse.paymentUrl,
+        amount: paymentInitResponse.amount,
+        currency: paymentInitResponse.currency,
       };
 
-      let paymentResult;
-      try {
-        paymentResult = await initializeRazorpayPayment({
-          ...paymentOptions,
-          onShow: () => {
-            console.log('[CartScreen] Showing payment modal');
-            setRazorpayOptions(paymentOptions);
-            setPaymentModalVisible(true);
-          },
-        });
-        console.log('[CartScreen] Payment completed:', paymentResult);
-        setPaymentModalVisible(false);
-        setRazorpayOptions(null);
-      } catch (paymentError) {
-        console.log('[CartScreen] Payment cancelled or failed:', paymentError.message);
-        setPaymentModalVisible(false);
-        setRazorpayOptions(null);
-        setIsCheckingOut(false);
+      console.log('[CartScreen] Payment data:', paymentData);
 
-        if (paymentError.message === 'Payment cancelled by user') {
-          Alert.alert('Payment Cancelled', 'You cancelled the payment.');
-        } else {
-          Alert.alert('Payment Failed', 'Payment failed. Please try again.');
-        }
-        return;
-      }
+      // Step 3: Show UPIGateway checkout modal
+      console.log('[CartScreen] Showing UPIGateway checkout modal...');
+      setRazorpayOptions(paymentData);
+      setPaymentModalVisible(true);
 
-      // Step 4: Verify payment
-      console.log('[CartScreen] Verifying payment...');
-      const verificationResponse = await paymentService.verifyPayment(paymentResult);
-      console.log('[CartScreen] Payment verified:', verificationResponse);
-
-      // Step 5: Clear cart and navigate to confirmation
-      console.log('[CartScreen] Payment successful! Clearing cart...');
-      await clearCart();
-
-      setIsCheckingOut(false);
-
-      // Navigate to order confirmation screen
-      navigation.replace('OrderConfirmation', { orderId });
+      // Payment will be verified via webhook
+      // The UPIGatewayCheckout component will poll for status and call onSuccess/onFailure
+      // Success/failure will be handled by the modal callbacks
 
     } catch (error) {
       console.error('[CartScreen] Checkout error:', error);
@@ -309,6 +270,46 @@ const CartScreen = ({ navigation }) => {
         [{ text: 'OK' }]
       );
     }
+  };
+
+  const handlePaymentSuccess = async (paymentData) => {
+    console.log('[CartScreen] Payment successful!', paymentData);
+    setPaymentModalVisible(false);
+    setRazorpayOptions(null);
+    setIsCheckingOut(false);
+
+    // Clear cart
+    console.log('[CartScreen] Clearing cart...');
+    await clearCart();
+
+    // Navigate to order confirmation screen
+    navigation.replace('OrderConfirmation', { orderId: paymentData.orderId });
+  };
+
+  const handlePaymentFailure = (error) => {
+    console.log('[CartScreen] Payment failed:', error);
+    setPaymentModalVisible(false);
+    setRazorpayOptions(null);
+    setIsCheckingOut(false);
+
+    Alert.alert(
+      'Payment Failed',
+      error.message || 'Payment failed. Please try again.',
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handlePaymentCancel = () => {
+    console.log('[CartScreen] Payment cancelled');
+    setPaymentModalVisible(false);
+    setRazorpayOptions(null);
+    setIsCheckingOut(false);
+
+    Alert.alert(
+      'Payment Cancelled',
+      'You cancelled the payment. Your order has not been placed.',
+      [{ text: 'OK' }]
+    );
   };
 
   const handleClearCart = () => {
@@ -620,10 +621,10 @@ const CartScreen = ({ navigation }) => {
         itemIds={itemIds}
       />
 
-      {/* Razorpay Payment Checkout */}
-      <RazorpayCheckout
+      {/* UPIGateway Payment Checkout */}
+      <UPIGatewayCheckout
         visible={paymentModalVisible}
-        options={razorpayOptions}
+        paymentData={razorpayOptions}
         onSuccess={(paymentData) => {
           console.log('[CartScreen] Payment success callback:', paymentData);
           handlePaymentSuccess(paymentData);
@@ -632,8 +633,8 @@ const CartScreen = ({ navigation }) => {
           console.log('[CartScreen] Payment failure callback:', error);
           handlePaymentFailure(error);
         }}
-        onCancel={() => {
-          console.log('[CartScreen] Payment cancel callback');
+        onDismiss={() => {
+          console.log('[CartScreen] Payment dismiss callback');
           handlePaymentCancel();
         }}
       />

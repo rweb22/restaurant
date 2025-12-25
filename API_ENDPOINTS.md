@@ -179,23 +179,37 @@ Response: {
 
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
-| POST | `/payments/initiate` | Authenticated | Initiate Razorpay payment |
-| POST | `/payments/verify` | Authenticated | Verify payment signature |
+| POST | `/payments/initiate` | Authenticated | Initiate UPIGateway payment |
+| POST | `/payments/check-status` | Authenticated | Check payment status (polling) |
 | GET | `/payments/status/:orderId` | Authenticated | Get payment status |
-| POST | `/payments/refund` | Admin | Process refund |
+| POST | `/payments/refund` | Admin | Process refund (manual) |
 
 **Payment Initiate Body**:
 ```json
 { "orderId": 1 }
 ```
 
-**Payment Verify Body**:
+**Payment Initiate Response**:
 ```json
 {
-  "razorpay_order_id": "order_xxx",
-  "razorpay_payment_id": "pay_xxx",
-  "razorpay_signature": "signature_xxx"
+  "success": true,
+  "data": {
+    "orderId": 1,
+    "transactionId": 123,
+    "gatewayOrderId": "upi_order_xxx",
+    "clientTxnId": "order_1_1234567890",
+    "qrCode": "base64_encoded_qr_image",
+    "qrString": "upi://pay?...",
+    "paymentUrl": "https://upigateway.com/pay/...",
+    "amount": 500,
+    "currency": "INR"
+  }
 }
+```
+
+**Payment Check Status Body**:
+```json
+{ "orderId": 1 }
 ```
 
 **Refund Body**:
@@ -213,14 +227,26 @@ Response: {
 
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
-| POST | `/webhooks/razorpay` | Public (Signature Verified) | Razorpay webhook handler |
+| POST | `/webhooks/upigateway` | Public (Signature Verified) | UPIGateway webhook handler |
 
-**Events Handled**:
-- `payment.authorized`
-- `payment.captured`
-- `payment.failed`
-- `refund.created`
-- `refund.processed`
+**Webhook Payload**:
+```json
+{
+  "client_txn_id": "order_1_1234567890",
+  "status": "success",
+  "txn_id": "UPI123456789",
+  "upi_txn_id": "123456789012",
+  "amount": "500.00",
+  "customer_vpa": "customer@upi",
+  "customer_name": "Customer Name",
+  "customer_mobile": "9876543210"
+}
+```
+
+**Status Values**:
+- `success` - Payment completed successfully
+- `failed` - Payment failed
+- `pending` - Payment is still pending
 
 ---
 

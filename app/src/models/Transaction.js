@@ -59,7 +59,7 @@ module.exports = (sequelize, DataTypes) => {
       paymentGateway: {
         type: DataTypes.STRING(50),
         allowNull: false,
-        defaultValue: 'razorpay',
+        defaultValue: 'upigateway',
         field: 'payment_gateway'
       },
       gatewayOrderId: {

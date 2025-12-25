@@ -48,7 +48,7 @@ export const PAYMENT_STATUS = {
 
 // Payment Methods
 export const PAYMENT_METHODS = {
-  RAZORPAY: 'razorpay',
+  UPIGATEWAY: 'upigateway',
   COD: 'cod',
 };
 
