@@ -1,6 +1,6 @@
 /**
  * Payment Routes
- * 
+ *
  * This file defines all payment-related routes.
  */
 
@@ -8,6 +8,20 @@ const express = require('express');
 const router = express.Router();
 const paymentController = require('../controllers/paymentController');
 const { authenticate, requireRole } = require('../middleware/auth');
+
+/**
+ * @route   GET /api/payments/transactions
+ * @desc    Get all transactions (Admin only)
+ * @access  Private (Admin only)
+ */
+router.get('/transactions', authenticate, requireRole('admin'), paymentController.getAllTransactions);
+
+/**
+ * @route   GET /api/payments/transactions/:id
+ * @desc    Get transaction by ID (Admin only)
+ * @access  Private (Admin only)
+ */
+router.get('/transactions/:id', authenticate, requireRole('admin'), paymentController.getTransactionById);
 
 /**
  * @route   POST /api/payments/initiate

@@ -6,26 +6,36 @@ const logger = require('../utils/logger');
 class AddressService {
   /**
    * Get all addresses for a user
+   * If userId is null, get all addresses (admin only)
    */
-  async getAllAddresses(userId) {
+  async getAllAddresses(userId = null) {
     try {
+      const where = userId !== null ? { user_id: userId } : {};
+
       const addresses = await Address.findAll({
-        where: { user_id: userId },
-        include: [{
-          model: Location,
-          as: 'location',
-          attributes: ['id', 'name', 'area', 'city', 'pincode', 'deliveryCharge', 'estimatedDeliveryTime', 'isAvailable']
-        }],
+        where,
+        include: [
+          {
+            model: Location,
+            as: 'location',
+            attributes: ['id', 'name', 'area', 'city', 'pincode', 'deliveryCharge', 'estimatedDeliveryTime', 'isAvailable']
+          },
+          {
+            model: User,
+            as: 'user',
+            attributes: ['id', 'name', 'phone']
+          }
+        ],
         order: [
           ['is_default', 'DESC'],
           ['created_at', 'DESC']
         ]
       });
 
-      logger.info(`Retrieved ${addresses.length} addresses for user ${userId}`);
+      logger.info(`Retrieved ${addresses.length} addresses${userId ? ` for user ${userId}` : ' (all users)'}`);
       return addresses;
     } catch (error) {
-      logger.error(`Error getting addresses for user ${userId}`, error);
+      logger.error(`Error getting addresses${userId ? ` for user ${userId}` : ' (all users)'}`, error);
       throw error;
     }
   }
@@ -42,11 +52,18 @@ class AddressService {
 
       const address = await Address.findOne({
         where,
-        include: [{
-          model: Location,
-          as: 'location',
-          attributes: ['id', 'name', 'area', 'city', 'pincode', 'deliveryCharge', 'estimatedDeliveryTime', 'isAvailable']
-        }]
+        include: [
+          {
+            model: Location,
+            as: 'location',
+            attributes: ['id', 'name', 'area', 'city', 'pincode', 'deliveryCharge', 'estimatedDeliveryTime', 'isAvailable']
+          },
+          {
+            model: User,
+            as: 'user',
+            attributes: ['id', 'name', 'phone']
+          }
+        ]
       });
 
       if (!address) {

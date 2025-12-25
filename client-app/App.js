@@ -14,6 +14,7 @@ import useDeliveryStore from './src/store/deliveryStore';
 // Screens
 import LoginScreen from './src/screens/LoginScreen';
 import VerifyOTPScreen from './src/screens/VerifyOTPScreen';
+import EnterNameScreen from './src/screens/EnterNameScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import ItemDetailScreen from './src/screens/ItemDetailScreen';
 import CartScreen from './src/screens/CartScreen';
@@ -44,7 +45,7 @@ const theme = {
 };
 
 export default function App() {
-  const { isAuthenticated, isLoading, loadAuth } = useAuthStore();
+  const { isAuthenticated, isLoading, loadAuth, user } = useAuthStore();
   const loadCart = useCartStore((state) => state.loadCart);
   const loadDeliveryInfo = useDeliveryStore((state) => state.loadDeliveryInfo);
 
@@ -76,6 +77,9 @@ export default function App() {
                 <Stack.Screen name="Login" component={LoginScreen} />
                 <Stack.Screen name="VerifyOTP" component={VerifyOTPScreen} />
               </>
+            ) : !user?.name ? (
+              // Show Enter Name screen if authenticated but name not set
+              <Stack.Screen name="EnterName" component={EnterNameScreen} />
             ) : (
               <>
                 <Stack.Screen name="Home" component={HomeScreen} />

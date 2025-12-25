@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import menuService from '../services/menuService';
 import useCartStore from '../store/cartStore';
+import { API_CONFIG } from '../constants/config';
 
 const ItemDetailScreen = ({ route, navigation }) => {
   const { itemId } = route.params;
@@ -116,7 +117,11 @@ const ItemDetailScreen = ({ route, navigation }) => {
 
       <ScrollView style={styles.scrollView}>
         <Image
-          source={{ uri: item?.item?.imageUrl || 'https://via.placeholder.com/400' }}
+          source={{
+            uri: item?.item?.imageUrl
+              ? `${API_CONFIG.BASE_URL.replace('/api', '')}${item.item.imageUrl}`
+              : 'https://via.placeholder.com/400'
+          }}
           style={styles.image}
           resizeMode="cover"
         />

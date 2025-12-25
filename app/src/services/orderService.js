@@ -4,6 +4,7 @@ const { Order, OrderItem, OrderItemAddOn, User, Address, Location, Offer, Item, 
 const logger = require('../utils/logger');
 const offerService = require('./offerService');
 const notificationService = require('./notificationService');
+const restaurantService = require('./restaurantService');
 const { Op } = require('sequelize');
 
 class OrderService {
@@ -154,6 +155,12 @@ class OrderService {
     const transaction = await sequelize.transaction();
 
     try {
+      // Check if restaurant is open
+      const restaurantStatus = await restaurantService.isRestaurantOpen();
+      if (!restaurantStatus.isOpen) {
+        throw new Error(`Restaurant is currently closed. ${restaurantStatus.reason}`);
+      }
+
       // Verify user exists
       const user = await User.findByPk(userId);
       if (!user) {

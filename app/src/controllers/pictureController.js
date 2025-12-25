@@ -1,12 +1,53 @@
 'use strict';
 
 const pictureService = require('../services/pictureService');
+const { Picture } = require('../models');
 
 /**
  * Picture Controller
  * Handles HTTP requests for picture management
  */
 class PictureController {
+  /**
+   * Get all pictures across all entities (Admin only)
+   * GET /api/pictures/all
+   */
+  async getAllPictures(req, res) {
+    try {
+      const { page = 1, limit = 50, entityType } = req.query;
+      const offset = (page - 1) * limit;
+
+      const where = {};
+      if (entityType) where.entityType = entityType;
+
+      const { count, rows: pictures } = await Picture.findAndCountAll({
+        where,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        order: [['entityType', 'ASC'], ['entityId', 'ASC'], ['displayOrder', 'ASC']]
+      });
+
+      res.json({
+        success: true,
+        data: {
+          pictures,
+          pagination: {
+            total: count,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalPages: Math.ceil(count / limit)
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error getting all pictures:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get all pictures'
+      });
+    }
+  }
+
   /**
    * Get all pictures for an entity
    * GET /api/pictures?entityType=item&entityId=1

@@ -15,16 +15,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import menuService from '../services/menuService';
 import uploadService from '../services/uploadService';
+import config from '../constants/config';
 
 export default function ItemFormScreen({ route, navigation }) {
   const queryClient = useQueryClient();
   const itemId = route.params?.itemId;
+  const categoryIdParam = route.params?.categoryId; // Category ID from hierarchical navigation
   const isEditing = !!itemId;
 
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    categoryId: null,
+    categoryId: categoryIdParam || null,
     isAvailable: true,
   });
 
@@ -129,7 +131,7 @@ export default function ItemFormScreen({ route, navigation }) {
 
   const handlePickImages = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsMultipleSelection: true,
       quality: 0.8,
     });
@@ -141,6 +143,17 @@ export default function ItemFormScreen({ route, navigation }) {
 
   const handleRemoveImage = (index) => {
     setSelectedImages(selectedImages.filter((_, i) => i !== index));
+  };
+
+  const handleDeleteExistingPicture = async (pictureId) => {
+    try {
+      await uploadService.deletePicture(pictureId);
+      setExistingPictures(existingPictures.filter(pic => pic.id !== pictureId));
+      queryClient.invalidateQueries(['item', itemId]);
+    } catch (error) {
+      console.error('Error deleting picture:', error);
+      alert('Failed to delete picture');
+    }
   };
 
   const handleSubmit = () => {
@@ -202,12 +215,27 @@ export default function ItemFormScreen({ route, navigation }) {
       <Text variant="titleSmall" style={styles.sectionTitle}>
         Category *
       </Text>
-      <SegmentedButtons
-        value={formData.categoryId?.toString() || ''}
-        onValueChange={(value) => setFormData({ ...formData, categoryId: parseInt(value) })}
-        buttons={categoryButtons}
-        style={styles.segmentedButtons}
-      />
+      {categoryIdParam || isEditing ? (
+        // Show read-only category when navigated from hierarchical view or editing
+        <View style={styles.readOnlyContainer}>
+          <TextInput
+            value={categories.find(c => c.id === formData.categoryId)?.name || ''}
+            mode="outlined"
+            editable={false}
+            style={[styles.input, styles.readOnlyInput]}
+            right={<TextInput.Icon icon="lock" />}
+          />
+          <View style={styles.blurOverlay} />
+        </View>
+      ) : (
+        // Show category selector when navigated from standalone items list
+        <SegmentedButtons
+          value={formData.categoryId?.toString() || ''}
+          onValueChange={(value) => setFormData({ ...formData, categoryId: parseInt(value) })}
+          buttons={categoryButtons}
+          style={styles.segmentedButtons}
+        />
+      )}
 
       <Text variant="titleSmall" style={styles.sectionTitle}>
         Pictures
@@ -216,7 +244,20 @@ export default function ItemFormScreen({ route, navigation }) {
       {existingPictures.length > 0 && (
         <View style={styles.picturesContainer}>
           {existingPictures.map((pic) => (
-            <Image key={pic.id} source={{ uri: pic.url }} style={styles.picturePreview} />
+            <View key={pic.id} style={styles.imageWrapper}>
+              <Image
+                source={{ uri: `${config.apiUrl.replace('/api', '')}${pic.url}` }}
+                style={styles.picturePreview}
+              />
+              <Button
+                mode="text"
+                onPress={() => handleDeleteExistingPicture(pic.id)}
+                compact
+                textColor="#dc2626"
+              >
+                Remove
+              </Button>
+            </View>
           ))}
         </View>
       )}
@@ -303,6 +344,22 @@ const styles = StyleSheet.create({
   },
   segmentedButtons: {
     marginBottom: 16,
+  },
+  readOnlyContainer: {
+    position: 'relative',
+    marginBottom: 16,
+  },
+  readOnlyInput: {
+    backgroundColor: '#f5f5f5',
+  },
+  blurOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    pointerEvents: 'none',
   },
   emptyCard: {
     marginBottom: 16,

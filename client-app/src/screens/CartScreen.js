@@ -17,7 +17,9 @@ import OffersModal from '../components/OffersModal';
 import orderService from '../services/orderService';
 import paymentService from '../services/paymentService';
 import addressService from '../services/addressService';
+import restaurantService from '../services/restaurantService';
 import { initializeRazorpayPayment, getRazorpayConfig, handlePaymentSuccess, handlePaymentFailure, handlePaymentCancel, getPaymentOptions } from '../utils/razorpay';
+import { API_CONFIG } from '../constants/config';
 
 const CartScreen = ({ navigation }) => {
   const { items, updateQuantity, removeItem, clearCart, getTotal, getItemCount } = useCartStore();
@@ -36,6 +38,15 @@ const CartScreen = ({ navigation }) => {
     queryFn: addressService.getAddresses,
     enabled: !!selectedAddress, // Only fetch if there's a selected address
   });
+
+  // Fetch restaurant status
+  const { data: statusData } = useQuery({
+    queryKey: ['restaurant', 'status'],
+    queryFn: () => restaurantService.getStatus(),
+    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+  });
+
+  const restaurantStatus = statusData?.data;
 
   useEffect(() => {
     loadDeliveryInfo();
@@ -123,6 +134,25 @@ const CartScreen = ({ navigation }) => {
 
       if (!selectedAddress) {
         Alert.alert('Select Delivery Location', 'Please select a delivery address before checkout');
+        return;
+      }
+
+      // Check if restaurant is open
+      if (restaurantStatus && !restaurantStatus.isOpen) {
+        Alert.alert(
+          'Restaurant Closed',
+          `Sorry, we are currently closed. ${restaurantStatus.reason}${
+            restaurantStatus.nextOpenTime
+              ? `\n\nWe will open at ${new Date(restaurantStatus.nextOpenTime).toLocaleString('en-IN', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}`
+              : ''
+          }`
+        );
         return;
       }
 
@@ -330,7 +360,11 @@ const CartScreen = ({ navigation }) => {
             <View key={`${item.id}-${item.sizeName}-${index}`}>
               <Surface style={styles.itemContainer} elevation={0}>
                 <Image
-                  source={{ uri: item.imageUrl || 'https://via.placeholder.com/80' }}
+                  source={{
+                    uri: item.imageUrl
+                      ? `${API_CONFIG.BASE_URL.replace('/api', '')}${item.imageUrl}`
+                      : 'https://via.placeholder.com/80'
+                  }}
                   style={styles.itemImage}
                 />
                 <View style={styles.itemDetails}>
@@ -541,10 +575,14 @@ const CartScreen = ({ navigation }) => {
             onPress={handleCheckout}
             style={styles.checkoutButton}
             contentStyle={styles.checkoutButtonContent}
-            disabled={isCheckingOut}
+            disabled={isCheckingOut || !restaurantStatus?.isOpen}
             loading={isCheckingOut}
           >
-            {isCheckingOut ? 'Processing...' : 'Checkout'}
+            {!restaurantStatus?.isOpen
+              ? 'Restaurant Closed'
+              : isCheckingOut
+                ? 'Processing...'
+                : 'Checkout'}
           </Button>
         </View>
       </Surface>

@@ -14,16 +14,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import menuService from '../services/menuService';
 import notificationService from '../services/notificationService';
+import restaurantService from '../services/restaurantService';
 import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
 import useDeliveryStore from '../store/deliveryStore';
 import AddressSelectionModal from '../components/AddressSelectionModal';
+import { API_CONFIG } from '../constants/config';
 
 const HomeScreen = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const { getItemCount, clearCart } = useCartStore();
-  const logout = useAuthStore((state) => state.logout);
+  const { logout, user } = useAuthStore();
   const { selectedAddress, loadDeliveryInfo, clearDeliveryInfo } = useDeliveryStore();
 
   // Fetch unread notification count
@@ -34,6 +36,15 @@ const HomeScreen = ({ navigation }) => {
   });
 
   const unreadCount = unreadCountData?.data?.count || 0;
+
+  // Fetch restaurant status
+  const { data: statusData } = useQuery({
+    queryKey: ['restaurant', 'status'],
+    queryFn: () => restaurantService.getStatus(),
+    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+  });
+
+  const restaurantStatus = statusData?.data;
 
   useEffect(() => {
     loadDeliveryInfo();
@@ -87,7 +98,10 @@ const HomeScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header elevated>
-        <Appbar.Content title="Menu" subtitle="Choose your favorite items" />
+        <Appbar.Content
+          title="Menu"
+          subtitle={user?.name ? `Hi, ${user.name}! 👋` : "Choose your favorite items"}
+        />
         <View style={styles.iconContainer}>
           <IconButton
             icon="bell"
@@ -143,6 +157,38 @@ const HomeScreen = ({ navigation }) => {
         </TouchableOpacity>
       )}
 
+      {/* Restaurant Status Banner */}
+      {restaurantStatus && !restaurantStatus.isOpen && (
+        <View style={[
+          styles.statusBanner,
+          { backgroundColor: '#ffebee' }
+        ]}>
+          <View style={styles.statusContent}>
+            <Chip
+              mode="flat"
+              style={styles.closedChip}
+              textStyle={styles.closedChipText}
+            >
+              🔴 CLOSED
+            </Chip>
+            <Text variant="bodyMedium" style={styles.statusReason}>
+              {restaurantStatus.reason}
+            </Text>
+            {restaurantStatus.nextOpenTime && (
+              <Text variant="bodySmall" style={styles.nextOpenTime}>
+                Opens {new Date(restaurantStatus.nextOpenTime).toLocaleString('en-IN', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </Text>
+            )}
+          </View>
+        </View>
+      )}
+
       {/* Categories */}
       <View style={styles.categoriesContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -181,15 +227,22 @@ const HomeScreen = ({ navigation }) => {
             {items?.items?.map((item) => (
               <Card
                 key={item.id}
-                style={[styles.card, !item.isAvailable && styles.unavailableCard]}
+                style={[
+                  styles.card,
+                  (!item.isAvailable || !restaurantStatus?.isOpen) && styles.unavailableCard
+                ]}
                 onPress={() => {
-                  if (item.isAvailable) {
+                  if (item.isAvailable && restaurantStatus?.isOpen) {
                     navigation.navigate('ItemDetail', { itemId: item.id });
                   }
                 }}
               >
                 <Card.Cover
-                  source={{ uri: item.imageUrl || 'https://via.placeholder.com/150' }}
+                  source={{
+                    uri: item.imageUrl
+                      ? `${API_CONFIG.BASE_URL.replace('/api', '')}${item.imageUrl}`
+                      : 'https://via.placeholder.com/150'
+                  }}
                   style={[styles.cardImage, !item.isAvailable && styles.unavailableImage]}
                 />
                 {!item.isAvailable && (
@@ -270,6 +323,31 @@ const styles = StyleSheet.create({
   },
   addressText: {
     color: '#57534e',
+  },
+  statusBanner: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e7e5e4',
+  },
+  statusContent: {
+    alignItems: 'flex-start',
+  },
+  closedChip: {
+    backgroundColor: '#f44336',
+    marginBottom: 8,
+  },
+  closedChipText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  statusReason: {
+    color: '#c62828',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  nextOpenTime: {
+    color: '#666',
   },
   categoriesContainer: {
     backgroundColor: '#ffffff',

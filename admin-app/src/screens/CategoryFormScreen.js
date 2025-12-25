@@ -29,6 +29,7 @@ export default function CategoryFormScreen({ route, navigation }) {
   });
   const [selectedImage, setSelectedImage] = useState(null);
   const [existingPicture, setExistingPicture] = useState(null);
+  const [existingPictureId, setExistingPictureId] = useState(null);
 
   // Fetch category if editing
   const { data: categoryData, isLoading } = useQuery({
@@ -52,6 +53,7 @@ export default function CategoryFormScreen({ route, navigation }) {
       if (cat.pictures && cat.pictures.length > 0) {
         const primary = cat.pictures.find(p => p.isPrimary) || cat.pictures[0];
         setExistingPicture(`${config.apiUrl.replace('/api', '')}${primary.url}`);
+        setExistingPictureId(primary.id);
       }
     }
   }, [categoryData]);
@@ -95,7 +97,7 @@ export default function CategoryFormScreen({ route, navigation }) {
 
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [16, 9],
       quality: 0.8,
@@ -106,9 +108,20 @@ export default function CategoryFormScreen({ route, navigation }) {
     }
   };
 
-  const handleRemoveImage = () => {
+  const handleRemoveImage = async () => {
+    if (existingPictureId) {
+      // Delete from database
+      try {
+        await uploadService.deletePicture(existingPictureId);
+        setExistingPicture(null);
+        setExistingPictureId(null);
+        queryClient.invalidateQueries(['category', categoryId]);
+      } catch (error) {
+        console.error('Error deleting picture:', error);
+        alert('Failed to delete picture');
+      }
+    }
     setSelectedImage(null);
-    setExistingPicture(null);
   };
 
   const handleSave = () => {

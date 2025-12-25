@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
+import { View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
-import { PaperProvider, IconButton } from 'react-native-paper';
+import { PaperProvider, IconButton, Icon } from 'react-native-paper';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { lightTheme } from './src/styles/theme';
@@ -11,6 +12,7 @@ import useAuthStore from './src/store/authStore';
 // Screens
 import LoginScreen from './src/screens/LoginScreen';
 import VerifyOTPScreen from './src/screens/VerifyOTPScreen';
+import EnterNameScreen from './src/screens/EnterNameScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import OrdersScreen from './src/screens/OrdersScreen';
 import OrderDetailsScreen from './src/screens/OrderDetailsScreen';
@@ -33,6 +35,13 @@ import CategoryAddOnFormScreen from './src/screens/CategoryAddOnFormScreen';
 import ItemAddOnsScreen from './src/screens/ItemAddOnsScreen';
 import ItemAddOnFormScreen from './src/screens/ItemAddOnFormScreen';
 import MenuManagementScreen from './src/screens/MenuManagementScreen';
+import TransactionsScreen from './src/screens/TransactionsScreen';
+import TransactionDetailsScreen from './src/screens/TransactionDetailsScreen';
+import NotificationsScreen from './src/screens/NotificationsScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
+
+// Components
+import CustomDrawerContent from './src/components/CustomDrawerContent';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -63,7 +72,7 @@ function MainStack({ navigation }) {
       <Stack.Screen
         name="Dashboard"
         component={DashboardScreen}
-        options={{
+        options={({ navigation: screenNavigation }) => ({
           title: 'Dashboard',
           headerLeft: () => (
             <IconButton
@@ -72,7 +81,24 @@ function MainStack({ navigation }) {
               onPress={() => navigation.openDrawer()}
             />
           ),
-        }}
+          headerRight: () => {
+            const { clearAuth } = useAuthStore.getState();
+            return (
+              <View style={{ flexDirection: 'row', marginRight: 8 }}>
+                <IconButton
+                  icon="bell"
+                  iconColor="#fff"
+                  onPress={() => screenNavigation.navigate('Notifications')}
+                />
+                <IconButton
+                  icon="logout"
+                  iconColor="#fff"
+                  onPress={clearAuth}
+                />
+              </View>
+            );
+          },
+        })}
       />
       <Stack.Screen
         name="Orders"
@@ -101,6 +127,11 @@ function MainStack({ navigation }) {
           title: route.params?.itemId ? 'Edit Item' : 'Create Item',
         })}
       />
+      <Stack.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={{ title: 'Notifications' }}
+      />
     </Stack.Navigator>
   );
 }
@@ -121,7 +152,7 @@ function MenuManagementStack({ navigation }) {
       <Stack.Screen
         name="MenuManagementList"
         component={MenuManagementScreen}
-        options={{
+        options={({ navigation: screenNavigation }) => ({
           title: 'Menu Management',
           headerLeft: () => (
             <IconButton
@@ -130,7 +161,29 @@ function MenuManagementStack({ navigation }) {
               onPress={() => navigation.openDrawer()}
             />
           ),
-        }}
+          headerRight: () => {
+            const { clearAuth } = useAuthStore.getState();
+            return (
+              <View style={{ flexDirection: 'row', marginRight: 8 }}>
+                <IconButton
+                  icon="bell"
+                  iconColor="#fff"
+                  onPress={() => {
+                    const parent = screenNavigation.getParent();
+                    if (parent) {
+                      parent.navigate('Main', { screen: 'Notifications' });
+                    }
+                  }}
+                />
+                <IconButton
+                  icon="logout"
+                  iconColor="#fff"
+                  onPress={clearAuth}
+                />
+              </View>
+            );
+          },
+        })}
       />
       <Stack.Screen
         name="CategoryForm"
@@ -263,7 +316,7 @@ function AddOnsStack({ navigation }) {
       <Stack.Screen
         name="AddOnsList"
         component={AddOnsScreen}
-        options={{
+        options={({ navigation: screenNavigation }) => ({
           title: 'Add-ons',
           headerLeft: () => (
             <IconButton
@@ -272,7 +325,29 @@ function AddOnsStack({ navigation }) {
               onPress={() => navigation.openDrawer()}
             />
           ),
-        }}
+          headerRight: () => {
+            const { clearAuth } = useAuthStore.getState();
+            return (
+              <View style={{ flexDirection: 'row', marginRight: 8 }}>
+                <IconButton
+                  icon="bell"
+                  iconColor="#fff"
+                  onPress={() => {
+                    const parent = screenNavigation.getParent();
+                    if (parent) {
+                      parent.navigate('Main', { screen: 'Notifications' });
+                    }
+                  }}
+                />
+                <IconButton
+                  icon="logout"
+                  iconColor="#fff"
+                  onPress={clearAuth}
+                />
+              </View>
+            );
+          },
+        })}
       />
       <Stack.Screen
         name="AddOnForm"
@@ -301,7 +376,7 @@ function LocationsStack({ navigation }) {
       <Stack.Screen
         name="LocationsList"
         component={LocationsScreen}
-        options={{
+        options={({ navigation: screenNavigation }) => ({
           title: 'Locations',
           headerLeft: () => (
             <IconButton
@@ -310,7 +385,29 @@ function LocationsStack({ navigation }) {
               onPress={() => navigation.openDrawer()}
             />
           ),
-        }}
+          headerRight: () => {
+            const { clearAuth } = useAuthStore.getState();
+            return (
+              <View style={{ flexDirection: 'row', marginRight: 8 }}>
+                <IconButton
+                  icon="bell"
+                  iconColor="#fff"
+                  onPress={() => {
+                    const parent = screenNavigation.getParent();
+                    if (parent) {
+                      parent.navigate('Main', { screen: 'Notifications' });
+                    }
+                  }}
+                />
+                <IconButton
+                  icon="logout"
+                  iconColor="#fff"
+                  onPress={clearAuth}
+                />
+              </View>
+            );
+          },
+        })}
       />
       <Stack.Screen
         name="LocationForm"
@@ -339,7 +436,7 @@ function UsersStack({ navigation }) {
       <Stack.Screen
         name="UsersList"
         component={UsersScreen}
-        options={{
+        options={({ navigation: screenNavigation }) => ({
           title: 'Users',
           headerLeft: () => (
             <IconButton
@@ -348,7 +445,29 @@ function UsersStack({ navigation }) {
               onPress={() => navigation.openDrawer()}
             />
           ),
-        }}
+          headerRight: () => {
+            const { clearAuth } = useAuthStore.getState();
+            return (
+              <View style={{ flexDirection: 'row', marginRight: 8 }}>
+                <IconButton
+                  icon="bell"
+                  iconColor="#fff"
+                  onPress={() => {
+                    const parent = screenNavigation.getParent();
+                    if (parent) {
+                      parent.navigate('Main', { screen: 'Notifications' });
+                    }
+                  }}
+                />
+                <IconButton
+                  icon="logout"
+                  iconColor="#fff"
+                  onPress={clearAuth}
+                />
+              </View>
+            );
+          },
+        })}
       />
       <Stack.Screen
         name="UserForm"
@@ -356,6 +475,21 @@ function UsersStack({ navigation }) {
         options={{
           title: 'Edit User',
         }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function SettingsStack({ navigation }) {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen
+        name="SettingsMain"
+        component={SettingsScreen}
       />
     </Stack.Navigator>
   );
@@ -377,7 +511,7 @@ function OffersStack({ navigation }) {
       <Stack.Screen
         name="OffersList"
         component={OffersScreen}
-        options={{
+        options={({ navigation: screenNavigation }) => ({
           title: 'Offers',
           headerLeft: () => (
             <IconButton
@@ -386,7 +520,29 @@ function OffersStack({ navigation }) {
               onPress={() => navigation.openDrawer()}
             />
           ),
-        }}
+          headerRight: () => {
+            const { clearAuth } = useAuthStore.getState();
+            return (
+              <View style={{ flexDirection: 'row', marginRight: 8 }}>
+                <IconButton
+                  icon="bell"
+                  iconColor="#fff"
+                  onPress={() => {
+                    const parent = screenNavigation.getParent();
+                    if (parent) {
+                      parent.navigate('Main', { screen: 'Notifications' });
+                    }
+                  }}
+                />
+                <IconButton
+                  icon="logout"
+                  iconColor="#fff"
+                  onPress={clearAuth}
+                />
+              </View>
+            );
+          },
+        })}
       />
       <Stack.Screen
         name="OfferForm"
@@ -509,10 +665,69 @@ function ItemAddOnsStack({ navigation }) {
   );
 }
 
+function TransactionsStack({ navigation }) {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: lightTheme.colors.primary,
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}
+    >
+      <Stack.Screen
+        name="TransactionsList"
+        component={TransactionsScreen}
+        options={({ navigation: screenNavigation }) => ({
+          title: 'Transactions',
+          headerLeft: () => (
+            <IconButton
+              icon="menu"
+              iconColor="#fff"
+              onPress={() => navigation.openDrawer()}
+            />
+          ),
+          headerRight: () => {
+            const { clearAuth } = useAuthStore.getState();
+            return (
+              <View style={{ flexDirection: 'row', marginRight: 8 }}>
+                <IconButton
+                  icon="bell"
+                  iconColor="#fff"
+                  onPress={() => {
+                    const parent = screenNavigation.getParent();
+                    if (parent) {
+                      parent.navigate('Main', { screen: 'Notifications' });
+                    }
+                  }}
+                />
+                <IconButton
+                  icon="logout"
+                  iconColor="#fff"
+                  onPress={clearAuth}
+                />
+              </View>
+            );
+          },
+        })}
+      />
+      <Stack.Screen
+        name="TransactionDetails"
+        component={TransactionDetailsScreen}
+        options={{ title: 'Transaction Details' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 function DrawerNavigator() {
   return (
     <Drawer.Navigator
       initialRouteName="Main"
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
         headerShown: false,
         drawerActiveTintColor: lightTheme.colors.primary,
@@ -524,17 +739,17 @@ function DrawerNavigator() {
         options={{
           drawerLabel: 'Dashboard',
           drawerIcon: ({ color, size }) => (
-            <IconButton icon="view-dashboard" iconColor={color} size={size} />
+            <Icon source="view-dashboard" color={color} size={size} />
           ),
         }}
       />
       <Drawer.Screen
         name="OrdersDrawer"
         component={OrdersScreen}
-        options={{
+        options={({ navigation }) => ({
           drawerLabel: 'Orders',
           drawerIcon: ({ color, size }) => (
-            <IconButton icon="receipt" iconColor={color} size={size} />
+            <Icon source="receipt" color={color} size={size} />
           ),
           headerShown: true,
           headerStyle: {
@@ -542,7 +757,24 @@ function DrawerNavigator() {
           },
           headerTintColor: '#fff',
           headerTitle: 'Orders',
-        }}
+          headerRight: () => {
+            const { clearAuth } = useAuthStore.getState();
+            return (
+              <View style={{ flexDirection: 'row', marginRight: 8 }}>
+                <IconButton
+                  icon="bell"
+                  iconColor="#fff"
+                  onPress={() => navigation.navigate('Main', { screen: 'Notifications' })}
+                />
+                <IconButton
+                  icon="logout"
+                  iconColor="#fff"
+                  onPress={clearAuth}
+                />
+              </View>
+            );
+          },
+        })}
       />
       <Drawer.Screen
         name="MenuManagementDrawer"
@@ -550,7 +782,7 @@ function DrawerNavigator() {
         options={{
           drawerLabel: 'Menu Management',
           drawerIcon: ({ color, size }) => (
-            <IconButton icon="silverware-fork-knife" iconColor={color} size={size} />
+            <Icon source="silverware-fork-knife" color={color} size={size} />
           ),
         }}
       />
@@ -560,7 +792,7 @@ function DrawerNavigator() {
         options={{
           drawerLabel: 'Add-ons',
           drawerIcon: ({ color, size }) => (
-            <IconButton icon="puzzle" iconColor={color} size={size} />
+            <Icon source="puzzle" color={color} size={size} />
           ),
         }}
       />
@@ -570,7 +802,7 @@ function DrawerNavigator() {
         options={{
           drawerLabel: 'Locations',
           drawerIcon: ({ color, size }) => (
-            <IconButton icon="map-marker" iconColor={color} size={size} />
+            <Icon source="map-marker" color={color} size={size} />
           ),
         }}
       />
@@ -580,7 +812,17 @@ function DrawerNavigator() {
         options={{
           drawerLabel: 'Users',
           drawerIcon: ({ color, size }) => (
-            <IconButton icon="account-group" iconColor={color} size={size} />
+            <Icon source="account-group" color={color} size={size} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="SettingsDrawer"
+        component={SettingsStack}
+        options={{
+          drawerLabel: 'Settings',
+          drawerIcon: ({ color, size }) => (
+            <Icon source="cog" color={color} size={size} />
           ),
         }}
       />
@@ -590,7 +832,17 @@ function DrawerNavigator() {
         options={{
           drawerLabel: 'Offers',
           drawerIcon: ({ color, size }) => (
-            <IconButton icon="tag-multiple" iconColor={color} size={size} />
+            <Icon source="tag-multiple" color={color} size={size} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="TransactionsDrawer"
+        component={TransactionsStack}
+        options={{
+          drawerLabel: 'Transactions',
+          drawerIcon: ({ color, size }) => (
+            <Icon source="cash-multiple" color={color} size={size} />
           ),
         }}
       />
@@ -611,8 +863,21 @@ function AuthNavigator() {
   );
 }
 
+// EnterName Navigator - shown when authenticated but name not set
+function EnterNameNavigator() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="EnterName" component={EnterNameScreen} />
+    </Stack.Navigator>
+  );
+}
+
 export default function App() {
-  const { isAuthenticated, isLoading, initialize } = useAuthStore();
+  const { isAuthenticated, isLoading, initialize, user } = useAuthStore();
 
   useEffect(() => {
     initialize();
@@ -627,7 +892,13 @@ export default function App() {
       <PaperProvider theme={lightTheme}>
         <StatusBar style="auto" />
         <NavigationContainer>
-          {isAuthenticated ? <DrawerNavigator /> : <AuthNavigator />}
+          {!isAuthenticated ? (
+            <AuthNavigator />
+          ) : !user?.name ? (
+            <EnterNameNavigator />
+          ) : (
+            <DrawerNavigator />
+          )}
         </NavigationContainer>
       </PaperProvider>
     </QueryClientProvider>

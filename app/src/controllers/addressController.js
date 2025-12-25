@@ -12,11 +12,14 @@ const logger = require('../utils/logger');
 
 /**
  * Get all addresses for authenticated user
+ * Admin: Get all addresses from all users
+ * Client: Get only their own addresses
  * GET /api/addresses
  */
 const getAllAddresses = async (req, res) => {
   try {
-    const userId = req.user.id;
+    // If admin, get all addresses; otherwise, get only user's addresses
+    const userId = req.user.role === 'admin' ? null : req.user.id;
     const addresses = await addressService.getAllAddresses(userId);
     const formattedAddresses = formatAddressesResponse(addresses);
 
@@ -29,12 +32,15 @@ const getAllAddresses = async (req, res) => {
 
 /**
  * Get address by ID
+ * Admin: Can get any address
+ * Client: Can only get their own addresses
  * GET /api/addresses/:id
  */
 const getAddressById = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    // If admin, allow access to any address; otherwise, restrict to user's own addresses
+    const userId = req.user.role === 'admin' ? null : req.user.id;
 
     const address = await addressService.getAddressById(id, userId);
 
@@ -102,12 +108,15 @@ const createAddress = async (req, res) => {
 
 /**
  * Update address
+ * Admin: Can update any address
+ * Client: Can only update their own addresses
  * PUT /api/addresses/:id
  */
 const updateAddress = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    // If admin, allow updating any address; otherwise, restrict to user's own addresses
+    const userId = req.user.role === 'admin' ? null : req.user.id;
     const addressData = {
       label: req.body.label,
       addressLine1: req.body.addressLine1,
@@ -149,12 +158,15 @@ const updateAddress = async (req, res) => {
 
 /**
  * Delete address
+ * Admin: Can delete any address
+ * Client: Can only delete their own addresses
  * DELETE /api/addresses/:id
  */
 const deleteAddress = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    // If admin, allow deleting any address; otherwise, restrict to user's own addresses
+    const userId = req.user.role === 'admin' ? null : req.user.id;
 
     await addressService.deleteAddress(id, userId);
 

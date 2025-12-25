@@ -24,22 +24,28 @@ const useCartStore = create((set, get) => ({
   addItem: async (item) => {
     const { items } = get();
 
+    // Ensure item has a quantity (default to 1 if not provided)
+    const itemWithQuantity = {
+      ...item,
+      quantity: item.quantity || 1
+    };
+
     // Check if item already exists (same item, size, and add-ons)
     const existingIndex = items.findIndex(
       (i) =>
-        i.id === item.id &&
-        i.sizeId === item.sizeId &&
-        JSON.stringify(i.addOns) === JSON.stringify(item.addOns)
+        i.id === itemWithQuantity.id &&
+        i.sizeId === itemWithQuantity.sizeId &&
+        JSON.stringify(i.addOns) === JSON.stringify(itemWithQuantity.addOns)
     );
 
     let newItems;
     if (existingIndex >= 0) {
       // Update quantity
       newItems = [...items];
-      newItems[existingIndex].quantity += item.quantity;
+      newItems[existingIndex].quantity += itemWithQuantity.quantity;
     } else {
       // Add new item
-      newItems = [...items, item];
+      newItems = [...items, itemWithQuantity];
     }
 
     await AsyncStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(newItems));

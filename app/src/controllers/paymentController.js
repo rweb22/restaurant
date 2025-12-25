@@ -1,6 +1,6 @@
 /**
  * Payment Controller
- * 
+ *
  * This controller handles all payment-related HTTP requests.
  */
 
@@ -15,6 +15,7 @@ const {
   formatPaymentStatusResponse,
   formatRefundResponse
 } = require('../dtos/payment.dto');
+const { Transaction, Order, User } = require('../models');
 const logger = require('../utils/logger');
 
 /**
@@ -147,7 +148,105 @@ const processRefund = async (req, res) => {
   }
 };
 
+/**
+ * Get all transactions (Admin only)
+ * GET /api/payments/transactions
+ */
+const getAllTransactions = async (req, res) => {
+  try {
+    const { page = 1, limit = 50, status, orderId } = req.query;
+    const offset = (page - 1) * limit;
+
+    const where = {};
+    if (status) where.status = status;
+    if (orderId) where.orderId = parseInt(orderId);
+
+    const { count, rows: transactions } = await Transaction.findAndCountAll({
+      where,
+      include: [
+        {
+          model: Order,
+          as: 'order',
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['id', 'name', 'phone']
+            }
+          ]
+        }
+      ],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        transactions: transactions.map(t => t.toSafeObject()),
+        pagination: {
+          total: count,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          totalPages: Math.ceil(count / limit)
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('Error getting all transactions:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to get transactions'
+    });
+  }
+};
+
+/**
+ * Get transaction by ID (Admin only)
+ * GET /api/payments/transactions/:id
+ */
+const getTransactionById = async (req, res) => {
+  try {
+    const transaction = await Transaction.findByPk(req.params.id, {
+      include: [
+        {
+          model: Order,
+          as: 'order',
+          include: [
+            {
+              model: User,
+              as: 'user',
+              attributes: ['id', 'name', 'phone']
+            }
+          ]
+        }
+      ]
+    });
+
+    if (!transaction) {
+      return res.status(404).json({
+        success: false,
+        message: 'Transaction not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: { transaction: transaction.toSafeObject() }
+    });
+  } catch (error) {
+    logger.error('Error getting transaction by ID:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to get transaction'
+    });
+  }
+};
+
 module.exports = {
+  getAllTransactions,
+  getTransactionById,
   initiatePayment,
   verifyPayment,
   getPaymentStatus,

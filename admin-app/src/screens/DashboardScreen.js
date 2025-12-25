@@ -1,18 +1,28 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { Text, Card, useTheme, IconButton, Chip, Divider } from 'react-native-paper';
+import { Text, Card, useTheme, IconButton, Chip, Divider, Button } from 'react-native-paper';
 import { useQuery } from '@tanstack/react-query';
 import orderService from '../services/orderService';
+import restaurantService from '../services/restaurantService';
+import useAuthStore from '../store/authStore';
 
 export default function DashboardScreen({ navigation }) {
   const theme = useTheme();
+  const { user, token } = useAuthStore();
 
   const { data: ordersData, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['orders', 'all'],
     queryFn: () => orderService.getAllOrders({ limit: 10, sortBy: 'createdAt', sortOrder: 'DESC' }),
   });
 
+  const { data: statusData, refetch: refetchStatus } = useQuery({
+    queryKey: ['restaurant', 'status'],
+    queryFn: () => restaurantService.getStatus(),
+    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+  });
+
   const orders = ordersData?.orders || [];
+  const restaurantStatus = statusData?.data;
 
   // Calculate stats
   const today = new Date().toDateString();
@@ -60,6 +70,54 @@ export default function DashboardScreen({ navigation }) {
       }
     >
       <View style={styles.content}>
+        {/* Welcome Message */}
+        {user?.name && (
+          <View style={styles.welcomeContainer}>
+            <Text variant="headlineSmall" style={styles.welcomeText}>
+              Welcome back, {user.name}! 👋
+            </Text>
+          </View>
+        )}
+
+        {/* Restaurant Status Banner */}
+        {restaurantStatus && (
+          <Card
+            style={[
+              styles.statusCard,
+              { backgroundColor: restaurantStatus.isOpen ? '#e8f5e9' : '#ffebee' }
+            ]}
+          >
+            <Card.Content>
+              <View style={styles.statusRow}>
+                <View style={styles.statusInfo}>
+                  <Chip
+                    mode="flat"
+                    style={[
+                      styles.statusChip,
+                      { backgroundColor: restaurantStatus.isOpen ? '#4caf50' : '#f44336' }
+                    ]}
+                    textStyle={styles.statusChipText}
+                  >
+                    {restaurantStatus.isOpen ? '🟢 OPEN' : '🔴 CLOSED'}
+                  </Chip>
+                  {!restaurantStatus.isOpen && (
+                    <Text variant="bodySmall" style={styles.statusReason}>
+                      {restaurantStatus.reason}
+                    </Text>
+                  )}
+                </View>
+                <Button
+                  mode="outlined"
+                  onPress={() => navigation.navigate('SettingsDrawer')}
+                  compact
+                >
+                  Manage
+                </Button>
+              </View>
+            </Card.Content>
+          </Card>
+        )}
+
         {/* Stats Cards */}
         <View style={styles.statsGrid}>
           <Card style={styles.statCard}>
@@ -162,6 +220,35 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
+  },
+  welcomeContainer: {
+    marginBottom: 20,
+  },
+  welcomeText: {
+    fontWeight: 'bold',
+    color: '#292524',
+  },
+  statusCard: {
+    marginBottom: 20,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  statusInfo: {
+    flex: 1,
+  },
+  statusChip: {
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  statusChipText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  statusReason: {
+    color: '#666',
   },
   statsGrid: {
     flexDirection: 'row',

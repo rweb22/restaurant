@@ -12,6 +12,14 @@ const { apiLimiter } = require('../middleware/rateLimiter');
 router.use(apiLimiter);
 
 /**
+ * Admin routes
+ */
+
+// Get all pictures across all entities (Admin only)
+// GET /api/pictures/all
+router.get('/all', authenticate, requireAdmin, pictureController.getAllPictures);
+
+/**
  * Public routes
  */
 

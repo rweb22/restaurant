@@ -146,6 +146,21 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
+  // Define associations
+  Notification.associate = function(models) {
+    Notification.belongsTo(models.User, {
+      foreignKey: 'user_id',
+      as: 'user',
+      onDelete: 'CASCADE'
+    });
+
+    Notification.belongsTo(models.Order, {
+      foreignKey: 'order_id',
+      as: 'order',
+      onDelete: 'SET NULL'
+    });
+  };
+
   return Notification;
 };
 

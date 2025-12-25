@@ -145,6 +145,12 @@ const formatItemResponse = (item, options = {}) => {
       fileSize: picture.fileSize !== undefined ? picture.fileSize : picture.file_size,
       mimeType: picture.mimeType || picture.mime_type
     }));
+
+    // Add imageUrl field for backward compatibility with client app
+    const primaryPicture = item.pictures.find(p => p.isPrimary || p.is_primary) || item.pictures[0];
+    if (primaryPicture) {
+      response.imageUrl = primaryPicture.url;
+    }
   }
 
   return response;

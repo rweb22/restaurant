@@ -117,6 +117,9 @@ const OrderDetailsScreen = ({ route, navigation }) => {
     try {
       console.log('[OrderDetails] Reordering items from order:', orderId);
 
+      let successCount = 0;
+      const skippedItems = [];
+
       // For each order item, fetch the full item details and add to cart
       for (const orderItem of order.items) {
         try {
@@ -128,48 +131,85 @@ const OrderDetailsScreen = ({ route, navigation }) => {
 
           const item = itemResponse.item;
 
+          // Check if item is available
+          if (!item.isAvailable) {
+            console.warn(`[OrderDetails] Item ${item.name} is no longer available, skipping`);
+            skippedItems.push({ name: orderItem.itemName, reason: 'no longer available' });
+            continue;
+          }
+
           // Find the size that matches the order item
           const size = item.sizes?.find(s => s.id === orderItem.itemSizeId);
 
           if (!size) {
             console.warn(`[OrderDetails] Size not found for item ${orderItem.itemId}, skipping`);
+            skippedItems.push({ name: orderItem.itemName, reason: 'size no longer available' });
             continue;
           }
 
-          // Map order item add-ons to cart add-ons format
-          const addOns = orderItem.addOns?.map(orderAddOn => ({
-            id: orderAddOn.addOnId,
-            name: orderAddOn.addOnName,
-            price: orderAddOn.addOnPrice,
-          })) || [];
+          // Validate and map add-ons using current data
+          const validAddOns = [];
+          if (orderItem.addOns && orderItem.addOns.length > 0) {
+            for (const orderAddOn of orderItem.addOns) {
+              // Find the current add-on data
+              const currentAddOn = item.addOns?.find(a => a.id === orderAddOn.addOnId);
 
-          // Add item to cart with the same quantity
-          for (let i = 0; i < orderItem.quantity; i++) {
-            addItem({
-              id: item.id,
-              name: item.name,
-              imageUrl: item.imageUrl,
-              sizeId: size.id,
-              sizeName: size.size,
-              sizePrice: size.price,
-              addOns: addOns,
-              category: {
-                id: item.categoryId,
-                gstRate: item.category?.gstRate || 5.0,
-              },
-            });
+              if (currentAddOn && currentAddOn.isAvailable) {
+                // Use current price, not old price
+                validAddOns.push({
+                  id: currentAddOn.id,
+                  name: currentAddOn.name,
+                  price: currentAddOn.price,
+                });
+              } else {
+                console.warn(`[OrderDetails] Add-on ${orderAddOn.addOnName} is no longer available for ${item.name}`);
+              }
+            }
           }
 
+          // Add item to cart with the same quantity
+          addItem({
+            id: item.id,
+            name: item.name,
+            imageUrl: item.imageUrl,
+            sizeId: size.id,
+            sizeName: size.size,
+            sizePrice: size.price, // Use current price
+            addOns: validAddOns, // Use validated add-ons with current prices
+            quantity: orderItem.quantity || 1,
+            category: {
+              id: item.categoryId,
+              gstRate: item.category?.gstRate || 5.0,
+            },
+          });
+
+          successCount++;
           console.log(`[OrderDetails] Added ${orderItem.quantity}x ${item.name} to cart`);
         } catch (itemError) {
           console.error(`[OrderDetails] Error fetching item ${orderItem.itemId}:`, itemError);
+          skippedItems.push({ name: orderItem.itemName, reason: 'no longer exists' });
           // Continue with other items even if one fails
         }
       }
 
       setIsReordering(false);
-      setReorderItemCount(order.items.length);
-      setShowReorderSuccessModal(true);
+
+      if (successCount === 0) {
+        // No items were added
+        setErrorMessage('None of the items from this order are currently available. Please browse the menu to add items.');
+        setShowErrorModal(true);
+      } else {
+        // Show success with count of successfully added items
+        setReorderItemCount(successCount);
+
+        // If some items were skipped, update the error message to inform the user
+        if (skippedItems.length > 0) {
+          const skippedNames = skippedItems.map(item => `${item.name} (${item.reason})`).join(', ');
+          setErrorMessage(`Note: Some items could not be added: ${skippedNames}`);
+        }
+
+        setShowReorderSuccessModal(true);
+      }
     } catch (error) {
       console.error('[OrderDetails] Reorder error:', error);
       setIsReordering(false);
@@ -387,7 +427,10 @@ const OrderDetailsScreen = ({ route, navigation }) => {
         visible={showReorderSuccessModal}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setShowReorderSuccessModal(false)}
+        onRequestClose={() => {
+          setShowReorderSuccessModal(false);
+          setErrorMessage(''); // Clear any warning message
+        }}
       >
         <View style={styles.modalOverlay}>
           <Surface style={styles.modalContent} elevation={5}>
@@ -400,10 +443,18 @@ const OrderDetailsScreen = ({ route, navigation }) => {
             <Text variant="bodyLarge" style={styles.modalMessage}>
               {reorderItemCount} item(s) from this order have been added to your cart.
             </Text>
+            {errorMessage && (
+              <Text variant="bodyMedium" style={styles.warningMessage}>
+                ⚠️ {errorMessage}
+              </Text>
+            )}
             <View style={styles.modalButtons}>
               <Button
                 mode="outlined"
-                onPress={() => setShowReorderSuccessModal(false)}
+                onPress={() => {
+                  setShowReorderSuccessModal(false);
+                  setErrorMessage(''); // Clear any warning message
+                }}
                 style={styles.modalButton}
               >
                 Continue Shopping
@@ -412,6 +463,7 @@ const OrderDetailsScreen = ({ route, navigation }) => {
                 mode="contained"
                 onPress={() => {
                   setShowReorderSuccessModal(false);
+                  setErrorMessage(''); // Clear any warning message
                   navigation.navigate('Cart');
                 }}
                 style={styles.modalButton}
@@ -595,6 +647,16 @@ const styles = StyleSheet.create({
   successEmoji: {
     fontSize: 48,
     marginBottom: 16,
+  },
+  warningMessage: {
+    textAlign: 'center',
+    marginTop: 12,
+    marginBottom: 12,
+    color: '#f59e0b',
+    backgroundColor: '#fef3c7',
+    padding: 12,
+    borderRadius: 8,
+    width: '100%',
   },
 });
 

@@ -1,14 +1,26 @@
 import api from './api';
+import { Platform } from 'react-native';
 
 const uploadService = {
   // Upload image and create picture record
   uploadPicture: async (file, entityType, entityId, altText = '', isPrimary = false) => {
     const formData = new FormData();
-    formData.append('image', {
-      uri: file.uri,
-      type: file.mimeType || 'image/jpeg',
-      name: file.fileName || 'upload.jpg',
-    });
+
+    // Handle web vs native differently
+    if (Platform.OS === 'web') {
+      // For web, fetch the image and convert to blob
+      const response = await fetch(file.uri);
+      const blob = await response.blob();
+      formData.append('image', blob, file.fileName || 'upload.jpg');
+    } else {
+      // For native (iOS/Android)
+      formData.append('image', {
+        uri: file.uri,
+        type: file.mimeType || 'image/jpeg',
+        name: file.fileName || 'upload.jpg',
+      });
+    }
+
     formData.append('entityType', entityType);
     formData.append('entityId', entityId.toString());
     formData.append('altText', altText);
@@ -25,11 +37,21 @@ const uploadService = {
   // Upload image only (returns file metadata)
   uploadImage: async (file) => {
     const formData = new FormData();
-    formData.append('image', {
-      uri: file.uri,
-      type: file.mimeType || 'image/jpeg',
-      name: file.fileName || 'upload.jpg',
-    });
+
+    // Handle web vs native differently
+    if (Platform.OS === 'web') {
+      // For web, fetch the image and convert to blob
+      const response = await fetch(file.uri);
+      const blob = await response.blob();
+      formData.append('image', blob, file.fileName || 'upload.jpg');
+    } else {
+      // For native (iOS/Android)
+      formData.append('image', {
+        uri: file.uri,
+        type: file.mimeType || 'image/jpeg',
+        name: file.fileName || 'upload.jpg',
+      });
+    }
 
     const response = await api.post('/upload/image', formData, {
       headers: {

@@ -3,11 +3,14 @@
 const express = require('express');
 const router = express.Router();
 const notificationController = require('../controllers/notificationController');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireRole } = require('../middleware/auth');
 
 /**
  * All notification routes require authentication
  */
+
+// Get all notifications (Admin only)
+router.get('/all', authenticate, requireRole('admin'), notificationController.getAllNotifications);
 
 // Get user's notifications (with pagination and filters)
 router.get('/', authenticate, notificationController.getNotifications);

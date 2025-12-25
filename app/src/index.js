@@ -23,12 +23,15 @@ const webhookRoutes = require('./routes/webhooks');
 const notificationRoutes = require('./routes/notificationRoutes');
 const pictureRoutes = require('./routes/pictures');
 const uploadRoutes = require('./routes/upload');
+const restaurantRoutes = require('./routes/restaurant');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
   credentials: true
@@ -67,6 +70,7 @@ app.use('/api/webhooks', webhookRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/pictures', pictureRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/restaurant', restaurantRoutes);
 
 // API info endpoint
 app.get('/api', (req, res) => {

@@ -23,6 +23,8 @@ export default function ItemSizeFormScreen({ route, navigation }) {
     isAvailable: true,
   });
 
+  const [itemName, setItemName] = useState(''); // Store item name for display
+
   // Fetch items for dropdown
   const { data: itemsData } = useQuery({
     queryKey: ['items'],
@@ -33,12 +35,12 @@ export default function ItemSizeFormScreen({ route, navigation }) {
   const { data: sizeData, isLoading } = useQuery({
     queryKey: ['itemSize', sizeId],
     queryFn: async () => {
-      // Get all items and find the size
-      const items = await menuService.getItems();
+      // Get all items with sizes included
+      const items = await menuService.getItems({ includeSizes: true });
       for (const item of items.items) {
         const size = item.sizes?.find(s => s.id === sizeId);
         if (size) {
-          return { size, itemId: item.id };
+          return { size, itemId: item.id, itemName: item.name };
         }
       }
       return null;
@@ -55,8 +57,19 @@ export default function ItemSizeFormScreen({ route, navigation }) {
         price: sizeData.size.price.toString(),
         isAvailable: sizeData.size.isAvailable,
       });
+      setItemName(sizeData.itemName || '');
     }
   }, [sizeData]);
+
+  // Set item name when navigating from hierarchical view (add new)
+  useEffect(() => {
+    if (itemIdParam && itemsData?.items) {
+      const item = itemsData.items.find(i => i.id === itemIdParam);
+      if (item) {
+        setItemName(item.name);
+      }
+    }
+  }, [itemIdParam, itemsData]);
 
   // Create mutation
   const createMutation = useMutation({
@@ -126,15 +139,29 @@ export default function ItemSizeFormScreen({ route, navigation }) {
       </Text>
 
       <Text variant="titleSmall" style={styles.label}>
-        Select Item *
+        Item *
       </Text>
-      <SegmentedButtons
-        value={formData.itemId?.toString() || ''}
-        onValueChange={(value) => setFormData({ ...formData, itemId: parseInt(value) })}
-        buttons={itemButtons}
-        style={styles.segmentedButtons}
-        disabled={isEditing}
-      />
+      {itemIdParam || isEditing ? (
+        // Show read-only item when navigated from hierarchical view or editing
+        <View style={styles.readOnlyContainer}>
+          <TextInput
+            value={itemName}
+            mode="outlined"
+            editable={false}
+            style={[styles.input, styles.readOnlyInput]}
+            right={<TextInput.Icon icon="lock" />}
+          />
+          <View style={styles.blurOverlay} />
+        </View>
+      ) : (
+        // Show item selector when navigated from standalone sizes list
+        <SegmentedButtons
+          value={formData.itemId?.toString() || ''}
+          onValueChange={(value) => setFormData({ ...formData, itemId: parseInt(value) })}
+          buttons={itemButtons}
+          style={styles.segmentedButtons}
+        />
+      )}
 
       <TextInput
         label="Size Name *"
@@ -196,6 +223,22 @@ const styles = StyleSheet.create({
   },
   segmentedButtons: {
     marginBottom: 16,
+  },
+  readOnlyContainer: {
+    position: 'relative',
+    marginBottom: 16,
+  },
+  readOnlyInput: {
+    backgroundColor: '#f5f5f5',
+  },
+  blurOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    pointerEvents: 'none',
   },
   input: {
     marginBottom: 16,

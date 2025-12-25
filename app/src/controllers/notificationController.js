@@ -1,6 +1,7 @@
 'use strict';
 
 const notificationService = require('../services/notificationService');
+const { Notification, User, Order } = require('../models');
 const logger = require('../utils/logger');
 
 /**
@@ -161,7 +162,67 @@ const deleteNotification = async (req, res) => {
   }
 };
 
+/**
+ * Get all notifications (Admin only)
+ * GET /api/notifications/all
+ */
+const getAllNotifications = async (req, res) => {
+  try {
+    const { page = 1, limit = 50, isRead, userId, type } = req.query;
+    const offset = (page - 1) * limit;
+
+    const where = {};
+    if (isRead !== undefined) where.isRead = isRead === 'true';
+    if (userId) where.userId = parseInt(userId);
+    if (type) where.type = type;
+
+    const { count, rows: notifications } = await Notification.findAndCountAll({
+      where,
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'name', 'phone', 'role'],
+          where: { role: 'admin' }, // Only get notifications for admin users
+          required: true // Inner join to ensure we only get admin notifications
+        },
+        {
+          model: Order,
+          as: 'order',
+          attributes: ['id', 'status', 'totalPrice']
+        }
+      ],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [['created_at', 'DESC']]
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        notifications,
+        pagination: {
+          total: count,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          totalPages: Math.ceil(count / limit)
+        }
+      }
+    });
+  } catch (error) {
+    logger.error(`Error fetching all notifications: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'FETCH_ALL_NOTIFICATIONS_ERROR',
+        message: 'Failed to fetch all notifications'
+      }
+    });
+  }
+};
+
 module.exports = {
+  getAllNotifications,
   getNotifications,
   getUnreadCount,
   markAsRead,

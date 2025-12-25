@@ -189,17 +189,34 @@ const formatAddressResponse = (address) => {
     updatedAt: address.updatedAt || address.updated_at
   };
 
+  // Include user data if available (for admin views)
+  if (address.user) {
+    response.user = {
+      id: address.user.id,
+      name: address.user.name,
+      phone: address.user.phone
+    };
+  }
+
   // Include location data if available
   if (address.location) {
+    const loc = address.location;
+    // Handle both camelCase (from Sequelize with underscored: true) and snake_case (raw data)
+    const deliveryCharge = loc.deliveryCharge !== undefined ? loc.deliveryCharge : loc.delivery_charge;
+    const estimatedDeliveryTime = loc.estimatedDeliveryTime !== undefined ? loc.estimatedDeliveryTime : loc.estimated_delivery_time;
+    const isAvailable = loc.isAvailable !== undefined ? loc.isAvailable : loc.is_available;
+
+    const parsedDeliveryCharge = deliveryCharge !== undefined && deliveryCharge !== null ? parseFloat(deliveryCharge) : 0;
+
     response.location = {
-      id: address.location.id,
-      name: address.location.name,
-      area: address.location.area,
-      city: address.location.city,
-      pincode: address.location.pincode,
-      deliveryCharge: parseFloat(address.location.deliveryCharge),
-      estimatedDeliveryTime: address.location.estimatedDeliveryTime,
-      isAvailable: address.location.isAvailable
+      id: loc.id,
+      name: loc.name,
+      area: loc.area,
+      city: loc.city,
+      pincode: loc.pincode,
+      deliveryCharge: parsedDeliveryCharge,
+      estimatedDeliveryTime: estimatedDeliveryTime || 30,
+      isAvailable: isAvailable !== undefined ? isAvailable : true
     };
   }
 
