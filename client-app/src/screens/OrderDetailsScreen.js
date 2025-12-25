@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Modal, TouchableOpacity } from 'react-native';
-import { Text, Button, Surface, Divider, Appbar, Chip } from 'react-native-paper';
+import { Text, Button, Surface, Divider, Appbar, Chip, Icon, ActivityIndicator } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import orderService from '../services/orderService';
 import menuService from '../services/menuService';
 import useCartStore from '../store/cartStore';
 import OrderTimeline from '../components/OrderTimeline';
+import { colors, spacing, fontSize, borderRadius, shadows } from '../styles/theme';
 
 const OrderDetailsScreen = ({ route, navigation }) => {
   const { orderId } = route.params;
@@ -49,17 +50,31 @@ const OrderDetailsScreen = ({ route, navigation }) => {
   const order = orderData?.order;
 
   const getStatusColor = (status) => {
-    const colors = {
-      pending_payment: '#f59e0b',
-      pending: '#3b82f6',
+    const statusColors = {
+      pending_payment: colors.warning,
+      pending: colors.info,
       confirmed: '#8b5cf6',
-      preparing: '#f97316',
-      ready: '#10b981',
+      preparing: colors.primary[600],
+      ready: colors.success,
       out_for_delivery: '#9c27b0',
-      completed: '#22c55e',
-      cancelled: '#ef4444',
+      completed: colors.success,
+      cancelled: colors.error,
     };
-    return colors[status] || '#78716c';
+    return statusColors[status] || colors.text.secondary;
+  };
+
+  const getStatusIcon = (status) => {
+    const icons = {
+      pending_payment: 'clock-alert-outline',
+      pending: 'clock-outline',
+      confirmed: 'check-circle-outline',
+      preparing: 'chef-hat',
+      ready: 'food',
+      out_for_delivery: 'bike-fast',
+      completed: 'check-all',
+      cancelled: 'close-circle-outline',
+    };
+    return icons[status] || 'information-outline';
   };
 
   const getStatusLabel = (status) => {
@@ -221,8 +236,15 @@ const OrderDetailsScreen = ({ route, navigation }) => {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
+        <Appbar.Header>
+          <Appbar.BackAction onPress={() => navigation.goBack()} />
+          <Appbar.Content title={`Order #${orderId}`} />
+        </Appbar.Header>
         <View style={styles.loadingContainer}>
-          <Text variant="bodyLarge">Loading order details...</Text>
+          <ActivityIndicator size="large" color={colors.primary[500]} />
+          <Text variant="bodyLarge" style={styles.loadingText}>
+            Loading order details...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -231,14 +253,21 @@ const OrderDetailsScreen = ({ route, navigation }) => {
   if (error || !order) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
+        <Appbar.Header>
+          <Appbar.BackAction onPress={() => navigation.goBack()} />
+          <Appbar.Content title={`Order #${orderId}`} />
+        </Appbar.Header>
         <View style={styles.errorContainer}>
-          <Text variant="headlineSmall" style={styles.errorEmoji}>
-            ❌
-          </Text>
-          <Text variant="bodyLarge" style={styles.errorText}>
+          <Icon source="alert-circle" size={64} color={colors.error} />
+          <Text variant="titleLarge" style={styles.errorText}>
             Failed to load order details
           </Text>
-          <Button mode="contained" onPress={() => navigation.navigate('Home')} style={styles.button}>
+          <Button
+            mode="contained"
+            onPress={() => navigation.navigate('Home')}
+            style={styles.button}
+            buttonColor={colors.primary[500]}
+          >
             Go to Home
           </Button>
         </View>
@@ -254,65 +283,95 @@ const OrderDetailsScreen = ({ route, navigation }) => {
       </Appbar.Header>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Status Card */}
+        <Surface style={styles.statusCard} elevation={2}>
+          <Chip
+            mode="flat"
+            icon={() => <Icon source={getStatusIcon(order.status)} size={18} color={getStatusColor(order.status)} />}
+            style={[styles.statusChipLarge, { backgroundColor: getStatusColor(order.status) + '20' }]}
+            textStyle={[styles.statusTextLarge, { color: getStatusColor(order.status) }]}
+          >
+            {getStatusLabel(order.status)}
+          </Chip>
+          <Text variant="bodyMedium" style={styles.statusSubtitle}>
+            {order.status === 'completed' ? 'Your order has been delivered' :
+             order.status === 'cancelled' ? 'This order was cancelled' :
+             order.status === 'out_for_delivery' ? 'Your order is on the way' :
+             order.status === 'ready' ? 'Your order is ready for pickup' :
+             order.status === 'preparing' ? 'Your order is being prepared' :
+             order.status === 'confirmed' ? 'Your order has been confirmed' :
+             order.status === 'pending_payment' ? 'Waiting for payment confirmation' :
+             'Your order is being processed'}
+          </Text>
+        </Surface>
+
         {/* Order Timeline */}
         <OrderTimeline status={order.status} paymentStatus={order.paymentStatus} />
 
         {/* Order Details */}
-        <Surface style={styles.card} elevation={1}>
-          <Text variant="titleLarge" style={styles.sectionTitle}>
-            Order Details
-          </Text>
+        <Surface style={styles.card} elevation={2}>
+          <View style={styles.cardHeader}>
+            <Icon source="receipt" size={24} color={colors.primary[500]} />
+            <Text variant="titleLarge" style={styles.sectionTitle}>
+              Order Details
+            </Text>
+          </View>
           <Divider style={styles.divider} />
 
-          <View style={styles.row}>
-            <Text variant="bodyLarge" style={styles.label}>
+          <View style={styles.detailRow}>
+            <Text variant="bodyMedium" style={styles.label}>
               Order ID
             </Text>
-            <Text variant="bodyLarge" style={styles.value}>
+            <Text variant="titleMedium" style={styles.value}>
               #{order.id}
             </Text>
           </View>
 
-          <View style={styles.row}>
-            <Text variant="bodyLarge" style={styles.label}>
-              Status
-            </Text>
-            <Text variant="bodyLarge" style={[styles.value, styles.statusText]}>
-              {order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1).replace('_', ' ') : 'N/A'}
-            </Text>
-          </View>
-
-          <View style={styles.row}>
-            <Text variant="bodyLarge" style={styles.label}>
+          <View style={styles.detailRow}>
+            <Text variant="bodyMedium" style={styles.label}>
               Payment Status
             </Text>
-            <Text variant="bodyLarge" style={[styles.value, styles.statusText]}>
+            <Chip
+              mode="flat"
+              style={[styles.paymentChip, {
+                backgroundColor: order.paymentStatus === 'paid' ? colors.success + '20' : colors.warning + '20'
+              }]}
+              textStyle={[styles.paymentChipText, {
+                color: order.paymentStatus === 'paid' ? colors.success : colors.warning
+              }]}
+            >
               {order.paymentStatus ? order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1) : 'N/A'}
-            </Text>
+            </Chip>
           </View>
 
-          <View style={styles.row}>
-            <Text variant="bodyLarge" style={styles.label}>
+          <View style={styles.detailRow}>
+            <Text variant="bodyMedium" style={styles.label}>
               Total Amount
             </Text>
-            <Text variant="headlineSmall" style={[styles.value, styles.totalText]}>
+            <Text variant="headlineSmall" style={styles.totalText}>
               ₹{parseFloat(order.totalPrice).toFixed(2)}
             </Text>
           </View>
         </Surface>
 
         {/* Delivery Address */}
-        {order.deliveryAddress && (
-          <Surface style={styles.card} elevation={1}>
-            <Text variant="titleLarge" style={styles.sectionTitle}>
-              Delivery Address
-            </Text>
+        {order.deliveryAddress ? (
+          <Surface style={styles.card} elevation={2}>
+            <View style={styles.cardHeader}>
+              <Icon source="map-marker" size={24} color={colors.primary[500]} />
+              <Text variant="titleLarge" style={styles.sectionTitle}>
+                Delivery Address
+              </Text>
+            </View>
             <Divider style={styles.divider} />
-            <Text variant="bodyLarge" style={styles.addressText}>
-              {order.deliveryAddress}
-            </Text>
+            <View style={styles.addressContainer}>
+              <Icon source="home" size={20} color={colors.text.secondary} />
+              <Text variant="bodyLarge" style={styles.addressText}>
+                {order.deliveryAddress}
+              </Text>
+            </View>
           </Surface>
-        )}
+        ) : null}
 
         {/* Action Buttons */}
         <View style={styles.buttonContainer}>
@@ -510,155 +569,195 @@ const OrderDetailsScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fafaf9',
+    backgroundColor: colors.background,
   },
   scrollContent: {
-    paddingBottom: 16,
+    paddingBottom: spacing.lg,
   },
+  // Loading & Error States
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingText: {
+    marginTop: spacing.lg,
+    color: colors.text.secondary,
+  },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: spacing.xl,
   },
   errorEmoji: {
     fontSize: 64,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   errorText: {
     textAlign: 'center',
-    marginBottom: 24,
-    color: '#666',
+    marginTop: spacing.md,
+    marginBottom: spacing.xl,
+    color: colors.error,
   },
+  // Status Card
   statusCard: {
-    padding: 24,
-    marginBottom: 16,
-    marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 12,
+    padding: spacing.xl,
+    marginBottom: spacing.lg,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.lg,
+    borderRadius: borderRadius.lg,
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
+    ...shadows.md,
   },
   statusChipLarge: {
     height: 36,
-    marginBottom: 12,
+    marginBottom: spacing.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
   statusTextLarge: {
-    fontSize: 14,
+    fontSize: fontSize.sm,
     fontWeight: '600',
     textAlign: 'center',
   },
   statusSubtitle: {
-    color: '#78716c',
+    color: colors.text.secondary,
     textAlign: 'center',
   },
+  // Cards
   card: {
-    padding: 16,
-    marginBottom: 16,
-    borderRadius: 12,
-    backgroundColor: '#fff',
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    marginHorizontal: spacing.lg,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.white,
+    ...shadows.md,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
   },
   sectionTitle: {
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginLeft: spacing.sm,
+    color: colors.text.primary,
   },
   divider: {
-    marginBottom: 16,
+    backgroundColor: colors.secondary[200],
+    marginBottom: spacing.lg,
   },
-  row: {
+  // Detail Rows
+  detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   label: {
-    color: '#666',
+    color: colors.text.secondary,
   },
   value: {
-    fontWeight: '500',
+    fontWeight: '600',
+    color: colors.text.primary,
   },
-  statusText: {
-    color: '#6200ee',
+  paymentChip: {
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  paymentChipText: {
+    fontSize: fontSize.xs,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   totalText: {
-    color: '#6200ee',
+    color: colors.primary[500],
     fontWeight: 'bold',
   },
-  addressText: {
-    lineHeight: 24,
-    color: '#333',
+  // Address
+  addressContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
   },
+  addressText: {
+    flex: 1,
+    lineHeight: 24,
+    color: colors.text.primary,
+    marginLeft: spacing.sm,
+  },
+  // Buttons
   buttonContainer: {
-    gap: 12,
-    marginTop: 8,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.sm,
+    marginBottom: spacing.md,
   },
   button: {
-    borderRadius: 8,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
   },
   cancelButton: {
-    borderColor: '#dc2626',
+    borderColor: colors.error,
     borderWidth: 1,
   },
   buttonContent: {
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
   },
+  // Modals
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: spacing.xl,
   },
   modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
     width: '100%',
     maxWidth: 400,
     alignItems: 'center',
   },
   modalTitle: {
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: spacing.md,
     textAlign: 'center',
+    color: colors.text.primary,
   },
   modalMessage: {
     textAlign: 'center',
-    marginBottom: 24,
-    color: '#666',
+    marginBottom: spacing.xl,
+    color: colors.text.secondary,
   },
   modalButtons: {
     flexDirection: 'row',
-    gap: 12,
     width: '100%',
+    marginHorizontal: -spacing.xs,
   },
   modalButton: {
     flex: 1,
-    borderRadius: 8,
+    borderRadius: borderRadius.md,
+    marginHorizontal: spacing.xs,
   },
   modalButtonFull: {
     width: '100%',
-    borderRadius: 8,
+    borderRadius: borderRadius.md,
   },
   successEmoji: {
     fontSize: 48,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   warningMessage: {
     textAlign: 'center',
-    marginTop: 12,
-    marginBottom: 12,
-    color: '#f59e0b',
-    backgroundColor: '#fef3c7',
-    padding: 12,
-    borderRadius: 8,
+    marginTop: spacing.md,
+    marginBottom: spacing.md,
+    color: colors.warning,
+    backgroundColor: colors.warning + '20',
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
     width: '100%',
   },
 });
