@@ -71,18 +71,6 @@ export default function ItemsScreen({ navigation }) {
         queryClient.setQueryData(['items'], context.previousData);
       }
     },
-    onSuccess: (data, variables) => {
-      // Update cache with server response (no refetch needed)
-      queryClient.setQueryData(['items'], (old) => {
-        if (!old?.items) return old;
-        return {
-          ...old,
-          items: old.items.map(item =>
-            item.id === variables.itemId ? data.item : item
-          )
-        };
-      });
-    },
   });
 
   const items = itemsData?.items || [];

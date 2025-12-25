@@ -107,7 +107,8 @@ const formatItemResponse = (item, options = {}) => {
     response.category = {
       id: item.category.id,
       name: item.category.name,
-      gstRate: item.category.gstRate !== undefined ? parseFloat(item.category.gstRate) : (item.category.gst_rate !== undefined ? parseFloat(item.category.gst_rate) : 5.00)
+      gstRate: item.category.gstRate !== undefined ? parseFloat(item.category.gstRate) : (item.category.gst_rate !== undefined ? parseFloat(item.category.gst_rate) : 5.00),
+      isAvailable: item.category.isAvailable !== undefined ? item.category.isAvailable : item.category.is_available
     };
   }
 

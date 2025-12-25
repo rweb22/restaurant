@@ -21,11 +21,19 @@ class ItemService {
       }
 
       // Always include category
-      include.push({
+      const categoryInclude = {
         model: Category,
         as: 'category',
-        attributes: ['id', 'name', 'gstRate']
-      });
+        attributes: ['id', 'name', 'gstRate', 'isAvailable'],
+      };
+
+      // If filtering by available items, also filter by available categories
+      if (filters.available === true) {
+        categoryInclude.where = { isAvailable: true };
+        categoryInclude.required = true; // INNER JOIN to exclude items with unavailable categories
+      }
+
+      include.push(categoryInclude);
 
       // Include sizes if requested
       if (filters.includeSizes) {

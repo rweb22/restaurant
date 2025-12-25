@@ -50,18 +50,6 @@ export default function CategoriesScreen({ navigation }) {
         queryClient.setQueryData(['categories'], context.previousData);
       }
     },
-    onSuccess: (data, variables) => {
-      // Update cache with server response (no refetch needed)
-      queryClient.setQueryData(['categories'], (old) => {
-        if (!old?.categories) return old;
-        return {
-          ...old,
-          categories: old.categories.map(cat =>
-            cat.id === variables.categoryId ? data.category : cat
-          )
-        };
-      });
-    },
   });
 
   const categories = categoriesData?.categories || [];
