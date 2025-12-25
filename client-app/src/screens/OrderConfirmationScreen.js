@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Button, Surface, Divider } from 'react-native-paper';
+import { Text, Button, Surface, Divider, Icon, ActivityIndicator } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import orderService from '../services/orderService';
+import { colors, spacing, fontSize, borderRadius, shadows } from '../styles/theme';
 
 const OrderConfirmationScreen = ({ route, navigation }) => {
   const { orderId } = route.params;
@@ -20,7 +21,10 @@ const OrderConfirmationScreen = ({ route, navigation }) => {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
-          <Text variant="bodyLarge">Loading order details...</Text>
+          <ActivityIndicator size="large" color={colors.primary[500]} />
+          <Text variant="bodyLarge" style={styles.loadingText}>
+            Loading order details...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -30,13 +34,16 @@ const OrderConfirmationScreen = ({ route, navigation }) => {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.errorContainer}>
-          <Text variant="headlineSmall" style={styles.errorEmoji}>
-            ❌
-          </Text>
-          <Text variant="bodyLarge" style={styles.errorText}>
+          <Icon source="alert-circle" size={64} color={colors.error} />
+          <Text variant="titleLarge" style={styles.errorText}>
             Failed to load order details
           </Text>
-          <Button mode="contained" onPress={() => navigation.navigate('Main', { screen: 'HomeTab' })} style={styles.button}>
+          <Button
+            mode="contained"
+            onPress={() => navigation.navigate('Main', { screen: 'HomeTab' })}
+            style={styles.button}
+            buttonColor={colors.primary[500]}
+          >
             Go to Home
           </Button>
         </View>
@@ -49,91 +56,120 @@ const OrderConfirmationScreen = ({ route, navigation }) => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Success Header */}
         <Surface style={styles.successCard} elevation={0}>
-          <Text variant="displaySmall" style={styles.successEmoji}>
-            ✅
-          </Text>
+          <View style={styles.successIconContainer}>
+            <Icon source="check-circle" size={80} color={colors.success} />
+          </View>
           <Text variant="headlineMedium" style={styles.successTitle}>
             Order Placed Successfully!
           </Text>
           <Text variant="bodyLarge" style={styles.successSubtitle}>
-            Your order has been confirmed
+            Your order has been confirmed and will be delivered soon
           </Text>
+          <View style={styles.orderIdBadge}>
+            <Icon source="receipt" size={20} color={colors.primary[500]} />
+            <Text variant="titleMedium" style={styles.orderIdText}>
+              Order #{order.id}
+            </Text>
+          </View>
         </Surface>
 
-        {/* Order Details */}
-        <Surface style={styles.card} elevation={1}>
-          <Text variant="titleLarge" style={styles.sectionTitle}>
-            Order Details
-          </Text>
+        {/* Order Summary */}
+        <Surface style={styles.card} elevation={2}>
+          <View style={styles.cardHeader}>
+            <Icon source="information" size={24} color={colors.primary[500]} />
+            <Text variant="titleLarge" style={styles.sectionTitle}>
+              Order Summary
+            </Text>
+          </View>
           <Divider style={styles.divider} />
 
-          <View style={styles.row}>
-            <Text variant="bodyLarge" style={styles.label}>
-              Order ID
-            </Text>
-            <Text variant="bodyLarge" style={styles.value}>
-              #{order.id}
-            </Text>
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryItem}>
+              <Icon source="clock-outline" size={20} color={colors.text.secondary} />
+              <View style={styles.summaryTextContainer}>
+                <Text variant="bodySmall" style={styles.summaryLabel}>
+                  Status
+                </Text>
+                <Text variant="bodyLarge" style={styles.summaryValue}>
+                  {order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1).replace('_', ' ') : 'N/A'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.summaryItem}>
+              <Icon source="credit-card" size={20} color={colors.text.secondary} />
+              <View style={styles.summaryTextContainer}>
+                <Text variant="bodySmall" style={styles.summaryLabel}>
+                  Payment
+                </Text>
+                <Text variant="bodyLarge" style={styles.summaryValue}>
+                  {order.paymentStatus ? order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1) : 'N/A'}
+                </Text>
+              </View>
+            </View>
           </View>
 
-          <View style={styles.row}>
-            <Text variant="bodyLarge" style={styles.label}>
-              Status
-            </Text>
-            <Text variant="bodyLarge" style={[styles.value, styles.statusText]}>
-              {order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1).replace('_', ' ') : 'N/A'}
-            </Text>
-          </View>
-
-          <View style={styles.row}>
-            <Text variant="bodyLarge" style={styles.label}>
-              Payment Status
-            </Text>
-            <Text variant="bodyLarge" style={[styles.value, styles.statusText]}>
-              {order.paymentStatus ? order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1) : 'N/A'}
-            </Text>
-          </View>
-
-          <View style={styles.row}>
-            <Text variant="bodyLarge" style={styles.label}>
+          <View style={styles.totalRow}>
+            <Text variant="titleMedium" style={styles.totalLabel}>
               Total Amount
             </Text>
-            <Text variant="headlineSmall" style={[styles.value, styles.totalText]}>
+            <Text variant="headlineMedium" style={styles.totalAmount}>
               ₹{parseFloat(order.totalPrice).toFixed(2)}
             </Text>
           </View>
         </Surface>
 
         {/* Delivery Address */}
-        {order.deliveryAddress && (
-          <Surface style={styles.card} elevation={1}>
-            <Text variant="titleLarge" style={styles.sectionTitle}>
-              Delivery Address
-            </Text>
+        {order.deliveryAddress ? (
+          <Surface style={styles.card} elevation={2}>
+            <View style={styles.cardHeader}>
+              <Icon source="map-marker" size={24} color={colors.primary[500]} />
+              <Text variant="titleLarge" style={styles.sectionTitle}>
+                Delivery Address
+              </Text>
+            </View>
             <Divider style={styles.divider} />
-            <Text variant="bodyLarge" style={styles.addressText}>
-              {order.deliveryAddress}
-            </Text>
+            <View style={styles.addressContainer}>
+              <Icon source="home" size={20} color={colors.text.secondary} />
+              <Text variant="bodyLarge" style={styles.addressText}>
+                {order.deliveryAddress}
+              </Text>
+            </View>
           </Surface>
-        )}
+        ) : null}
+
+        {/* Estimated Delivery Time */}
+        <Surface style={styles.estimateCard} elevation={1}>
+          <Icon source="truck-delivery" size={32} color={colors.primary[500]} />
+          <View style={styles.estimateTextContainer}>
+            <Text variant="titleMedium" style={styles.estimateTitle}>
+              Estimated Delivery
+            </Text>
+            <Text variant="bodyMedium" style={styles.estimateTime}>
+              30-45 minutes
+            </Text>
+          </View>
+        </Surface>
 
         {/* Action Buttons */}
         <View style={styles.buttonContainer}>
           <Button
             mode="outlined"
             onPress={() => navigation.navigate('Main', { screen: 'HomeTab' })}
-            style={styles.button}
+            style={styles.outlinedButton}
             contentStyle={styles.buttonContent}
+            textColor={colors.primary[500]}
           >
             Continue Shopping
           </Button>
           <Button
             mode="contained"
             onPress={() => navigation.navigate('Main', { screen: 'OrdersTab' })}
-            style={styles.button}
+            style={styles.containedButton}
             contentStyle={styles.buttonContent}
+            buttonColor={colors.primary[500]}
           >
-            View My Orders
+            Track Order
           </Button>
         </View>
       </ScrollView>
@@ -144,96 +180,185 @@ const OrderConfirmationScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fafaf9',
+    backgroundColor: colors.background,
   },
   scrollContent: {
-    padding: 16,
+    padding: spacing.lg,
   },
+  // Loading & Error States
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingText: {
+    marginTop: spacing.lg,
+    color: colors.text.secondary,
+  },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
-  },
-  errorEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
+    padding: spacing.xl,
   },
   errorText: {
     textAlign: 'center',
-    marginBottom: 24,
-    color: '#666',
+    marginTop: spacing.md,
+    marginBottom: spacing.xl,
+    color: colors.error,
   },
+  // Success Card
   successCard: {
-    padding: 32,
-    marginBottom: 16,
-    borderRadius: 12,
+    padding: spacing['2xl'],
+    marginBottom: spacing.lg,
+    borderRadius: borderRadius.xl,
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
   },
-  successEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
+  successIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: colors.success + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
   },
   successTitle: {
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     textAlign: 'center',
+    color: colors.text.primary,
   },
   successSubtitle: {
-    color: '#666',
+    color: colors.text.secondary,
     textAlign: 'center',
+    marginBottom: spacing.lg,
   },
+  orderIdBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary[50],
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.xl,
+    marginTop: spacing.md,
+  },
+  orderIdText: {
+    color: colors.primary[500],
+    fontWeight: 'bold',
+    marginLeft: spacing.sm,
+  },
+  // Cards
   card: {
-    padding: 16,
-    marginBottom: 16,
-    borderRadius: 12,
-    backgroundColor: '#fff',
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.white,
+    ...shadows.md,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
   },
   sectionTitle: {
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginLeft: spacing.sm,
+    color: colors.text.primary,
   },
   divider: {
-    marginBottom: 16,
+    backgroundColor: colors.secondary[200],
+    marginBottom: spacing.lg,
   },
-  row: {
+  // Summary
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.lg,
+  },
+  summaryItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  summaryTextContainer: {
+    marginLeft: spacing.sm,
+  },
+  summaryLabel: {
+    color: colors.text.secondary,
+    marginBottom: spacing.xs,
+  },
+  summaryValue: {
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    backgroundColor: colors.primary[50],
+    padding: spacing.lg,
+    borderRadius: borderRadius.md,
+    marginTop: spacing.sm,
   },
-  label: {
-    color: '#666',
+  totalLabel: {
+    color: colors.text.primary,
+    fontWeight: '600',
   },
-  value: {
-    fontWeight: '500',
-  },
-  statusText: {
-    color: '#6200ee',
-  },
-  totalText: {
-    color: '#6200ee',
+  totalAmount: {
+    color: colors.primary[500],
     fontWeight: 'bold',
   },
-  addressText: {
-    lineHeight: 24,
-    color: '#333',
+  // Address
+  addressContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
   },
+  addressText: {
+    flex: 1,
+    lineHeight: 24,
+    color: colors.text.primary,
+    marginLeft: spacing.sm,
+  },
+  // Estimate Card
+  estimateCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.primary[50],
+  },
+  estimateTextContainer: {
+    marginLeft: spacing.lg,
+  },
+  estimateTitle: {
+    color: colors.text.primary,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
+  },
+  estimateTime: {
+    color: colors.primary[500],
+    fontWeight: 'bold',
+  },
+  // Buttons
   buttonContainer: {
-    gap: 12,
-    marginTop: 8,
+    marginTop: spacing.sm,
+  },
+  outlinedButton: {
+    borderRadius: borderRadius.md,
+    borderColor: colors.primary[500],
+    marginBottom: spacing.md,
+  },
+  containedButton: {
+    borderRadius: borderRadius.md,
   },
   button: {
-    borderRadius: 8,
+    borderRadius: borderRadius.md,
   },
   buttonContent: {
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
   },
 });
 
