@@ -40,7 +40,7 @@ const CategoryChip = ({
         onPressOut={handlePressOut}
         activeOpacity={0.8}
       >
-        {icon && <Text style={styles.icon}>{icon}</Text>}
+        {icon ? <Text style={styles.icon}>{icon}</Text> : null}
         <Text
           style={[
             styles.label,

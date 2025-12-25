@@ -54,11 +54,11 @@ const FoodCard = ({
             style={styles.image}
             resizeMode="cover"
           />
-          {badge && (
+          {badge ? (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{badge}</Text>
             </View>
-          )}
+          ) : null}
         </View>
 
         {/* Content */}
