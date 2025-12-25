@@ -81,11 +81,16 @@ export default function MenuManagementScreen({ navigation }) {
     },
   });
 
+  const [togglingCategoryId, setTogglingCategoryId] = React.useState(null);
+  const [togglingItemId, setTogglingItemId] = React.useState(null);
+
   // Toggle availability mutations
   const toggleCategoryAvailabilityMutation = useMutation({
     mutationFn: ({ categoryId, isAvailable }) =>
       menuService.updateCategory(categoryId, { isAvailable }),
     onMutate: async ({ categoryId, isAvailable }) => {
+      setTogglingCategoryId(categoryId);
+
       await queryClient.cancelQueries(['menu-management']);
       const previousData = queryClient.getQueryData(['menu-management']);
 
@@ -105,6 +110,10 @@ export default function MenuManagementScreen({ navigation }) {
       if (context?.previousData) {
         queryClient.setQueryData(['menu-management'], context.previousData);
       }
+      setTogglingCategoryId(null);
+    },
+    onSettled: () => {
+      setTogglingCategoryId(null);
     },
   });
 
@@ -112,6 +121,8 @@ export default function MenuManagementScreen({ navigation }) {
     mutationFn: ({ itemId, isAvailable }) =>
       menuService.updateItem(itemId, { isAvailable }),
     onMutate: async ({ itemId, isAvailable }) => {
+      setTogglingItemId(itemId);
+
       await queryClient.cancelQueries(['menu-management']);
       const previousData = queryClient.getQueryData(['menu-management']);
 
@@ -135,6 +146,10 @@ export default function MenuManagementScreen({ navigation }) {
       if (context?.previousData) {
         queryClient.setQueryData(['menu-management'], context.previousData);
       }
+      setTogglingItemId(null);
+    },
+    onSettled: () => {
+      setTogglingItemId(null);
     },
   });
 
@@ -279,7 +294,7 @@ export default function MenuManagementScreen({ navigation }) {
                         <Switch
                           value={category.isAvailable}
                           onValueChange={() => handleToggleCategoryAvailability(category.id, category.isAvailable)}
-                          disabled={toggleCategoryAvailabilityMutation.isPending}
+                          disabled={togglingCategoryId === category.id}
                         />
                         <Text variant="bodySmall" style={styles.metaText}>
                           GST: {category.gstRate}%
@@ -387,7 +402,7 @@ export default function MenuManagementScreen({ navigation }) {
                                     <Switch
                                       value={item.isAvailable}
                                       onValueChange={() => handleToggleItemAvailability(item.id, item.isAvailable)}
-                                      disabled={toggleItemAvailabilityMutation.isPending}
+                                      disabled={togglingItemId === item.id}
                                     />
                                     <Text variant="bodySmall" style={styles.metaText}>
                                       {sizes.length} sizes

@@ -21,10 +21,14 @@ export default function CategoriesScreen({ navigation }) {
     },
   });
 
+  const [togglingId, setTogglingId] = React.useState(null);
+
   const toggleAvailabilityMutation = useMutation({
     mutationFn: ({ categoryId, isAvailable }) =>
       menuService.updateCategory(categoryId, { isAvailable }),
     onMutate: async ({ categoryId, isAvailable }) => {
+      setTogglingId(categoryId);
+
       // Cancel outgoing refetches
       await queryClient.cancelQueries(['categories']);
 
@@ -49,6 +53,10 @@ export default function CategoriesScreen({ navigation }) {
       if (context?.previousData) {
         queryClient.setQueryData(['categories'], context.previousData);
       }
+      setTogglingId(null);
+    },
+    onSettled: () => {
+      setTogglingId(null);
     },
   });
 
@@ -144,7 +152,7 @@ export default function CategoriesScreen({ navigation }) {
                     <Switch
                       value={category.isAvailable}
                       onValueChange={() => handleToggleAvailability(category.id, category.isAvailable)}
-                      disabled={toggleAvailabilityMutation.isPending}
+                      disabled={togglingId === category.id}
                     />
                   </View>
                 </Card.Content>

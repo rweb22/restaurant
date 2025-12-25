@@ -41,11 +41,15 @@ export default function ItemsScreen({ navigation }) {
     },
   });
 
+  const [togglingId, setTogglingId] = React.useState(null);
+
   // Toggle availability mutation
   const toggleAvailabilityMutation = useMutation({
     mutationFn: ({ itemId, isAvailable }) =>
       menuService.updateItem(itemId, { isAvailable }),
     onMutate: async ({ itemId, isAvailable }) => {
+      setTogglingId(itemId);
+
       // Cancel outgoing refetches
       await queryClient.cancelQueries(['items']);
 
@@ -70,6 +74,10 @@ export default function ItemsScreen({ navigation }) {
       if (context?.previousData) {
         queryClient.setQueryData(['items'], context.previousData);
       }
+      setTogglingId(null);
+    },
+    onSettled: () => {
+      setTogglingId(null);
     },
   });
 
@@ -184,7 +192,7 @@ export default function ItemsScreen({ navigation }) {
               <Switch
                 value={item.isAvailable}
                 onValueChange={() => handleToggleAvailability(item.id, item.isAvailable)}
-                disabled={toggleAvailabilityMutation.isPending}
+                disabled={togglingId === item.id}
               />
             </View>
           </View>
