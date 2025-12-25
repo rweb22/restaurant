@@ -74,14 +74,15 @@ const HomeScreen = ({ navigation }) => {
   }, [navigation, selectedAddress]);
 
   const { data: categories, isLoading: categoriesLoading } = useQuery({
-    queryKey: ['categories'],
-    queryFn: menuService.getCategories,
+    queryKey: ['categories', 'available'],
+    queryFn: () => menuService.getCategories({ available: true }),
   });
 
   const { data: items, isLoading: itemsLoading } = useQuery({
-    queryKey: ['items', selectedCategory],
+    queryKey: ['items', selectedCategory, 'available'],
     queryFn: () => menuService.getItems({
       categoryId: selectedCategory,
+      available: true,
       includeSizes: true,
       includeAddOns: true,
     }),

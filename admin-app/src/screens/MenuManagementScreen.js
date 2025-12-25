@@ -106,8 +106,17 @@ export default function MenuManagementScreen({ navigation }) {
         queryClient.setQueryData(['menu-management'], context.previousData);
       }
     },
-    onSettled: () => {
-      queryClient.invalidateQueries(['menu-management']);
+    onSuccess: (data, variables) => {
+      // Update cache with server response (no refetch needed)
+      queryClient.setQueryData(['menu-management'], (old) => {
+        if (!old?.categories) return old;
+        return {
+          ...old,
+          categories: old.categories.map(cat =>
+            cat.id === variables.categoryId ? data.category : cat
+          )
+        };
+      });
     },
   });
 
@@ -139,8 +148,21 @@ export default function MenuManagementScreen({ navigation }) {
         queryClient.setQueryData(['menu-management'], context.previousData);
       }
     },
-    onSettled: () => {
-      queryClient.invalidateQueries(['menu-management']);
+    onSuccess: (data, variables) => {
+      // Update cache with server response (no refetch needed)
+      queryClient.setQueryData(['menu-management'], (old) => {
+        if (!old?.itemsByCategory) return old;
+        const newItemsByCategory = {};
+        Object.keys(old.itemsByCategory).forEach(catId => {
+          newItemsByCategory[catId] = old.itemsByCategory[catId].map(item =>
+            item.id === variables.itemId ? data.item : item
+          );
+        });
+        return {
+          ...old,
+          itemsByCategory: newItemsByCategory
+        };
+      });
     },
   });
 
