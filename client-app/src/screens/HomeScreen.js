@@ -365,10 +365,13 @@ const styles = StyleSheet.create({
   closedChip: {
     backgroundColor: colors.error,
     marginBottom: spacing.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   closedChipText: {
     color: colors.white,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   statusReason: {
     color: colors.error,

@@ -866,10 +866,14 @@ const styles = StyleSheet.create({
   sizeChip: {
     height: 24,
     backgroundColor: colors.primary[50],
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   sizeChipText: {
     fontSize: fontSize.xs,
     color: colors.primary[700],
+    textAlign: 'center',
+    lineHeight: fontSize.xs,
   },
   removeButton: {
     margin: 0,
@@ -906,11 +910,15 @@ const styles = StyleSheet.create({
     height: 24,
     backgroundColor: colors.primary[50],
     marginLeft: spacing.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   addressTypeChipText: {
     fontSize: fontSize.xs,
     color: colors.primary[700],
     fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: fontSize.xs,
   },
   addressCardContent: {
     marginBottom: spacing.md,

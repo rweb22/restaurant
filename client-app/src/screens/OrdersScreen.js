@@ -235,10 +235,13 @@ const styles = StyleSheet.create({
   },
   statusChip: {
     height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   statusText: {
     fontSize: 12,
     fontWeight: '600',
+    textAlign: 'center',
   },
   divider: {
     marginBottom: 12,

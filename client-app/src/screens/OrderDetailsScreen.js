@@ -547,10 +547,13 @@ const styles = StyleSheet.create({
   statusChipLarge: {
     height: 36,
     marginBottom: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   statusTextLarge: {
     fontSize: 14,
     fontWeight: '600',
+    textAlign: 'center',
   },
   statusSubtitle: {
     color: '#78716c',
