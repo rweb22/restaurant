@@ -472,7 +472,6 @@ const styles = StyleSheet.create({
     right: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
     backgroundColor: colors.error,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
@@ -482,6 +481,7 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: fontSize.sm,
     fontWeight: '600',
+    marginLeft: spacing.xs,
   },
   detailsCard: {
     backgroundColor: colors.white,
@@ -516,7 +516,7 @@ const styles = StyleSheet.create({
   sizesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.md,
+    marginHorizontal: -spacing.xs,
   },
   sizeCard: {
     position: 'relative',
@@ -527,6 +527,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: spacing.md,
     alignItems: 'center',
+    marginHorizontal: spacing.xs,
+    marginBottom: spacing.md,
   },
   sizeCardSelected: {
     borderColor: colors.primary[500],
@@ -590,7 +592,7 @@ const styles = StyleSheet.create({
   },
   // Add-ons Styles
   addOnSubsection: {
-    gap: spacing.sm,
+    // No gap needed, marginBottom on cards handles spacing
   },
   categoryAddOnTitle: {
     fontWeight: '600',
@@ -659,10 +661,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: spacing.md,
   },
   totalSection: {
     flex: 1,
+    marginRight: spacing.md,
   },
   totalLabel: {
     color: colors.white,
