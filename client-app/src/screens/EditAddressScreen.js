@@ -41,8 +41,8 @@ const EditAddressScreen = ({ navigation, route }) => {
 
   // Populate form when address data is loaded
   useEffect(() => {
-    if (addressData?.data?.address) {
-      const address = addressData.data.address;
+    if (addressData?.address) {
+      const address = addressData.address;
       setLabel(address.label || '');
       setAddressLine1(address.addressLine1 || '');
       setAddressLine2(address.addressLine2 || '');

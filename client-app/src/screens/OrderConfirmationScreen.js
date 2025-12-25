@@ -36,7 +36,7 @@ const OrderConfirmationScreen = ({ route, navigation }) => {
           <Text variant="bodyLarge" style={styles.errorText}>
             Failed to load order details
           </Text>
-          <Button mode="contained" onPress={() => navigation.navigate('Home')} style={styles.button}>
+          <Button mode="contained" onPress={() => navigation.navigate('Main', { screen: 'HomeTab' })} style={styles.button}>
             Go to Home
           </Button>
         </View>
@@ -121,7 +121,7 @@ const OrderConfirmationScreen = ({ route, navigation }) => {
         <View style={styles.buttonContainer}>
           <Button
             mode="outlined"
-            onPress={() => navigation.navigate('Home')}
+            onPress={() => navigation.navigate('Main', { screen: 'HomeTab' })}
             style={styles.button}
             contentStyle={styles.buttonContent}
           >
@@ -129,7 +129,7 @@ const OrderConfirmationScreen = ({ route, navigation }) => {
           </Button>
           <Button
             mode="contained"
-            onPress={() => navigation.navigate('Orders')}
+            onPress={() => navigation.navigate('Main', { screen: 'OrdersTab' })}
             style={styles.button}
             contentStyle={styles.buttonContent}
           >

@@ -1,10 +1,13 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
-import { PaperProvider, MD3LightTheme, ActivityIndicator } from 'react-native-paper';
-import { View, StyleSheet } from 'react-native';
+import { PaperProvider, MD3LightTheme, ActivityIndicator, Badge } from 'react-native-paper';
+import { View, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import Icon from 'react-native-paper/src/components/Icon';
+import ConfirmDialog from './src/components/ConfirmDialog';
 
 // Stores
 import useAuthStore from './src/store/authStore';
@@ -27,6 +30,7 @@ import OrderDetailsScreen from './src/screens/OrderDetailsScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
 
 const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
 const queryClient = new QueryClient();
 
 // Custom theme based on our design
@@ -43,6 +47,168 @@ const theme = {
     error: '#ef4444',
   },
 };
+
+// Bottom Tab Navigator for main app screens
+function MainTabs() {
+  const { getItemCount, clearCart } = useCartStore();
+  const { logout } = useAuthStore();
+  const { clearDeliveryInfo } = useDeliveryStore();
+  const [unreadCount, setUnreadCount] = React.useState(0);
+  const [showLogoutDialog, setShowLogoutDialog] = React.useState(false);
+
+  // You can add a query here to fetch unread notifications count
+  // For now, we'll use a placeholder
+
+  const handleLogout = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const confirmLogout = () => {
+    setShowLogoutDialog(false);
+    logout();
+    clearCart();
+    clearDeliveryInfo();
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutDialog(false);
+  };
+
+  return (
+    <>
+      <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: '#FF9800',
+        tabBarInactiveTintColor: '#9E9E9E',
+        tabBarShowLabel: false,
+        tabBarStyle: {
+          backgroundColor: '#fff',
+          borderTopWidth: 1,
+          borderTopColor: '#E0E0E0',
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+        },
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+
+          if (route.name === 'HomeTab') {
+            iconName = 'home';
+          } else if (route.name === 'OrdersTab') {
+            iconName = 'receipt-text';
+          } else if (route.name === 'CartTab') {
+            iconName = 'cart';
+          } else if (route.name === 'NotificationsTab') {
+            iconName = 'bell';
+          } else if (route.name === 'AddressesTab') {
+            iconName = 'map-marker';
+          } else if (route.name === 'LogoutTab') {
+            iconName = 'logout';
+          }
+
+          return <Icon source={iconName} size={28} color={color} />;
+        },
+      })}
+    >
+      <Tab.Screen
+        name="HomeTab"
+        component={HomeScreen}
+        options={{
+          tabBarLabel: 'Menu',
+        }}
+      />
+      <Tab.Screen
+        name="OrdersTab"
+        component={OrdersScreen}
+        options={{
+          tabBarLabel: 'Orders',
+        }}
+      />
+      <Tab.Screen
+        name="CartTab"
+        component={CartScreen}
+        options={{
+          tabBarLabel: 'Cart',
+          tabBarBadge: getItemCount() > 0 ? getItemCount() : null,
+          tabBarBadgeStyle: {
+            backgroundColor: '#FF9800',
+            color: '#fff',
+            fontSize: 10,
+            minWidth: 18,
+            height: 18,
+            borderRadius: 9,
+            lineHeight: 18,
+          },
+        }}
+      />
+      <Tab.Screen
+        name="NotificationsTab"
+        component={NotificationsScreen}
+        options={{
+          tabBarLabel: 'Notifications',
+          tabBarBadge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : null,
+          tabBarBadgeStyle: {
+            backgroundColor: '#FF9800',
+            color: '#fff',
+            fontSize: 10,
+            minWidth: 18,
+            height: 18,
+            borderRadius: 9,
+            lineHeight: 18,
+          },
+        }}
+      />
+      <Tab.Screen
+        name="AddressesTab"
+        component={AddressesScreen}
+        options={{
+          tabBarLabel: 'Addresses',
+        }}
+      />
+      <Tab.Screen
+        name="LogoutTab"
+        component={View}
+        options={({ route }) => ({
+          tabBarLabel: 'Logout',
+          tabBarButton: (props) => {
+            const isFocused = props.accessibilityState?.selected;
+            const color = isFocused ? '#FF9800' : '#9E9E9E';
+
+            return (
+              <TouchableOpacity
+                {...props}
+                style={[
+                  props.style,
+                  {
+                    flex: 1,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }
+                ]}
+                onPress={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleLogout();
+                }}
+              >
+                <Icon source="logout" size={28} color={color} />
+              </TouchableOpacity>
+            );
+          },
+        })}
+      />
+      </Tab.Navigator>
+      <ConfirmDialog
+        visible={showLogoutDialog}
+        onDismiss={cancelLogout}
+        onConfirm={confirmLogout}
+        title="Logout"
+        message="Are you sure you want to logout?"
+      />
+    </>
+  );
+}
 
 export default function App() {
   const { isAuthenticated, isLoading, loadAuth, user } = useAuthStore();
@@ -82,16 +248,15 @@ export default function App() {
               <Stack.Screen name="EnterName" component={EnterNameScreen} />
             ) : (
               <>
-                <Stack.Screen name="Home" component={HomeScreen} />
+                {/* Main Tab Navigator */}
+                <Stack.Screen name="Main" component={MainTabs} />
+
+                {/* Modal/Detail Screens (outside tabs) */}
                 <Stack.Screen name="ItemDetail" component={ItemDetailScreen} />
-                <Stack.Screen name="Cart" component={CartScreen} />
                 <Stack.Screen name="AddAddress" component={AddAddressScreen} />
-                <Stack.Screen name="Addresses" component={AddressesScreen} />
                 <Stack.Screen name="EditAddress" component={EditAddressScreen} />
                 <Stack.Screen name="OrderConfirmation" component={OrderConfirmationScreen} />
-                <Stack.Screen name="Orders" component={OrdersScreen} />
                 <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
-                <Stack.Screen name="Notifications" component={NotificationsScreen} />
               </>
             )}
           </Stack.Navigator>

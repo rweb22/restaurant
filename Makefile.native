@@ -1,0 +1,84 @@
+.PHONY: help setup start-db stop-db start-backend start-client start-admin db-shell migrate seed reset clean logs status
+
+help: ## Show this help message
+	@echo 'Restaurant Management System - Native Development'
+	@echo ''
+	@echo 'Usage: make -f Makefile.native [target]'
+	@echo ''
+	@echo 'Available targets:'
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+setup: ## Complete setup (database + backend)
+	@./start-all.sh
+
+start-db: ## Start PostgreSQL database in Docker
+	@./start-db.sh
+
+stop-db: ## Stop PostgreSQL database
+	@./stop-db.sh
+
+start-backend: ## Start backend API (run in separate terminal)
+	@echo "Starting backend API..."
+	@cd app && npm run dev
+
+start-client: ## Start client app (run in separate terminal)
+	@echo "Starting client app..."
+	@cd client-app && npm start
+
+start-admin: ## Start admin app (run in separate terminal)
+	@echo "Starting admin app..."
+	@cd admin-app && npm start
+
+db-shell: ## Access PostgreSQL shell
+	@docker compose -f docker-compose.db-only.yml exec db psql -U restaurant_user -d restaurant_db
+
+migrate: ## Run database migrations
+	@cd app && npm run db:migrate
+
+seed: ## Run database seeders
+	@cd app && npm run db:seed
+
+reset: ## Reset database (undo, migrate, seed)
+	@cd app && npm run db:reset
+
+clean: ## Remove database container and volumes
+	@docker compose -f docker-compose.db-only.yml down -v
+	@echo "Database removed. Run 'make setup' to recreate."
+
+logs: ## View database logs
+	@docker compose -f docker-compose.db-only.yml logs -f db
+
+status: ## Check status of all services
+	@echo "=== Database Status ==="
+	@docker compose -f docker-compose.db-only.yml ps
+	@echo ""
+	@echo "=== Backend Status ==="
+	@curl -s http://localhost:3000/health 2>/dev/null && echo "✅ Backend is running" || echo "❌ Backend is not running"
+	@echo ""
+
+install-backend: ## Install backend dependencies
+	@cd app && npm install
+
+install-client: ## Install client app dependencies
+	@cd client-app && npm install
+
+install-admin: ## Install admin app dependencies
+	@cd admin-app && npm install
+
+install-all: install-backend install-client install-admin ## Install all dependencies
+
+test: ## Run backend tests
+	@cd app && npm test
+
+test-unit: ## Run backend unit tests
+	@cd app && npm run test:unit
+
+test-integration: ## Run backend integration tests
+	@cd app && npm run test:integration
+
+lint: ## Run linter on backend
+	@cd app && npm run lint
+
+lint-fix: ## Fix linting issues in backend
+	@cd app && npm run lint:fix
+

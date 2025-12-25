@@ -26,7 +26,7 @@ const AddressesScreen = ({ navigation }) => {
     queryFn: () => addressService.getAddresses(),
   });
 
-  const addresses = addressesData?.data?.addresses || [];
+  const addresses = addressesData?.addresses || [];
 
   // Delete mutation
   const deleteMutation = useMutation({
@@ -44,7 +44,7 @@ const AddressesScreen = ({ navigation }) => {
     onSuccess: (response) => {
       queryClient.invalidateQueries(['addresses']);
       // Update delivery store with new default address
-      const updatedAddress = response.data.address;
+      const updatedAddress = response.address;
       setSelectedAddress(updatedAddress);
       setSelectedLocation(updatedAddress.location);
     },
@@ -148,7 +148,6 @@ const AddressesScreen = ({ navigation }) => {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header>
-          <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="My Addresses" />
         </Appbar.Header>
         <View style={styles.errorContainer}>
@@ -169,7 +168,6 @@ const AddressesScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header>
-        <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="My Addresses" subtitle={`${addresses.length} saved`} />
         <Appbar.Action
           icon="plus"

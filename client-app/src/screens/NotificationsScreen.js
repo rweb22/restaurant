@@ -134,7 +134,6 @@ const NotificationsScreen = ({ navigation }) => {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header>
-          <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="Notifications" />
         </Appbar.Header>
         <View style={styles.loadingContainer}>
@@ -148,7 +147,6 @@ const NotificationsScreen = ({ navigation }) => {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header>
-          <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="Notifications" />
         </Appbar.Header>
         <View style={styles.errorContainer}>
@@ -167,7 +165,6 @@ const NotificationsScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header>
-        <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="Notifications" />
         {notifications.some(n => !n.isRead) && (
           <Appbar.Action

@@ -136,7 +136,6 @@ const OrdersScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header>
-        <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="My Orders" />
       </Appbar.Header>
 

@@ -88,77 +88,36 @@ const HomeScreen = ({ navigation }) => {
     }),
   });
 
-  const handleLogout = async () => {
-    console.log('[HomeScreen] Logging out...');
-    await logout();
-    clearCart();
-    clearDeliveryInfo();
-    console.log('[HomeScreen] Logout complete');
-  };
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <Appbar.Header elevated>
-        <Appbar.Content
-          title="Menu"
-          subtitle={user?.name ? `Hi, ${user.name}! 👋` : "Choose your favorite items"}
-        />
-        <View style={styles.iconContainer}>
-          <IconButton
-            icon="bell"
-            size={24}
-            onPress={() => navigation.navigate('Notifications')}
-          />
-          {unreadCount > 0 && (
-            <Badge style={styles.notificationBadge}>{unreadCount > 99 ? '99+' : unreadCount}</Badge>
-          )}
+      {/* Combined Header with Greeting and Address */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Text variant="bodyMedium" style={styles.greeting}>
+            {user?.name ? `Hi, ${user.name}! 👋` : "Welcome! 👋"}
+          </Text>
         </View>
-        <View style={styles.iconContainer}>
-          <IconButton
-            icon="receipt-text"
-            size={24}
-            onPress={() => navigation.navigate('Orders')}
-          />
-        </View>
-        <View style={styles.iconContainer}>
-          <IconButton
-            icon="cart"
-            size={24}
-            onPress={() => navigation.navigate('Cart')}
-          />
-          {getItemCount() > 0 && (
-            <Badge style={styles.cartBadge}>{getItemCount()}</Badge>
-          )}
-        </View>
-        <IconButton
-          icon="logout"
-          size={24}
-          onPress={handleLogout}
-        />
-      </Appbar.Header>
 
-      {/* Delivery Address Bar */}
-      {selectedAddress && (
-        <TouchableOpacity
-          onPress={() => setAddressModalVisible(true)}
-          activeOpacity={0.7}
-        >
-          <View style={styles.addressBar}>
-            <View style={styles.addressContent}>
-              <Text variant="labelSmall" style={styles.deliverTo}>
-                DELIVER TO
+        {selectedAddress && (
+          <TouchableOpacity
+            onPress={() => setAddressModalVisible(true)}
+            activeOpacity={0.7}
+            style={styles.headerRight}
+          >
+            <View style={styles.addressInfo}>
+              <Text variant="bodySmall" style={styles.deliverTo}>
+                Deliver to
               </Text>
-              <Text variant="titleMedium" style={styles.addressLabel}>
-                {selectedAddress.label || 'Address'}
-              </Text>
-              <Text variant="bodySmall" style={styles.addressText} numberOfLines={1}>
-                {selectedAddress.addressLine1}
-              </Text>
+              <View style={styles.addressRow}>
+                <Text variant="bodyMedium" style={styles.addressLabel} numberOfLines={1}>
+                  {selectedAddress.label || 'Address'}
+                </Text>
+                <IconButton icon="chevron-down" size={16} style={styles.chevron} />
+              </View>
             </View>
-            <IconButton icon="chevron-down" size={20} />
-          </View>
-        </TouchableOpacity>
-      )}
+          </TouchableOpacity>
+        )}
+      </View>
 
       {/* Restaurant Status Banner */}
       {restaurantStatus && !restaurantStatus.isOpen && (
@@ -301,31 +260,46 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fafaf9',
   },
-  addressBar: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f5f5f4',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#e7e5e4',
   },
-  addressContent: {
+  headerLeft: {
     flex: 1,
+  },
+  greeting: {
+    color: '#1c1917',
+    fontWeight: '500',
+  },
+  headerRight: {
+    flexShrink: 1,
+    maxWidth: '50%',
+  },
+  addressInfo: {
+    alignItems: 'flex-start',
   },
   deliverTo: {
     color: '#78716c',
-    fontWeight: '600',
-    marginBottom: 2,
+    fontSize: 11,
+  },
+  addressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   addressLabel: {
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#292524',
-    marginBottom: 2,
+    fontSize: 14,
   },
-  addressText: {
-    color: '#57534e',
+  chevron: {
+    margin: 0,
+    marginLeft: -8,
   },
   statusBanner: {
     paddingHorizontal: 16,

@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database Only
+  db:
+    image: postgres:15-alpine
+    container_name: restaurant_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-restaurant_db}
+      POSTGRES_USER: ${DB_USER:-restaurant_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-restaurant_password}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-restaurant_user} -d ${DB_NAME:-restaurant_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
+

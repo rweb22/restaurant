@@ -173,7 +173,7 @@ const CartScreen = ({ navigation }) => {
               style: 'destructive',
               onPress: () => {
                 clearCart();
-                navigation.navigate('Home');
+                navigation.navigate('Main', { screen: 'HomeTab' });
               }
             },
           ]
@@ -318,7 +318,6 @@ const CartScreen = ({ navigation }) => {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header>
-          <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="Cart" />
         </Appbar.Header>
         <View style={styles.emptyContainer}>
@@ -330,7 +329,7 @@ const CartScreen = ({ navigation }) => {
           </Text>
           <Button
             mode="contained"
-            onPress={() => navigation.navigate('Home')}
+            onPress={() => navigation.navigate('HomeTab')}
             style={styles.browseButton}
           >
             Browse Menu
@@ -343,7 +342,6 @@ const CartScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <Appbar.Header>
-        <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="Cart" subtitle={`${getItemCount()} items`} />
         <Appbar.Action
           icon="trash-can-outline"
@@ -746,7 +744,7 @@ const CartScreen = ({ navigation }) => {
               mode="contained"
               onPress={() => {
                 setClearCartSuccessModalVisible(false);
-                navigation.navigate('Home');
+                navigation.navigate('HomeTab');
               }}
               style={styles.paymentModalButton}
             >

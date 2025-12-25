@@ -271,7 +271,7 @@ const ItemDetailScreen = ({ route, navigation }) => {
               mode="contained"
               onPress={() => {
                 setDialogVisible(false);
-                navigation.navigate('Cart');
+                navigation.navigate('Main', { screen: 'CartTab' });
               }}
             >
               View Cart
