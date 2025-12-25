@@ -22,15 +22,17 @@ export default function DashboardScreen({ navigation }) {
   );
   const todayRevenue = todayOrders
     .filter(order => order.status !== 'cancelled')
-    .reduce((sum, order) => sum + parseFloat(order.totalAmount || 0), 0);
+    .reduce((sum, order) => sum + parseFloat(order.totalPrice || 0), 0);
 
   const getStatusColor = (status) => {
     const colors = {
-      pending_payment: theme.colors.error,
+      pending_payment: '#9E9E9E',
+      pending: '#9E9E9E',
       confirmed: theme.colors.primary,
       preparing: '#FF9800',
-      out_for_delivery: '#2196F3',
-      delivered: theme.colors.tertiary,
+      ready: '#2196F3',
+      out_for_delivery: '#9C27B0',
+      completed: theme.colors.tertiary,
       cancelled: theme.colors.outline,
     };
     return colors[status] || theme.colors.outline;
@@ -39,10 +41,12 @@ export default function DashboardScreen({ navigation }) {
   const getStatusLabel = (status) => {
     const labels = {
       pending_payment: 'Pending Payment',
+      pending: 'Pending',
       confirmed: 'Confirmed',
       preparing: 'Preparing',
+      ready: 'Ready',
       out_for_delivery: 'Out for Delivery',
-      delivered: 'Delivered',
+      completed: 'Completed',
       cancelled: 'Cancelled',
     };
     return labels[status] || status;
@@ -137,7 +141,7 @@ export default function DashboardScreen({ navigation }) {
                     </Chip>
                   </View>
                   <Text variant="bodyMedium" style={styles.orderAmount}>
-                    ₹{parseFloat(order.totalAmount).toFixed(2)}
+                    ₹{parseFloat(order.totalPrice).toFixed(2)}
                   </Text>
                   <Text variant="bodySmall" style={styles.orderTime}>
                     {new Date(order.createdAt).toLocaleString()}

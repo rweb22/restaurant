@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Card, Button, useTheme, Divider, Menu, Portal, Dialog } from 'react-native-paper';
+import { Text, Card, Button, useTheme, Divider, Menu, Portal, Dialog, Chip } from 'react-native-paper';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import orderService from '../services/orderService';
 
@@ -37,18 +37,43 @@ export default function OrderDetailsScreen({ route, navigation }) {
     );
   }
 
-  const statusOptions = [
-    { value: 'confirmed', label: 'Confirmed', color: theme.colors.primary },
-    { value: 'preparing', label: 'Preparing', color: '#FF9800' },
-    { value: 'out_for_delivery', label: 'Out for Delivery', color: '#2196F3' },
-    { value: 'delivered', label: 'Delivered', color: theme.colors.tertiary },
-    { value: 'cancelled', label: 'Cancelled', color: theme.colors.error },
-  ];
+  // All possible statuses with their display properties
+  const allStatuses = {
+    pending_payment: { label: 'Pending Payment', color: '#9E9E9E' },
+    pending: { label: 'Pending', color: '#9E9E9E' },
+    confirmed: { label: 'Confirmed', color: theme.colors.primary },
+    preparing: { label: 'Preparing', color: '#FF9800' },
+    ready: { label: 'Ready', color: '#2196F3' },
+    out_for_delivery: { label: 'Out for Delivery', color: '#9C27B0' },
+    completed: { label: 'Completed', color: theme.colors.tertiary },
+    cancelled: { label: 'Cancelled', color: theme.colors.error },
+  };
 
-  const currentStatusOption = statusOptions.find(opt => opt.value === order.status);
+  // Valid status transitions based on current status
+  const validTransitions = {
+    pending_payment: ['cancelled'],
+    pending: ['confirmed', 'cancelled'],
+    confirmed: ['preparing', 'cancelled'],
+    preparing: ['ready', 'cancelled'],
+    ready: ['out_for_delivery', 'cancelled'],
+    out_for_delivery: ['completed', 'cancelled'],
+    completed: [],
+    cancelled: []
+  };
+
+  // Get available status options based on current order status
+  const availableNextStatuses = validTransitions[order.status] || [];
+  const statusOptions = availableNextStatuses.map(status => ({
+    value: status,
+    label: allStatuses[status].label,
+    color: allStatuses[status].color
+  }));
+
+  const currentStatusOption = allStatuses[order.status] || { label: order.status, color: '#9E9E9E' };
 
   const handleStatusChange = (status) => {
     setSelectedStatus(status);
+    setMenuVisible(false);
     setDialogVisible(true);
   };
 
@@ -69,30 +94,45 @@ export default function OrderDetailsScreen({ route, navigation }) {
 
             <View style={styles.statusContainer}>
               <Text variant="titleMedium">Status:</Text>
-              <Menu
-                visible={menuVisible}
-                onDismiss={() => setMenuVisible(false)}
-                anchor={
-                  <Button
-                    mode="outlined"
-                    onPress={() => setMenuVisible(true)}
-                    style={[styles.statusButton, { borderColor: currentStatusOption?.color }]}
-                    textColor={currentStatusOption?.color}
-                  >
-                    {currentStatusOption?.label || order.status}
-                  </Button>
-                }
-              >
-                {statusOptions.map((option) => (
-                  <Menu.Item
-                    key={option.value}
-                    onPress={() => handleStatusChange(option.value)}
-                    title={option.label}
-                    disabled={option.value === order.status}
-                  />
-                ))}
-              </Menu>
+              {statusOptions.length > 0 ? (
+                <Menu
+                  visible={menuVisible}
+                  onDismiss={() => setMenuVisible(false)}
+                  anchor={
+                    <Button
+                      mode="outlined"
+                      onPress={() => setMenuVisible(true)}
+                      style={[styles.statusButton, { borderColor: currentStatusOption?.color }]}
+                      textColor={currentStatusOption?.color}
+                    >
+                      {currentStatusOption?.label || order.status}
+                    </Button>
+                  }
+                >
+                  {statusOptions.map((option) => (
+                    <Menu.Item
+                      key={option.value}
+                      onPress={() => handleStatusChange(option.value)}
+                      title={option.label}
+                      disabled={option.value === order.status}
+                    />
+                  ))}
+                </Menu>
+              ) : (
+                <Chip
+                  mode="flat"
+                  textStyle={{ color: currentStatusOption?.color }}
+                  style={{ backgroundColor: `${currentStatusOption?.color}20` }}
+                >
+                  {currentStatusOption?.label || order.status}
+                </Chip>
+              )}
             </View>
+            {statusOptions.length === 0 && (
+              <Text variant="bodySmall" style={styles.finalStateNote}>
+                This order is in a final state and cannot be changed.
+              </Text>
+            )}
           </Card.Content>
         </Card>
 
@@ -106,18 +146,29 @@ export default function OrderDetailsScreen({ route, navigation }) {
         </Card>
 
         {/* Delivery Address */}
-        {order.deliveryAddress && (
+        {order.address && (
           <Card style={styles.card}>
             <Card.Content>
               <Text variant="titleMedium" style={styles.sectionTitle}>Delivery Address</Text>
-              <Text variant="bodyMedium">{order.deliveryAddress.addressLine1}</Text>
-              {order.deliveryAddress.addressLine2 && (
-                <Text variant="bodyMedium">{order.deliveryAddress.addressLine2}</Text>
+              <Text variant="bodySmall" style={styles.addressLabel}>{order.address.label}</Text>
+              <Text variant="bodyMedium">{order.address.addressLine1}</Text>
+              {order.address.addressLine2 && (
+                <Text variant="bodyMedium">{order.address.addressLine2}</Text>
               )}
-              <Text variant="bodyMedium">
-                {order.deliveryAddress.area}, {order.deliveryAddress.city}
-              </Text>
-              <Text variant="bodyMedium">{order.deliveryAddress.pincode}</Text>
+              {order.address.landmark && (
+                <Text variant="bodyMedium">Landmark: {order.address.landmark}</Text>
+              )}
+              {order.address.location && (
+                <>
+                  <Text variant="bodyMedium">
+                    {order.address.location.area}, {order.address.location.city}
+                  </Text>
+                  <Text variant="bodyMedium">Pincode: {order.address.location.pincode}</Text>
+                  <Text variant="bodySmall" style={styles.deliveryInfo}>
+                    Delivery Charge: ₹{order.address.location.deliveryCharge} • Est. Time: {order.address.location.estimatedDeliveryTime} mins
+                  </Text>
+                </>
+              )}
             </Card.Content>
           </Card>
         )}
@@ -131,13 +182,16 @@ export default function OrderDetailsScreen({ route, navigation }) {
                 {index > 0 && <Divider style={styles.divider} />}
                 <View style={styles.itemRow}>
                   <View style={styles.itemInfo}>
-                    <Text variant="bodyLarge">{item.name}</Text>
+                    <Text variant="bodyLarge">{item.itemName}</Text>
+                    <Text variant="bodySmall" style={styles.itemCategory}>
+                      {item.categoryName}
+                    </Text>
                     <Text variant="bodySmall" style={styles.itemSize}>
                       Size: {item.size} • Qty: {item.quantity}
                     </Text>
                     {item.addOns && item.addOns.length > 0 && (
                       <Text variant="bodySmall" style={styles.addOns}>
-                        Add-ons: {item.addOns.map(a => a.name).join(', ')}
+                        Add-ons: {item.addOns.map(a => `${a.addOnName} (₹${a.addOnPrice})`).join(', ')}
                       </Text>
                     )}
                   </View>
@@ -178,8 +232,16 @@ export default function OrderDetailsScreen({ route, navigation }) {
             <View style={styles.summaryRow}>
               <Text variant="titleMedium">Total</Text>
               <Text variant="titleMedium" style={{ color: theme.colors.primary }}>
-                ₹{parseFloat(order.totalAmount).toFixed(2)}
+                ₹{parseFloat(order.totalPrice).toFixed(2)}
               </Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text variant="bodySmall" style={styles.paymentInfo}>Payment Method</Text>
+              <Text variant="bodySmall" style={styles.paymentInfo}>{order.paymentMethod?.toUpperCase()}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text variant="bodySmall" style={styles.paymentInfo}>Payment Status</Text>
+              <Text variant="bodySmall" style={styles.paymentInfo}>{order.paymentStatus}</Text>
             </View>
           </Card.Content>
         </Card>
@@ -229,6 +291,11 @@ const styles = StyleSheet.create({
   statusButton: {
     flex: 1,
   },
+  finalStateNote: {
+    opacity: 0.6,
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
   sectionTitle: {
     marginBottom: 12,
     fontWeight: 'bold',
@@ -240,6 +307,11 @@ const styles = StyleSheet.create({
   },
   itemInfo: {
     flex: 1,
+  },
+  itemCategory: {
+    opacity: 0.5,
+    fontSize: 12,
+    marginTop: 2,
   },
   itemSize: {
     opacity: 0.6,
@@ -260,6 +332,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 8,
+  },
+  addressLabel: {
+    opacity: 0.6,
+    marginBottom: 4,
+    fontWeight: 'bold',
+  },
+  deliveryInfo: {
+    opacity: 0.6,
+    marginTop: 4,
+  },
+  paymentInfo: {
+    opacity: 0.7,
+    marginTop: 2,
   },
 });
 

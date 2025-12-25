@@ -29,11 +29,13 @@ export default function OrdersScreen({ navigation }) {
 
   const getStatusColor = (status) => {
     const colors = {
-      pending_payment: theme.colors.error,
+      pending_payment: '#9E9E9E',
+      pending: '#9E9E9E',
       confirmed: theme.colors.primary,
       preparing: '#FF9800',
-      out_for_delivery: '#2196F3',
-      delivered: theme.colors.tertiary,
+      ready: '#2196F3',
+      out_for_delivery: '#9C27B0',
+      completed: theme.colors.tertiary,
       cancelled: theme.colors.outline,
     };
     return colors[status] || theme.colors.outline;
@@ -42,10 +44,12 @@ export default function OrdersScreen({ navigation }) {
   const getStatusLabel = (status) => {
     const labels = {
       pending_payment: 'Pending Payment',
+      pending: 'Pending',
       confirmed: 'Confirmed',
       preparing: 'Preparing',
+      ready: 'Ready',
       out_for_delivery: 'Out for Delivery',
-      delivered: 'Delivered',
+      completed: 'Completed',
       cancelled: 'Cancelled',
     };
     return labels[status] || status;
@@ -67,11 +71,13 @@ export default function OrdersScreen({ navigation }) {
             onValueChange={setStatusFilter}
             buttons={[
               { value: 'all', label: 'All' },
-              { value: 'pending_payment', label: 'Pending' },
+              { value: 'pending_payment', label: 'Payment' },
+              { value: 'pending', label: 'Pending' },
               { value: 'confirmed', label: 'Confirmed' },
               { value: 'preparing', label: 'Preparing' },
+              { value: 'ready', label: 'Ready' },
               { value: 'out_for_delivery', label: 'Delivery' },
-              { value: 'delivered', label: 'Delivered' },
+              { value: 'completed', label: 'Completed' },
               { value: 'cancelled', label: 'Cancelled' },
             ]}
             style={styles.segmentedButtons}
@@ -123,16 +129,22 @@ export default function OrdersScreen({ navigation }) {
 
                 <View style={styles.orderDetails}>
                   <Text variant="bodyMedium" style={styles.orderAmount}>
-                    ₹{parseFloat(order.totalAmount).toFixed(2)}
+                    ₹{parseFloat(order.totalPrice).toFixed(2)}
                   </Text>
                   <Text variant="bodySmall" style={styles.orderTime}>
                     {new Date(order.createdAt).toLocaleString()}
                   </Text>
                 </View>
 
-                {order.deliveryAddress && (
+                {order.address?.location && (
                   <Text variant="bodySmall" style={styles.address} numberOfLines={1}>
-                    📍 {order.deliveryAddress.area}
+                    📍 {order.address.location.area}, {order.address.location.city}
+                  </Text>
+                )}
+
+                {order.user?.phone && (
+                  <Text variant="bodySmall" style={styles.phone} numberOfLines={1}>
+                    📞 {order.user.phone}
                   </Text>
                 )}
               </Card.Content>
@@ -192,6 +204,10 @@ const styles = StyleSheet.create({
   address: {
     opacity: 0.7,
     marginTop: 4,
+  },
+  phone: {
+    opacity: 0.7,
+    marginTop: 2,
   },
 });
 

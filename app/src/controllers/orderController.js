@@ -80,12 +80,16 @@ const createOrder = async (req, res) => {
     return sendSuccess(res, 201, { order: formattedOrder }, 'Order created successfully');
   } catch (error) {
     logger.error('Error in createOrder controller', error);
-    
+
     // Handle specific error messages
     if (error.message.includes('not found') || error.message.includes('does not belong')) {
       return sendError(res, 404, error.message);
     }
-    
+
+    if (error.message.includes('unavailable')) {
+      return sendError(res, 400, error.message);
+    }
+
     if (error.message.includes('offer') || error.message.includes('Offer')) {
       return sendError(res, 400, error.message);
     }

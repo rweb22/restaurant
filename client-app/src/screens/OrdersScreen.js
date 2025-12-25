@@ -33,6 +33,7 @@ const OrdersScreen = ({ navigation }) => {
       confirmed: '#8b5cf6',
       preparing: '#f97316',
       ready: '#10b981',
+      out_for_delivery: '#9c27b0',
       completed: '#22c55e',
       cancelled: '#ef4444',
     };
@@ -46,6 +47,7 @@ const OrdersScreen = ({ navigation }) => {
       confirmed: 'Confirmed',
       preparing: 'Preparing',
       ready: 'Ready',
+      out_for_delivery: 'Out for Delivery',
       completed: 'Completed',
       cancelled: 'Cancelled',
     };

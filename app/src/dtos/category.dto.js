@@ -39,6 +39,16 @@ const createCategorySchema = Joi.object({
       'number.base': 'Display order must be a number',
       'number.integer': 'Display order must be an integer',
       'number.min': 'Display order must be non-negative'
+    }),
+  gstRate: Joi.number()
+    .min(0)
+    .max(100)
+    .optional()
+    .default(5)
+    .messages({
+      'number.base': 'GST rate must be a number',
+      'number.min': 'GST rate must be non-negative',
+      'number.max': 'GST rate cannot exceed 100'
     })
 });
 
@@ -72,6 +82,15 @@ const updateCategorySchema = Joi.object({
       'number.base': 'Display order must be a number',
       'number.integer': 'Display order must be an integer',
       'number.min': 'Display order must be non-negative'
+    }),
+  gstRate: Joi.number()
+    .min(0)
+    .max(100)
+    .optional()
+    .messages({
+      'number.base': 'GST rate must be a number',
+      'number.min': 'GST rate must be non-negative',
+      'number.max': 'GST rate cannot exceed 100'
     })
 }).min(1).messages({
   'object.min': 'At least one field must be provided for update'

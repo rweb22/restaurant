@@ -26,6 +26,13 @@ import UsersScreen from './src/screens/UsersScreen';
 import UserFormScreen from './src/screens/UserFormScreen';
 import OffersScreen from './src/screens/OffersScreen';
 import OfferFormScreen from './src/screens/OfferFormScreen';
+import ItemSizesScreen from './src/screens/ItemSizesScreen';
+import ItemSizeFormScreen from './src/screens/ItemSizeFormScreen';
+import CategoryAddOnsScreen from './src/screens/CategoryAddOnsScreen';
+import CategoryAddOnFormScreen from './src/screens/CategoryAddOnFormScreen';
+import ItemAddOnsScreen from './src/screens/ItemAddOnsScreen';
+import ItemAddOnFormScreen from './src/screens/ItemAddOnFormScreen';
+import MenuManagementScreen from './src/screens/MenuManagementScreen';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -93,6 +100,72 @@ function MainStack({ navigation }) {
         options={({ route }) => ({
           title: route.params?.itemId ? 'Edit Item' : 'Create Item',
         })}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function MenuManagementStack({ navigation }) {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: lightTheme.colors.primary,
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}
+    >
+      <Stack.Screen
+        name="MenuManagementList"
+        component={MenuManagementScreen}
+        options={{
+          title: 'Menu Management',
+          headerLeft: () => (
+            <IconButton
+              icon="menu"
+              iconColor="#fff"
+              onPress={() => navigation.openDrawer()}
+            />
+          ),
+        }}
+      />
+      <Stack.Screen
+        name="CategoryForm"
+        component={CategoryFormScreen}
+        options={({ route }) => ({
+          title: route.params?.categoryId ? 'Edit Category' : 'Create Category',
+        })}
+      />
+      <Stack.Screen
+        name="ItemForm"
+        component={ItemFormScreen}
+        options={({ route }) => ({
+          title: route.params?.itemId ? 'Edit Item' : 'Create Item',
+        })}
+      />
+      <Stack.Screen
+        name="ItemSizeForm"
+        component={ItemSizeFormScreen}
+        options={({ route }) => ({
+          title: route.params?.sizeId ? 'Edit Size' : 'Create Size',
+        })}
+      />
+      <Stack.Screen
+        name="CategoryAddOnForm"
+        component={CategoryAddOnFormScreen}
+        options={{
+          title: 'Manage Category Add-ons',
+        }}
+      />
+      <Stack.Screen
+        name="ItemAddOnForm"
+        component={ItemAddOnFormScreen}
+        options={{
+          title: 'Manage Item Add-ons',
+        }}
       />
     </Stack.Navigator>
   );
@@ -326,6 +399,116 @@ function OffersStack({ navigation }) {
   );
 }
 
+function ItemSizesStack({ navigation }) {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: lightTheme.colors.primary,
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}
+    >
+      <Stack.Screen
+        name="ItemSizesList"
+        component={ItemSizesScreen}
+        options={{
+          title: 'Item Sizes',
+          headerLeft: () => (
+            <IconButton
+              icon="menu"
+              iconColor="#fff"
+              onPress={() => navigation.openDrawer()}
+            />
+          ),
+        }}
+      />
+      <Stack.Screen
+        name="ItemSizeForm"
+        component={ItemSizeFormScreen}
+        options={({ route }) => ({
+          title: route.params?.sizeId ? 'Edit Size' : 'Add Size',
+        })}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function CategoryAddOnsStack({ navigation }) {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: lightTheme.colors.primary,
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}
+    >
+      <Stack.Screen
+        name="CategoryAddOnsList"
+        component={CategoryAddOnsScreen}
+        options={{
+          title: 'Category Add-ons',
+          headerLeft: () => (
+            <IconButton
+              icon="menu"
+              iconColor="#fff"
+              onPress={() => navigation.openDrawer()}
+            />
+          ),
+        }}
+      />
+      <Stack.Screen
+        name="CategoryAddOnForm"
+        component={CategoryAddOnFormScreen}
+        options={{ title: 'Link Add-on to Category' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function ItemAddOnsStack({ navigation }) {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: lightTheme.colors.primary,
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}
+    >
+      <Stack.Screen
+        name="ItemAddOnsList"
+        component={ItemAddOnsScreen}
+        options={{
+          title: 'Item Add-ons',
+          headerLeft: () => (
+            <IconButton
+              icon="menu"
+              iconColor="#fff"
+              onPress={() => navigation.openDrawer()}
+            />
+          ),
+        }}
+      />
+      <Stack.Screen
+        name="ItemAddOnForm"
+        component={ItemAddOnFormScreen}
+        options={{ title: 'Link Add-on to Item' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 function DrawerNavigator() {
   return (
     <Drawer.Navigator
@@ -340,6 +523,9 @@ function DrawerNavigator() {
         component={MainStack}
         options={{
           drawerLabel: 'Dashboard',
+          drawerIcon: ({ color, size }) => (
+            <IconButton icon="view-dashboard" iconColor={color} size={size} />
+          ),
         }}
       />
       <Drawer.Screen
@@ -347,6 +533,9 @@ function DrawerNavigator() {
         component={OrdersScreen}
         options={{
           drawerLabel: 'Orders',
+          drawerIcon: ({ color, size }) => (
+            <IconButton icon="receipt" iconColor={color} size={size} />
+          ),
           headerShown: true,
           headerStyle: {
             backgroundColor: lightTheme.colors.primary,
@@ -356,17 +545,13 @@ function DrawerNavigator() {
         }}
       />
       <Drawer.Screen
-        name="CategoriesDrawer"
-        component={CategoriesStack}
+        name="MenuManagementDrawer"
+        component={MenuManagementStack}
         options={{
-          drawerLabel: 'Categories',
-        }}
-      />
-      <Drawer.Screen
-        name="ItemsDrawer"
-        component={ItemsStack}
-        options={{
-          drawerLabel: 'Items',
+          drawerLabel: 'Menu Management',
+          drawerIcon: ({ color, size }) => (
+            <IconButton icon="silverware-fork-knife" iconColor={color} size={size} />
+          ),
         }}
       />
       <Drawer.Screen
@@ -374,6 +559,9 @@ function DrawerNavigator() {
         component={AddOnsStack}
         options={{
           drawerLabel: 'Add-ons',
+          drawerIcon: ({ color, size }) => (
+            <IconButton icon="puzzle" iconColor={color} size={size} />
+          ),
         }}
       />
       <Drawer.Screen
@@ -381,6 +569,9 @@ function DrawerNavigator() {
         component={LocationsStack}
         options={{
           drawerLabel: 'Locations',
+          drawerIcon: ({ color, size }) => (
+            <IconButton icon="map-marker" iconColor={color} size={size} />
+          ),
         }}
       />
       <Drawer.Screen
@@ -388,6 +579,9 @@ function DrawerNavigator() {
         component={UsersStack}
         options={{
           drawerLabel: 'Users',
+          drawerIcon: ({ color, size }) => (
+            <IconButton icon="account-group" iconColor={color} size={size} />
+          ),
         }}
       />
       <Drawer.Screen
@@ -395,6 +589,9 @@ function DrawerNavigator() {
         component={OffersStack}
         options={{
           drawerLabel: 'Offers',
+          drawerIcon: ({ color, size }) => (
+            <IconButton icon="tag-multiple" iconColor={color} size={size} />
+          ),
         }}
       />
     </Drawer.Navigator>

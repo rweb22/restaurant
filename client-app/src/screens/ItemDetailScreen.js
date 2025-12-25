@@ -32,6 +32,15 @@ const ItemDetailScreen = ({ route, navigation }) => {
     }),
   });
 
+  // Fetch category add-ons
+  const { data: categoryData } = useQuery({
+    queryKey: ['category', item?.item?.categoryId],
+    queryFn: () => menuService.getCategoryById(item.item.categoryId, {
+      includeAddOns: true,
+    }),
+    enabled: !!item?.item?.categoryId,
+  });
+
   const handleAddOnToggle = (addOn) => {
     setSelectedAddOns((prev) => {
       const exists = prev.find((a) => a.id === addOn.id);
@@ -44,8 +53,27 @@ const ItemDetailScreen = ({ route, navigation }) => {
   };
 
   const handleAddToCart = () => {
+    // Check if item is available
+    if (!item?.item?.isAvailable) {
+      setError('This item is currently unavailable');
+      return;
+    }
+
     if (!selectedSize && item?.item?.sizes?.length > 0) {
       setError('Please select a size');
+      return;
+    }
+
+    // Check if selected size is available
+    if (selectedSize && !selectedSize.isAvailable) {
+      setError('This size is currently unavailable');
+      return;
+    }
+
+    // Check if any selected add-ons are unavailable
+    const unavailableAddOn = selectedAddOns.find(addOn => !addOn.isAvailable);
+    if (unavailableAddOn) {
+      setError(`Add-on "${unavailableAddOn.name}" is currently unavailable`);
       return;
     }
 
@@ -94,9 +122,16 @@ const ItemDetailScreen = ({ route, navigation }) => {
         />
 
         <Surface style={styles.content} elevation={0}>
-          <Text variant="headlineMedium" style={styles.title}>
-            {item?.item?.name}
-          </Text>
+          <View style={styles.titleContainer}>
+            <Text variant="headlineMedium" style={styles.title}>
+              {item?.item?.name}
+            </Text>
+            {!item?.item?.isAvailable && (
+              <Chip icon="close-circle" style={styles.unavailableChip} textStyle={styles.unavailableChipText}>
+                Unavailable
+              </Chip>
+            )}
+          </View>
           <Text variant="bodyLarge" style={styles.description}>
             {item?.item?.description}
           </Text>
@@ -111,33 +146,91 @@ const ItemDetailScreen = ({ route, navigation }) => {
                   <Chip
                     key={size.id}
                     selected={selectedSize?.id === size.id}
-                    onPress={() => setSelectedSize(size)}
-                    style={styles.sizeChip}
+                    onPress={() => {
+                      if (size.isAvailable && item.item.isAvailable) {
+                        setSelectedSize(size);
+                      }
+                    }}
+                    style={[
+                      styles.sizeChip,
+                      !size.isAvailable && styles.unavailableSizeChip
+                    ]}
+                    disabled={!size.isAvailable || !item.item.isAvailable}
                   >
                     {size.size.charAt(0).toUpperCase() + size.size.slice(1)} - ₹{size.price}
+                    {!size.isAvailable && ' (Unavailable)'}
                   </Chip>
                 ))}
               </View>
             </View>
           )}
 
-          {item?.item?.addOns?.length > 0 && (
+          {/* Combine item add-ons and category add-ons */}
+          {((item?.item?.addOns?.length > 0) || (categoryData?.category?.addOns?.length > 0)) && (
             <View style={styles.section}>
               <Text variant="titleLarge" style={styles.sectionTitle}>
                 Add-ons
               </Text>
-              <View style={styles.chipsContainer}>
-                {item.item.addOns.map((addOn) => (
-                  <Chip
-                    key={addOn.id}
-                    selected={selectedAddOns.find((a) => a.id === addOn.id)}
-                    onPress={() => handleAddOnToggle(addOn)}
-                    style={styles.addOnChip}
-                  >
-                    {addOn.name} +₹{addOn.price}
-                  </Chip>
-                ))}
-              </View>
+
+              {/* Item-specific add-ons */}
+              {item?.item?.addOns?.length > 0 && (
+                <View style={styles.addOnSubsection}>
+                  <Text variant="bodyMedium" style={styles.addOnSubtitle}>
+                    Item Add-ons
+                  </Text>
+                  <View style={styles.chipsContainer}>
+                    {item.item.addOns.map((addOn) => (
+                      <Chip
+                        key={`item-${addOn.id}`}
+                        selected={selectedAddOns.find((a) => a.id === addOn.id)}
+                        onPress={() => {
+                          if (addOn.isAvailable && item.item.isAvailable) {
+                            handleAddOnToggle(addOn);
+                          }
+                        }}
+                        style={[
+                          styles.addOnChip,
+                          !addOn.isAvailable && styles.unavailableAddOnChip
+                        ]}
+                        disabled={!addOn.isAvailable || !item.item.isAvailable}
+                      >
+                        {addOn.name} +₹{addOn.price}
+                        {!addOn.isAvailable && ' (Unavailable)'}
+                      </Chip>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {/* Category add-ons */}
+              {categoryData?.category?.addOns?.length > 0 && (
+                <View style={styles.addOnSubsection}>
+                  <Text variant="bodyMedium" style={styles.addOnSubtitle}>
+                    {item?.item?.category?.name || 'Category'} Add-ons
+                  </Text>
+                  <View style={styles.chipsContainer}>
+                    {categoryData.category.addOns.map((addOn) => (
+                      <Chip
+                        key={`category-${addOn.id}`}
+                        selected={selectedAddOns.find((a) => a.id === addOn.id)}
+                        onPress={() => {
+                          if (addOn.isAvailable && item.item.isAvailable) {
+                            handleAddOnToggle(addOn);
+                          }
+                        }}
+                        style={[
+                          styles.addOnChip,
+                          !addOn.isAvailable && styles.unavailableAddOnChip
+                        ]}
+                        disabled={!addOn.isAvailable || !item.item.isAvailable}
+                      >
+                        {addOn.name} +₹{addOn.price}
+                        {!addOn.isAvailable && ' (Unavailable)'}
+                      </Chip>
+                    ))}
+                  </View>
+                </View>
+              )}
             </View>
           )}
         </Surface>
@@ -150,8 +243,13 @@ const ItemDetailScreen = ({ route, navigation }) => {
             ₹{getTotal()}
           </Text>
         </View>
-        <Button mode="contained" onPress={handleAddToCart} style={styles.addButton}>
-          Add to Cart
+        <Button
+          mode="contained"
+          onPress={handleAddToCart}
+          style={styles.addButton}
+          disabled={!item?.item?.isAvailable}
+        >
+          {item?.item?.isAvailable ? 'Add to Cart' : 'Unavailable'}
         </Button>
       </Surface>
 
@@ -213,9 +311,22 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#ffffff',
   },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   title: {
     fontWeight: 'bold',
-    marginBottom: 8,
+    flex: 1,
+  },
+  unavailableChip: {
+    backgroundColor: '#dc2626',
+    marginLeft: 8,
+  },
+  unavailableChipText: {
+    color: '#ffffff',
   },
   description: {
     color: '#78716c',
@@ -233,6 +344,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 12,
   },
+  addOnSubsection: {
+    marginBottom: 16,
+  },
+  addOnSubtitle: {
+    fontWeight: '600',
+    color: '#57534e',
+    marginBottom: 8,
+  },
   chipsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -242,9 +361,15 @@ const styles = StyleSheet.create({
     marginRight: 8,
     marginBottom: 8,
   },
+  unavailableSizeChip: {
+    opacity: 0.5,
+  },
   addOnChip: {
     marginRight: 8,
     marginBottom: 8,
+  },
+  unavailableAddOnChip: {
+    opacity: 0.5,
   },
   bottomBar: {
     padding: 16,

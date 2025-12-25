@@ -36,6 +36,12 @@ const OrderTimeline = ({ status, paymentStatus }) => {
       description: 'Ready for delivery',
     },
     {
+      key: 'out_for_delivery',
+      label: 'Out for Delivery',
+      icon: '🚚',
+      description: 'On the way to you',
+    },
+    {
       key: 'completed',
       label: 'Completed',
       icon: '🎉',

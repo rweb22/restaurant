@@ -9,17 +9,19 @@ import {
   Divider,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
 import useCartStore from '../store/cartStore';
 import useDeliveryStore from '../store/deliveryStore';
 import AddressSelectionModal from '../components/AddressSelectionModal';
 import OffersModal from '../components/OffersModal';
 import orderService from '../services/orderService';
 import paymentService from '../services/paymentService';
+import addressService from '../services/addressService';
 import { initializeRazorpayPayment, getRazorpayConfig, handlePaymentSuccess, handlePaymentFailure, handlePaymentCancel, getPaymentOptions } from '../utils/razorpay';
 
 const CartScreen = ({ navigation }) => {
   const { items, updateQuantity, removeItem, clearCart, getTotal, getItemCount } = useCartStore();
-  const { selectedAddress, selectedLocation, loadDeliveryInfo } = useDeliveryStore();
+  const { selectedAddress, selectedLocation, loadDeliveryInfo, setSelectedAddress } = useDeliveryStore();
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [offersModalVisible, setOffersModalVisible] = useState(false);
   const [appliedOffer, setAppliedOffer] = useState(null);
@@ -28,9 +30,28 @@ const CartScreen = ({ navigation }) => {
   const [clearCartModalVisible, setClearCartModalVisible] = useState(false);
   const [clearCartSuccessModalVisible, setClearCartSuccessModalVisible] = useState(false);
 
+  // Fetch addresses to validate selected address
+  const { data: addressesData } = useQuery({
+    queryKey: ['addresses'],
+    queryFn: addressService.getAddresses,
+    enabled: !!selectedAddress, // Only fetch if there's a selected address
+  });
+
   useEffect(() => {
     loadDeliveryInfo();
   }, []);
+
+  // Validate selected address when addresses are loaded
+  useEffect(() => {
+    if (selectedAddress && addressesData?.addresses) {
+      const addresses = addressesData.addresses;
+      const addressExists = addresses.some(addr => addr.id === selectedAddress.id);
+      if (!addressExists) {
+        console.log('[CartScreen] Selected address no longer exists, clearing...');
+        setSelectedAddress(null);
+      }
+    }
+  }, [selectedAddress, addressesData]);
 
   // Calculate price breakdown
   const calculatePriceBreakdown = () => {

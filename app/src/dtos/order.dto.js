@@ -103,11 +103,11 @@ const createOrderSchema = Joi.object({
 // Update order status validation
 const updateOrderStatusSchema = Joi.object({
   status: Joi.string()
-    .valid('pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled')
+    .valid('pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'completed', 'cancelled')
     .required()
     .messages({
       'string.base': 'Status must be a string',
-      'any.only': 'Status must be one of: pending, confirmed, preparing, ready, completed, cancelled',
+      'any.only': 'Status must be one of: pending, confirmed, preparing, ready, out_for_delivery, completed, cancelled',
       'any.required': 'Status is required'
     })
 }).options({ stripUnknown: true });
@@ -138,6 +138,40 @@ const formatOrderResponse = (order, includeItems = false) => {
     createdAt: order.createdAt,
     updatedAt: order.updatedAt
   };
+
+  // Include user information if available
+  if (order.user) {
+    response.user = {
+      id: order.user.id,
+      name: order.user.name,
+      phone: order.user.phone
+    };
+  }
+
+  // Include address information if available
+  if (order.address) {
+    response.address = {
+      id: order.address.id,
+      label: order.address.label,
+      addressLine1: order.address.addressLine1,
+      addressLine2: order.address.addressLine2,
+      landmark: order.address.landmark,
+      locationId: order.address.locationId
+    };
+
+    // Include location information if available
+    if (order.address.location) {
+      response.address.location = {
+        id: order.address.location.id,
+        name: order.address.location.name,
+        area: order.address.location.area,
+        city: order.address.location.city,
+        pincode: order.address.location.pincode,
+        deliveryCharge: parseFloat(order.address.location.deliveryCharge),
+        estimatedDeliveryTime: order.address.location.estimatedDeliveryTime
+      };
+    }
+  }
 
   if (includeItems && order.orderItems) {
     response.items = order.orderItems.map(item => formatOrderItemResponse(item, true));
@@ -170,9 +204,18 @@ const formatOrderItemResponse = (orderItem, includeAddOns = false) => {
     createdAt: orderItem.createdAt
   };
 
+  // Calculate total price including add-ons
+  let totalPrice = parseFloat(orderItem.basePrice) * orderItem.quantity;
+
   if (includeAddOns && orderItem.addOns) {
-    response.addOns = orderItem.addOns.map(addOn => formatOrderItemAddOnResponse(addOn));
+    response.addOns = orderItem.addOns.map(addOn => {
+      const formattedAddOn = formatOrderItemAddOnResponse(addOn);
+      totalPrice += formattedAddOn.addOnPrice * formattedAddOn.quantity;
+      return formattedAddOn;
+    });
   }
+
+  response.totalPrice = totalPrice;
 
   return response;
 };

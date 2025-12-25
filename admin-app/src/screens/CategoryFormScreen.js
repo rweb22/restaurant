@@ -183,8 +183,13 @@ export default function CategoryFormScreen({ route, navigation }) {
 
         <TextInput
           label="GST Rate (%)"
-          value={formData.gstRate.toString()}
-          onChangeText={(text) => setFormData({ ...formData, gstRate: parseFloat(text) || 0 })}
+          value={String(formData.gstRate)}
+          onChangeText={(text) => {
+            const value = text === '' ? 0 : parseFloat(text);
+            if (!isNaN(value)) {
+              setFormData({ ...formData, gstRate: value });
+            }
+          }}
           mode="outlined"
           keyboardType="decimal-pad"
           style={styles.input}

@@ -110,13 +110,13 @@ module.exports = (sequelize, DataTypes) => {
         onDelete: 'SET NULL'
       },
       status: {
-        type: DataTypes.ENUM('pending_payment', 'pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled'),
+        type: DataTypes.ENUM('pending_payment', 'pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'completed', 'cancelled'),
         allowNull: false,
         defaultValue: 'pending_payment',
         field: 'status',
         validate: {
           isIn: {
-            args: [['pending_payment', 'pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled']],
+            args: [['pending_payment', 'pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'completed', 'cancelled']],
             msg: 'Invalid order status'
           }
         }

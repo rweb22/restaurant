@@ -24,12 +24,34 @@ const AddressSelectionModal = ({ visible, onDismiss, onAddAddress, onManageAddre
     enabled: visible,
   });
 
+  const addresses = addressesData?.addresses || [];
+
+  // Validate selected address when addresses are loaded
   useEffect(() => {
-    if (visible) {
-      refetch();
+    if (visible && !isLoading && addresses.length > 0) {
+      // Check if the currently selected address still exists
+      if (selectedAddress) {
+        const addressExists = addresses.some(addr => addr.id === selectedAddress.id);
+        if (!addressExists) {
+          // Selected address no longer exists, clear it
+          console.log('[AddressSelectionModal] Selected address no longer exists, clearing...');
+          setSelectedAddress(null);
+          setTempSelectedAddress(null);
+        } else {
+          setTempSelectedAddress(selectedAddress);
+        }
+      }
+    } else if (visible && !isLoading && addresses.length === 0) {
+      // No addresses available, clear selection
+      if (selectedAddress) {
+        console.log('[AddressSelectionModal] No addresses available, clearing selection...');
+        setSelectedAddress(null);
+        setTempSelectedAddress(null);
+      }
+    } else if (visible) {
       setTempSelectedAddress(selectedAddress);
     }
-  }, [visible]);
+  }, [visible, isLoading, addresses.length]);
 
   const handleConfirm = () => {
     if (tempSelectedAddress) {
@@ -41,8 +63,6 @@ const AddressSelectionModal = ({ visible, onDismiss, onAddAddress, onManageAddre
   const handleAddressSelect = (address) => {
     setTempSelectedAddress(address);
   };
-
-  const addresses = addressesData?.addresses || [];
 
   return (
     <Portal>

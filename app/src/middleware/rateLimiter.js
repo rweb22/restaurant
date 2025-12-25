@@ -46,11 +46,12 @@ const otpVerifyLimiter = rateLimit({
 
 /**
  * General API rate limiter
- * Limits: 100 requests per 15 minutes per IP
+ * Limits: 1000 requests per 15 minutes per IP
+ * Increased limit to support browsing with multiple API calls
  */
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Max 100 requests per window
+  max: 1000, // Max 1000 requests per window (increased from 100)
   message: 'Too many requests from this IP. Please try again later.',
   standardHeaders: true,
   legacyHeaders: false,

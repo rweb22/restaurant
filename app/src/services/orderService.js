@@ -1,6 +1,6 @@
 'use strict';
 
-const { Order, OrderItem, OrderItemAddOn, User, Address, Offer, Item, ItemSize, AddOn, Category, sequelize } = require('../models');
+const { Order, OrderItem, OrderItemAddOn, User, Address, Location, Offer, Item, ItemSize, AddOn, Category, sequelize } = require('../models');
 const logger = require('../utils/logger');
 const offerService = require('./offerService');
 const notificationService = require('./notificationService');
@@ -27,6 +27,11 @@ class OrderService {
           model: Offer,
           as: 'offer',
           attributes: ['id', 'code', 'title', 'discountType']
+        },
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'name', 'phone']
         }
       ];
 
@@ -49,10 +54,33 @@ class OrderService {
         order: [['created_at', 'DESC']]
       });
 
+      // Manually fetch address and location data for each order
+      for (const order of orders) {
+        if (order.addressId) {
+          const address = await Address.findByPk(order.addressId);
+          if (address) {
+            order.address = address;
+
+            // Fetch location data for the address
+            if (address.locationId) {
+              const location = await Location.findByPk(address.locationId);
+              if (location) {
+                order.address.location = location;
+              }
+            }
+          }
+        }
+      }
+
       logger.info(`Retrieved ${orders.length} orders`);
       return orders;
     } catch (error) {
       logger.error('Error retrieving orders', error);
+      logger.error('Error details:', {
+        message: error.message,
+        sql: error.sql,
+        original: error.original
+      });
       throw error;
     }
   }
@@ -76,6 +104,11 @@ class OrderService {
             attributes: ['id', 'code', 'title', 'discountType']
           },
           {
+            model: User,
+            as: 'user',
+            attributes: ['id', 'name', 'phone']
+          },
+          {
             model: OrderItem,
             as: 'orderItems',
             include: [
@@ -89,6 +122,21 @@ class OrderService {
       });
 
       if (order) {
+        // Manually fetch address and location data
+        if (order.addressId) {
+          const address = await Address.findByPk(order.addressId);
+          if (address) {
+            order.address = address;
+
+            // Fetch location data for the address
+            if (address.locationId) {
+              const location = await Location.findByPk(address.locationId);
+              if (location) {
+                order.address.location = location;
+              }
+            }
+          }
+        }
         logger.info(`Retrieved order: ${id}`);
       }
 
@@ -157,6 +205,16 @@ class OrderService {
         const item = itemSize.item;
         const category = item.category;
 
+        // Validate item availability
+        if (!item.isAvailable) {
+          throw new Error(`Item "${item.name}" is currently unavailable`);
+        }
+
+        // Validate item size availability
+        if (!itemSize.isAvailable) {
+          throw new Error(`Size "${itemSize.size}" for item "${item.name}" is currently unavailable`);
+        }
+
         // Track for offer validation
         categoryIds.push(category.id);
         itemIds.push(item.id);
@@ -171,6 +229,11 @@ class OrderService {
             const addOn = await AddOn.findByPk(addOnData.addOnId);
             if (!addOn) {
               throw new Error(`Add-on ${addOnData.addOnId} not found`);
+            }
+
+            // Validate add-on availability
+            if (!addOn.isAvailable) {
+              throw new Error(`Add-on "${addOn.name}" is currently unavailable`);
             }
 
             const addOnQuantity = addOnData.quantity || 1;
@@ -332,7 +395,8 @@ class OrderService {
         pending: ['confirmed', 'cancelled'],
         confirmed: ['preparing', 'cancelled'],
         preparing: ['ready', 'cancelled'],
-        ready: ['completed', 'cancelled'],
+        ready: ['out_for_delivery', 'cancelled'],
+        out_for_delivery: ['completed', 'cancelled'],
         completed: [],
         cancelled: []
       };

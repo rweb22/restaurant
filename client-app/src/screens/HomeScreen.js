@@ -181,22 +181,33 @@ const HomeScreen = ({ navigation }) => {
             {items?.items?.map((item) => (
               <Card
                 key={item.id}
-                style={styles.card}
-                onPress={() => navigation.navigate('ItemDetail', { itemId: item.id })}
+                style={[styles.card, !item.isAvailable && styles.unavailableCard]}
+                onPress={() => {
+                  if (item.isAvailable) {
+                    navigation.navigate('ItemDetail', { itemId: item.id });
+                  }
+                }}
               >
                 <Card.Cover
                   source={{ uri: item.imageUrl || 'https://via.placeholder.com/150' }}
-                  style={styles.cardImage}
+                  style={[styles.cardImage, !item.isAvailable && styles.unavailableImage]}
                 />
+                {!item.isAvailable && (
+                  <View style={styles.unavailableBadge}>
+                    <Text variant="labelSmall" style={styles.unavailableText}>
+                      UNAVAILABLE
+                    </Text>
+                  </View>
+                )}
                 <Card.Content style={styles.cardContent}>
-                  <Text variant="titleMedium" numberOfLines={1} style={styles.itemName}>
+                  <Text variant="titleMedium" numberOfLines={1} style={[styles.itemName, !item.isAvailable && styles.unavailableItemName]}>
                     {item.name}
                   </Text>
-                  <Text variant="bodySmall" numberOfLines={2} style={styles.itemDescription}>
+                  <Text variant="bodySmall" numberOfLines={2} style={[styles.itemDescription, !item.isAvailable && styles.unavailableItemDescription]}>
                     {item.description}
                   </Text>
                   {item.sizes && item.sizes.length > 0 && (
-                    <Text variant="titleLarge" style={styles.itemPrice}>
+                    <Text variant="titleLarge" style={[styles.itemPrice, !item.isAvailable && styles.unavailableItemPrice]}>
                       ₹{Math.min(...item.sizes.map(s => s.price))}+
                     </Text>
                   )}
@@ -291,9 +302,31 @@ const styles = StyleSheet.create({
     width: '48%',
     margin: '1%',
     marginBottom: 16,
+    position: 'relative',
+  },
+  unavailableCard: {
+    opacity: 0.6,
   },
   cardImage: {
     height: 120,
+  },
+  unavailableImage: {
+    opacity: 0.5,
+  },
+  unavailableBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#dc2626',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    zIndex: 1,
+  },
+  unavailableText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 10,
   },
   cardContent: {
     paddingTop: 12,
@@ -302,13 +335,22 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 4,
   },
+  unavailableItemName: {
+    color: '#a8a29e',
+  },
   itemDescription: {
     color: '#78716c',
     marginBottom: 8,
   },
+  unavailableItemDescription: {
+    color: '#d6d3d1',
+  },
   itemPrice: {
     color: '#dc2626',
     fontWeight: 'bold',
+  },
+  unavailableItemPrice: {
+    color: '#a8a29e',
   },
   iconContainer: {
     position: 'relative',

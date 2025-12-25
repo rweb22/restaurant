@@ -79,7 +79,8 @@ const createCategory = async (req, res) => {
       description: req.body.description,
       imageUrl: req.body.imageUrl,
       isAvailable: req.body.isAvailable !== undefined ? req.body.isAvailable : true,
-      displayOrder: req.body.displayOrder !== undefined ? req.body.displayOrder : 0
+      displayOrder: req.body.displayOrder !== undefined ? req.body.displayOrder : 0,
+      gstRate: req.body.gstRate !== undefined ? req.body.gstRate : 5
     };
 
     const category = await categoryService.createCategory(categoryData);
@@ -116,6 +117,7 @@ const updateCategory = async (req, res) => {
     if (req.body.imageUrl !== undefined) updateData.imageUrl = req.body.imageUrl;
     if (req.body.isAvailable !== undefined) updateData.isAvailable = req.body.isAvailable;
     if (req.body.displayOrder !== undefined) updateData.displayOrder = req.body.displayOrder;
+    if (req.body.gstRate !== undefined) updateData.gstRate = req.body.gstRate;
 
     const category = await categoryService.updateCategory(id, updateData);
 

@@ -28,9 +28,6 @@ export default function ItemFormScreen({ route, navigation }) {
     isAvailable: true,
   });
 
-  const [sizes, setSizes] = useState([]);
-
-  const [selectedAddOnIds, setSelectedAddOnIds] = useState([]);
   const [selectedImages, setSelectedImages] = useState([]);
   const [existingPictures, setExistingPictures] = useState([]);
 
@@ -47,12 +44,6 @@ export default function ItemFormScreen({ route, navigation }) {
     queryFn: menuService.getCategories,
   });
 
-  // Fetch add-ons
-  const { data: addOnsData } = useQuery({
-    queryKey: ['addOns'],
-    queryFn: menuService.getAddOns,
-  });
-
   // Populate form when editing
   useEffect(() => {
     if (itemData?.item) {
@@ -63,23 +54,6 @@ export default function ItemFormScreen({ route, navigation }) {
         categoryId: item.categoryId,
         isAvailable: item.isAvailable,
       });
-
-      // Set sizes - keep existing sizes with their IDs
-      if (item.sizes && item.sizes.length > 0) {
-        setSizes(
-          item.sizes.map((s) => ({
-            id: s.id,
-            size: s.size,
-            price: s.price.toString(),
-            isAvailable: s.isAvailable,
-          }))
-        );
-      }
-
-      // Set add-ons
-      if (item.addOns) {
-        setSelectedAddOnIds(item.addOns.map((a) => a.id));
-      }
 
       // Set pictures
       if (item.pictures) {
@@ -104,15 +78,6 @@ export default function ItemFormScreen({ route, navigation }) {
             formData.name,
             i === 0 // First image is primary
           );
-        }
-
-        // Add sizes
-        const validSizes = sizes.filter((s) => s.size.trim() && s.price && parseFloat(s.price) > 0);
-        for (const sizeData of validSizes) {
-          await menuService.addSizeToItem(newItemId, {
-            size: sizeData.size,
-            price: parseFloat(sizeData.price),
-          });
         }
 
         queryClient.invalidateQueries(['items']);
@@ -146,27 +111,6 @@ export default function ItemFormScreen({ route, navigation }) {
           }
         }
 
-        // Update sizes - update existing, create new
-        for (const sizeData of sizes) {
-          if (!sizeData.size.trim() || !sizeData.price || parseFloat(sizeData.price) <= 0) continue;
-
-          if (sizeData.id) {
-            // Update existing size
-            await menuService.updateItemSize(sizeData.id, {
-              size: sizeData.size,
-              price: parseFloat(sizeData.price),
-              isAvailable: sizeData.isAvailable ?? true,
-            });
-          } else {
-            // Create new size
-            await menuService.addSizeToItem(itemId, {
-              size: sizeData.size,
-              price: parseFloat(sizeData.price),
-              isAvailable: sizeData.isAvailable ?? true,
-            });
-          }
-        }
-
         queryClient.invalidateQueries(['items']);
         queryClient.invalidateQueries(['item', itemId]);
         navigation.goBack();
@@ -182,7 +126,6 @@ export default function ItemFormScreen({ route, navigation }) {
   });
 
   const categories = categoriesData?.categories || [];
-  const addOns = addOnsData?.addOns || [];
 
   const handlePickImages = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -200,54 +143,6 @@ export default function ItemFormScreen({ route, navigation }) {
     setSelectedImages(selectedImages.filter((_, i) => i !== index));
   };
 
-  const handleToggleAddOn = (addOnId) => {
-    if (selectedAddOnIds.includes(addOnId)) {
-      setSelectedAddOnIds(selectedAddOnIds.filter((id) => id !== addOnId));
-    } else {
-      setSelectedAddOnIds([...selectedAddOnIds, addOnId]);
-    }
-  };
-
-  const handleAddSize = () => {
-    setSizes([
-      ...sizes,
-      {
-        size: '',
-        price: '',
-        isAvailable: true,
-      },
-    ]);
-  };
-
-  const handleRemoveSize = async (index) => {
-    const sizeToRemove = sizes[index];
-
-    // If it's an existing size (has ID), delete it from backend
-    if (sizeToRemove.id && isEditing) {
-      if (confirm('Are you sure you want to delete this size?')) {
-        try {
-          await menuService.deleteItemSize(sizeToRemove.id);
-          setSizes(sizes.filter((_, i) => i !== index));
-          queryClient.invalidateQueries(['item', itemId]);
-        } catch (error) {
-          alert('Failed to delete size');
-        }
-      }
-    } else {
-      // Just remove from local state
-      setSizes(sizes.filter((_, i) => i !== index));
-    }
-  };
-
-  const handleUpdateSize = (index, field, value) => {
-    const newSizes = [...sizes];
-    newSizes[index] = {
-      ...newSizes[index],
-      [field]: value,
-    };
-    setSizes(newSizes);
-  };
-
   const handleSubmit = () => {
     // Validation
     if (!formData.name.trim()) {
@@ -260,29 +155,10 @@ export default function ItemFormScreen({ route, navigation }) {
       return;
     }
 
-    const validSizes = sizes.filter((s) => s.size.trim() && s.price && parseFloat(s.price) > 0);
-    if (validSizes.length === 0) {
-      alert('Please add at least one size with name and price');
-      return;
-    }
-
-    // Check for duplicate size names
-    const sizeNames = validSizes.map(s => s.size.toLowerCase().trim());
-    const duplicates = sizeNames.filter((name, index) => sizeNames.indexOf(name) !== index);
-    if (duplicates.length > 0) {
-      alert(`Duplicate size names found: ${duplicates.join(', ')}. Each size must have a unique name.`);
-      return;
-    }
-
-    const itemData = {
-      ...formData,
-      addOnIds: selectedAddOnIds,
-    };
-
     if (isEditing) {
-      updateMutation.mutate({ id: itemId, data: itemData });
+      updateMutation.mutate({ id: itemId, data: formData });
     } else {
-      createMutation.mutate(itemData);
+      createMutation.mutate(formData);
     }
   };
 
@@ -332,86 +208,6 @@ export default function ItemFormScreen({ route, navigation }) {
         buttons={categoryButtons}
         style={styles.segmentedButtons}
       />
-
-      <View style={styles.sectionHeader}>
-        <Text variant="titleSmall" style={styles.sectionTitle}>
-          Sizes & Prices *
-        </Text>
-        <Button mode="outlined" onPress={handleAddSize} icon="plus" compact>
-          Add Size
-        </Button>
-      </View>
-
-      {sizes.length === 0 ? (
-        <Card style={styles.emptyCard}>
-          <Card.Content>
-            <Text variant="bodyMedium" style={styles.emptyText}>
-              No sizes added yet. Click "Add Size" to add pricing options.
-            </Text>
-            <Text variant="bodySmall" style={styles.emptyHint}>
-              Examples: Small, Medium, Large, Regular, Family Pack, 6", 9", 12", etc.
-            </Text>
-          </Card.Content>
-        </Card>
-      ) : (
-        <Card style={styles.sizesCard}>
-          <Card.Content>
-            {/* Table Header */}
-            <View style={styles.tableHeader}>
-              <Text variant="labelLarge" style={styles.headerSize}>Size Name</Text>
-              <Text variant="labelLarge" style={styles.headerPrice}>Price (₹)</Text>
-              <View style={styles.headerAction} />
-            </View>
-
-            {/* Size Rows */}
-            {sizes.map((sizeData, index) => (
-              <View key={index} style={styles.tableRow}>
-                <TextInput
-                  placeholder="e.g. Small, 9 inch"
-                  value={sizeData.size}
-                  onChangeText={(text) => handleUpdateSize(index, 'size', text)}
-                  mode="outlined"
-                  dense
-                  style={styles.sizeNameInput}
-                />
-                <TextInput
-                  placeholder="0.00"
-                  value={sizeData.price}
-                  onChangeText={(text) => handleUpdateSize(index, 'price', text)}
-                  keyboardType="decimal-pad"
-                  mode="outlined"
-                  dense
-                  style={styles.sizePriceInput}
-                  left={<TextInput.Affix text="₹" />}
-                />
-                <IconButton
-                  icon="delete"
-                  iconColor="#dc2626"
-                  size={20}
-                  onPress={() => handleRemoveSize(index)}
-                  style={styles.deleteButton}
-                />
-              </View>
-            ))}
-          </Card.Content>
-        </Card>
-      )}
-
-      <Text variant="titleSmall" style={styles.sectionTitle}>
-        Add-ons
-      </Text>
-      <View style={styles.addOnsContainer}>
-        {addOns.map((addOn) => (
-          <Chip
-            key={addOn.id}
-            selected={selectedAddOnIds.includes(addOn.id)}
-            onPress={() => handleToggleAddOn(addOn.id)}
-            style={styles.addOnChip}
-          >
-            {addOn.name} (₹{addOn.price})
-          </Chip>
-        ))}
-      </View>
 
       <Text variant="titleSmall" style={styles.sectionTitle}>
         Pictures
