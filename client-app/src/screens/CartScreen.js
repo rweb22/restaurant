@@ -19,11 +19,12 @@ import AddressSelectionModal from '../components/AddressSelectionModal';
 import OffersModal from '../components/OffersModal';
 import QuantitySelector from '../components/QuantitySelector';
 import PriceBreakdown from '../components/PriceBreakdown';
+import RazorpayCheckout from '../components/RazorpayCheckout';
 import orderService from '../services/orderService';
 import paymentService from '../services/paymentService';
 import addressService from '../services/addressService';
 import restaurantService from '../services/restaurantService';
-import { initializeRazorpayPayment, getRazorpayConfig, handlePaymentSuccess, handlePaymentFailure, handlePaymentCancel, getPaymentOptions } from '../utils/razorpay';
+import { initializeRazorpayPayment, getRazorpayConfig, handlePaymentSuccess, handlePaymentFailure, handlePaymentCancel } from '../utils/razorpay';
 import { API_CONFIG } from '../constants/config';
 import { colors, spacing, fontSize, borderRadius, shadows } from '../styles/theme';
 
@@ -35,6 +36,7 @@ const CartScreen = ({ navigation }) => {
   const [appliedOffer, setAppliedOffer] = useState(null);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+  const [razorpayOptions, setRazorpayOptions] = useState(null);
   const [clearCartModalVisible, setClearCartModalVisible] = useState(false);
   const [clearCartSuccessModalVisible, setClearCartSuccessModalVisible] = useState(false);
 
@@ -234,25 +236,33 @@ const CartScreen = ({ navigation }) => {
       console.log('[CartScreen] Opening Razorpay checkout...');
       const razorpayConfig = getRazorpayConfig();
 
+      // Prepare Razorpay options
+      const paymentOptions = {
+        orderId: razorpayOrderId,
+        amount: amount,
+        currency: currency,
+        key: key,
+        name: razorpayConfig.name,
+        description: razorpayConfig.description,
+      };
+
       let paymentResult;
       try {
         paymentResult = await initializeRazorpayPayment({
-          orderId: razorpayOrderId,
-          amount: amount,
-          currency: currency,
-          key: key,
-          name: razorpayConfig.name,
-          description: razorpayConfig.description,
+          ...paymentOptions,
           onShow: () => {
             console.log('[CartScreen] Showing payment modal');
+            setRazorpayOptions(paymentOptions);
             setPaymentModalVisible(true);
           },
         });
         console.log('[CartScreen] Payment completed:', paymentResult);
         setPaymentModalVisible(false);
+        setRazorpayOptions(null);
       } catch (paymentError) {
         console.log('[CartScreen] Payment cancelled or failed:', paymentError.message);
         setPaymentModalVisible(false);
+        setRazorpayOptions(null);
         setIsCheckingOut(false);
 
         if (paymentError.message === 'Payment cancelled by user') {
@@ -610,84 +620,23 @@ const CartScreen = ({ navigation }) => {
         itemIds={itemIds}
       />
 
-      {/* Payment Modal */}
-      <Modal
+      {/* Razorpay Payment Checkout */}
+      <RazorpayCheckout
         visible={paymentModalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => {
-          handlePaymentCancel();
-          setPaymentModalVisible(false);
-          setIsCheckingOut(false);
+        options={razorpayOptions}
+        onSuccess={(paymentData) => {
+          console.log('[CartScreen] Payment success callback:', paymentData);
+          handlePaymentSuccess(paymentData);
         }}
-      >
-        <View style={styles.paymentModalOverlay}>
-          <Surface style={styles.paymentModalContent} elevation={5}>
-            <Text variant="headlineSmall" style={styles.paymentModalTitle}>
-              Mock Payment Gateway
-            </Text>
-
-            <View style={styles.paymentModalDetails}>
-              <Text variant="bodyMedium" style={styles.paymentModalLabel}>
-                This is a mock payment for development.
-              </Text>
-
-              <View style={styles.paymentModalRow}>
-                <Text variant="bodyMedium" style={styles.paymentModalLabel}>Order ID:</Text>
-                <Text variant="bodyMedium" style={styles.paymentModalValue}>
-                  {getPaymentOptions()?.orderId}
-                </Text>
-              </View>
-
-              <View style={styles.paymentModalRow}>
-                <Text variant="bodyMedium" style={styles.paymentModalLabel}>Amount:</Text>
-                <Text variant="titleLarge" style={styles.paymentModalAmount}>
-                  ₹{parseFloat(getPaymentOptions()?.amount || 0).toFixed(2)}
-                </Text>
-              </View>
-
-              <Text variant="bodySmall" style={styles.paymentModalInstruction}>
-                Select an option to simulate payment:
-              </Text>
-            </View>
-
-            <View style={styles.paymentModalButtons}>
-              <Button
-                mode="outlined"
-                onPress={() => {
-                  handlePaymentCancel();
-                  setPaymentModalVisible(false);
-                  setIsCheckingOut(false);
-                }}
-                style={styles.paymentModalButton}
-              >
-                Cancel
-              </Button>
-
-              <Button
-                mode="contained"
-                buttonColor="#dc2626"
-                onPress={() => {
-                  handlePaymentFailure();
-                }}
-                style={styles.paymentModalButton}
-              >
-                Simulate Failure
-              </Button>
-
-              <Button
-                mode="contained"
-                onPress={() => {
-                  handlePaymentSuccess();
-                }}
-                style={styles.paymentModalButton}
-              >
-                Simulate Success
-              </Button>
-            </View>
-          </Surface>
-        </View>
-      </Modal>
+        onFailure={(error) => {
+          console.log('[CartScreen] Payment failure callback:', error);
+          handlePaymentFailure(error);
+        }}
+        onCancel={() => {
+          console.log('[CartScreen] Payment cancel callback');
+          handlePaymentCancel();
+        }}
+      />
 
       {/* Clear Cart Confirmation Modal */}
       <Modal

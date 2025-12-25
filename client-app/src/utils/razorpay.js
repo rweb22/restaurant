@@ -1,25 +1,26 @@
 /**
- * Razorpay Helper
+ * Razorpay Helper for Expo
  *
- * This is a mock implementation for Expo.
- * In production, you would use react-native-razorpay package.
+ * This implementation uses RazorpayCheckout component with WebView
+ * which supports all payment methods including UPI, cards, wallets, etc.
  *
- * For Expo, you can either:
- * 1. Use expo-web-browser to open Razorpay checkout in a browser
- * 2. Eject from Expo and use react-native-razorpay
- * 3. Use Razorpay's Standard Checkout (web-based)
+ * Note: The actual payment UI is handled by the RazorpayCheckout component.
+ * This file provides helper functions for configuration and compatibility.
  */
 
-// Store the payment callback globally
+// Store the payment callback globally for the component to use
 let paymentResolve = null;
 let paymentReject = null;
 let paymentOptions = null;
 
 /**
  * Initialize Razorpay payment
+ * This function is called by CartScreen and stores the payment options
+ * The actual payment UI is shown via RazorpayCheckout component
+ *
  * @param {Object} options - Payment options
  * @param {string} options.orderId - Razorpay order ID
- * @param {number} options.amount - Amount in rupees
+ * @param {number} options.amount - Amount in paise (smallest currency unit)
  * @param {string} options.currency - Currency code
  * @param {string} options.key - Razorpay key ID
  * @param {string} options.name - Business name
@@ -47,17 +48,12 @@ export const initializeRazorpayPayment = async (options) => {
 
 /**
  * Handle payment success
+ * Called by RazorpayCheckout component when payment succeeds
  */
-export const handlePaymentSuccess = () => {
-  if (paymentResolve && paymentOptions) {
-    const mockResponse = {
-      razorpay_order_id: paymentOptions.orderId,
-      razorpay_payment_id: `pay_mock_${Date.now()}`,
-      razorpay_signature: `mock_signature_${Date.now()}`,
-    };
-
-    console.log('[Razorpay] Payment successful (mock):', mockResponse);
-    paymentResolve(mockResponse);
+export const handlePaymentSuccess = (paymentData) => {
+  if (paymentResolve) {
+    console.log('[Razorpay] Payment successful:', paymentData);
+    paymentResolve(paymentData);
 
     // Clear callbacks
     paymentResolve = null;
@@ -68,11 +64,12 @@ export const handlePaymentSuccess = () => {
 
 /**
  * Handle payment failure
+ * Called by RazorpayCheckout component when payment fails
  */
-export const handlePaymentFailure = () => {
+export const handlePaymentFailure = (error) => {
   if (paymentReject) {
-    console.log('[Razorpay] Payment failed (mock)');
-    paymentReject(new Error('Payment failed'));
+    console.log('[Razorpay] Payment failed:', error);
+    paymentReject(error);
 
     // Clear callbacks
     paymentResolve = null;
@@ -83,6 +80,7 @@ export const handlePaymentFailure = () => {
 
 /**
  * Handle payment cancellation
+ * Called by RazorpayCheckout component when user cancels
  */
 export const handlePaymentCancel = () => {
   if (paymentReject) {
