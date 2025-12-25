@@ -1,17 +1,72 @@
-import React, { useRef } from 'react';
-import { Modal, View, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { Modal, View, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { Text, IconButton } from 'react-native-paper';
 import { WebView } from 'react-native-webview';
 import { colors, spacing } from '../styles/theme';
 
 /**
  * RazorpayCheckout Component
- * 
- * A WebView-based Razorpay checkout component for Expo
+ *
+ * A cross-platform Razorpay checkout component for Expo
+ * - Uses WebView for native mobile apps (iOS/Android)
+ * - Uses script injection for web browsers
  * Supports all payment methods including UPI, cards, wallets, etc.
  */
 const RazorpayCheckout = ({ visible, options, onSuccess, onFailure, onCancel }) => {
   const webViewRef = useRef(null);
+  const isWeb = Platform.OS === 'web';
+
+  // For web platform, inject Razorpay script and open checkout
+  useEffect(() => {
+    if (!visible || !options || !isWeb) return;
+
+    // Load Razorpay script
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => {
+      // Initialize Razorpay checkout
+      const rzpOptions = {
+        key: options.key,
+        amount: options.amount,
+        currency: options.currency,
+        name: options.name,
+        description: options.description,
+        order_id: options.orderId,
+        theme: { color: '#FF9800' },
+        modal: {
+          ondismiss: function() {
+            onCancel();
+          }
+        },
+        handler: function(response) {
+          onSuccess({
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature
+          });
+        }
+      };
+
+      const rzp = new window.Razorpay(rzpOptions);
+
+      rzp.on('payment.failed', function(response) {
+        onFailure(new Error(response.error.description));
+      });
+
+      // Open checkout
+      rzp.open();
+    };
+
+    document.body.appendChild(script);
+
+    return () => {
+      // Cleanup script on unmount
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
+  }, [visible, options, isWeb, onSuccess, onFailure, onCancel]);
 
   const generateCheckoutHTML = () => {
     return `
@@ -140,6 +195,12 @@ const RazorpayCheckout = ({ visible, options, onSuccess, onFailure, onCancel }) 
     return null;
   }
 
+  // For web platform, return null as Razorpay opens in its own modal
+  if (isWeb) {
+    return null;
+  }
+
+  // For native mobile apps, use WebView
   return (
     <Modal
       visible={visible}
