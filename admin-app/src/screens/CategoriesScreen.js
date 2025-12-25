@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, Image } from 'react-native';
-import { Text, Card, FAB, IconButton, useTheme, Chip } from 'react-native-paper';
+import { Text, Card, FAB, IconButton, useTheme, Chip, Switch } from 'react-native-paper';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import menuService from '../services/menuService';
 import config from '../constants/config';
@@ -21,12 +21,53 @@ export default function CategoriesScreen({ navigation }) {
     },
   });
 
+  const toggleAvailabilityMutation = useMutation({
+    mutationFn: ({ categoryId, isAvailable }) =>
+      menuService.updateCategory(categoryId, { isAvailable }),
+    onMutate: async ({ categoryId, isAvailable }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries(['categories']);
+
+      // Snapshot previous value
+      const previousData = queryClient.getQueryData(['categories']);
+
+      // Optimistically update
+      queryClient.setQueryData(['categories'], (old) => {
+        if (!old?.categories) return old;
+        return {
+          ...old,
+          categories: old.categories.map(cat =>
+            cat.id === categoryId ? { ...cat, isAvailable } : cat
+          )
+        };
+      });
+
+      return { previousData };
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(['categories'], context.previousData);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries(['categories']);
+    },
+  });
+
   const categories = categoriesData?.categories || [];
 
   const handleDelete = (categoryId) => {
     if (confirm('Are you sure you want to delete this category?')) {
       deleteMutation.mutate(categoryId);
     }
+  };
+
+  const handleToggleAvailability = (categoryId, currentValue) => {
+    toggleAvailabilityMutation.mutate({
+      categoryId,
+      isAvailable: !currentValue
+    });
   };
 
   const getPrimaryPictureUrl = (category) => {
@@ -103,6 +144,11 @@ export default function CategoriesScreen({ navigation }) {
                     >
                       {category.isAvailable ? 'Available' : 'Unavailable'}
                     </Chip>
+                    <Switch
+                      value={category.isAvailable}
+                      onValueChange={() => handleToggleAvailability(category.id, category.isAvailable)}
+                      disabled={toggleAvailabilityMutation.isPending}
+                    />
                   </View>
                 </Card.Content>
               </Card>

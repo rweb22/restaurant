@@ -9,6 +9,7 @@ import {
   Menu,
   ActivityIndicator,
   useTheme,
+  Switch,
 } from 'react-native-paper';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import menuService from '../services/menuService';
@@ -80,6 +81,69 @@ export default function MenuManagementScreen({ navigation }) {
     },
   });
 
+  // Toggle availability mutations
+  const toggleCategoryAvailabilityMutation = useMutation({
+    mutationFn: ({ categoryId, isAvailable }) =>
+      menuService.updateCategory(categoryId, { isAvailable }),
+    onMutate: async ({ categoryId, isAvailable }) => {
+      await queryClient.cancelQueries(['menu-management']);
+      const previousData = queryClient.getQueryData(['menu-management']);
+
+      queryClient.setQueryData(['menu-management'], (old) => {
+        if (!old?.categories) return old;
+        return {
+          ...old,
+          categories: old.categories.map(cat =>
+            cat.id === categoryId ? { ...cat, isAvailable } : cat
+          )
+        };
+      });
+
+      return { previousData };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(['menu-management'], context.previousData);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries(['menu-management']);
+    },
+  });
+
+  const toggleItemAvailabilityMutation = useMutation({
+    mutationFn: ({ itemId, isAvailable }) =>
+      menuService.updateItem(itemId, { isAvailable }),
+    onMutate: async ({ itemId, isAvailable }) => {
+      await queryClient.cancelQueries(['menu-management']);
+      const previousData = queryClient.getQueryData(['menu-management']);
+
+      queryClient.setQueryData(['menu-management'], (old) => {
+        if (!old?.itemsByCategory) return old;
+        const newItemsByCategory = {};
+        Object.keys(old.itemsByCategory).forEach(catId => {
+          newItemsByCategory[catId] = old.itemsByCategory[catId].map(item =>
+            item.id === itemId ? { ...item, isAvailable } : item
+          );
+        });
+        return {
+          ...old,
+          itemsByCategory: newItemsByCategory
+        };
+      });
+
+      return { previousData };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(['menu-management'], context.previousData);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries(['menu-management']);
+    },
+  });
+
   const categories = categoriesData?.categories || [];
   const itemsByCategory = categoriesData?.itemsByCategory || {};
 
@@ -140,6 +204,20 @@ export default function MenuManagementScreen({ navigation }) {
   const handleAddSize = (itemId) => {
     handleMenuClose();
     navigation.navigate('ItemSizeForm', { itemId });
+  };
+
+  const handleToggleCategoryAvailability = (categoryId, currentValue) => {
+    toggleCategoryAvailabilityMutation.mutate({
+      categoryId,
+      isAvailable: !currentValue
+    });
+  };
+
+  const handleToggleItemAvailability = (itemId, currentValue) => {
+    toggleItemAvailabilityMutation.mutate({
+      itemId,
+      isAvailable: !currentValue
+    });
   };
 
   if (isLoading) {
@@ -204,6 +282,11 @@ export default function MenuManagementScreen({ navigation }) {
                         >
                           {category.isAvailable ? 'Available' : 'Unavailable'}
                         </Chip>
+                        <Switch
+                          value={category.isAvailable}
+                          onValueChange={() => handleToggleCategoryAvailability(category.id, category.isAvailable)}
+                          disabled={toggleCategoryAvailabilityMutation.isPending}
+                        />
                         <Text variant="bodySmall" style={styles.metaText}>
                           GST: {category.gstRate}%
                         </Text>
@@ -307,6 +390,11 @@ export default function MenuManagementScreen({ navigation }) {
                                     >
                                       {item.isAvailable ? 'Available' : 'Unavailable'}
                                     </Chip>
+                                    <Switch
+                                      value={item.isAvailable}
+                                      onValueChange={() => handleToggleItemAvailability(item.id, item.isAvailable)}
+                                      disabled={toggleItemAvailabilityMutation.isPending}
+                                    />
                                     <Text variant="bodySmall" style={styles.metaText}>
                                       {sizes.length} sizes
                                     </Text>

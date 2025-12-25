@@ -10,6 +10,7 @@ import {
   Menu,
   ActivityIndicator,
   SegmentedButtons,
+  Switch,
 } from 'react-native-paper';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import menuService from '../services/menuService';
@@ -36,6 +37,41 @@ export default function ItemsScreen({ navigation }) {
   const deleteMutation = useMutation({
     mutationFn: menuService.deleteItem,
     onSuccess: () => {
+      queryClient.invalidateQueries(['items']);
+    },
+  });
+
+  // Toggle availability mutation
+  const toggleAvailabilityMutation = useMutation({
+    mutationFn: ({ itemId, isAvailable }) =>
+      menuService.updateItem(itemId, { isAvailable }),
+    onMutate: async ({ itemId, isAvailable }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries(['items']);
+
+      // Snapshot previous value
+      const previousData = queryClient.getQueryData(['items']);
+
+      // Optimistically update
+      queryClient.setQueryData(['items'], (old) => {
+        if (!old?.items) return old;
+        return {
+          ...old,
+          items: old.items.map(item =>
+            item.id === itemId ? { ...item, isAvailable } : item
+          )
+        };
+      });
+
+      return { previousData };
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(['items'], context.previousData);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries(['items']);
     },
   });
@@ -71,6 +107,13 @@ export default function ItemsScreen({ navigation }) {
     if (confirm('Are you sure you want to delete this item?')) {
       deleteMutation.mutate(itemId);
     }
+  };
+
+  const handleToggleAvailability = (itemId, currentValue) => {
+    toggleAvailabilityMutation.mutate({
+      itemId,
+      isAvailable: !currentValue
+    });
   };
 
   const renderItem = ({ item }) => {
@@ -127,18 +170,25 @@ export default function ItemsScreen({ navigation }) {
             </View>
 
             <View style={styles.footer}>
-              <Chip
-                icon={item.isAvailable ? 'check-circle' : 'close-circle'}
-                textStyle={{ color: item.isAvailable ? '#16a34a' : '#dc2626' }}
-                style={styles.statusChip}
-              >
-                {item.isAvailable ? 'Available' : 'Unavailable'}
-              </Chip>
-              {item.addOns && item.addOns.length > 0 && (
-                <Text variant="bodySmall" style={styles.addOnsCount}>
-                  {item.addOns.length} add-ons
-                </Text>
-              )}
+              <View style={styles.footerLeft}>
+                <Chip
+                  icon={item.isAvailable ? 'check-circle' : 'close-circle'}
+                  textStyle={{ color: item.isAvailable ? '#16a34a' : '#dc2626' }}
+                  style={styles.statusChip}
+                >
+                  {item.isAvailable ? 'Available' : 'Unavailable'}
+                </Chip>
+                {item.addOns && item.addOns.length > 0 && (
+                  <Text variant="bodySmall" style={styles.addOnsCount}>
+                    {item.addOns.length} add-ons
+                  </Text>
+                )}
+              </View>
+              <Switch
+                value={item.isAvailable}
+                onValueChange={() => handleToggleAvailability(item.id, item.isAvailable)}
+                disabled={toggleAvailabilityMutation.isPending}
+              />
             </View>
           </View>
         </View>
@@ -263,6 +313,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  footerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
   },
   statusChip: {
     height: 24,
