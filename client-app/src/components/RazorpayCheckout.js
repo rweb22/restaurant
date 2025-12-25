@@ -1,8 +1,8 @@
 import React, { useRef, useEffect } from 'react';
-import { Modal, View, StyleSheet, ActivityIndicator, Platform } from 'react-native';
+import { Modal, View, StyleSheet, ActivityIndicator, Platform, TouchableOpacity } from 'react-native';
 import { Text, IconButton } from 'react-native-paper';
 import { WebView } from 'react-native-webview';
-import { colors, spacing } from '../styles/theme';
+import { colors, spacing, fontSize, borderRadius } from '../styles/theme';
 
 /**
  * RazorpayCheckout Component
@@ -16,11 +16,24 @@ const RazorpayCheckout = ({ visible, options, onSuccess, onFailure, onCancel }) 
   const webViewRef = useRef(null);
   const isWeb = Platform.OS === 'web';
 
-  // For web platform, inject Razorpay script and open checkout
+  // For web platform, check if using mock or real Razorpay
   useEffect(() => {
     if (!visible || !options || !isWeb) return;
 
-    // Load Razorpay script
+    // Check if using mock Razorpay (placeholder keys)
+    const isMockKey = options.key && (
+      options.key.includes('xxxxx') ||
+      options.key === 'rzp_test_mock' ||
+      options.key.length < 20
+    );
+
+    if (isMockKey) {
+      // Using mock mode - don't try to load real Razorpay
+      console.log('[RazorpayCheckout] Mock mode detected, skipping Razorpay script');
+      return;
+    }
+
+    // Load real Razorpay script
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.async = true;
@@ -56,6 +69,11 @@ const RazorpayCheckout = ({ visible, options, onSuccess, onFailure, onCancel }) 
 
       // Open checkout
       rzp.open();
+    };
+
+    script.onerror = () => {
+      console.error('[RazorpayCheckout] Failed to load Razorpay script');
+      onFailure(new Error('Failed to load payment gateway'));
     };
 
     document.body.appendChild(script);
@@ -195,9 +213,79 @@ const RazorpayCheckout = ({ visible, options, onSuccess, onFailure, onCancel }) 
     return null;
   }
 
-  // For web platform, return null as Razorpay opens in its own modal
-  if (isWeb) {
+  // Check if using mock Razorpay
+  const isMockKey = options.key && (
+    options.key.includes('xxxxx') ||
+    options.key === 'rzp_test_mock' ||
+    options.key.length < 20
+  );
+
+  // For web platform with real Razorpay, return null as Razorpay opens in its own modal
+  if (isWeb && !isMockKey) {
     return null;
+  }
+
+  // For web platform with mock keys, show mock payment UI
+  if (isWeb && isMockKey) {
+    return (
+      <Modal
+        visible={visible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={onCancel}
+      >
+        <View style={styles.mockOverlay}>
+          <View style={styles.mockContainer}>
+            <Text style={styles.mockTitle}>Mock Payment Gateway</Text>
+            <Text style={styles.mockSubtitle}>Development Mode</Text>
+
+            <View style={styles.mockDetails}>
+              <Text style={styles.mockLabel}>Order ID:</Text>
+              <Text style={styles.mockValue}>{options.orderId}</Text>
+            </View>
+
+            <View style={styles.mockDetails}>
+              <Text style={styles.mockLabel}>Amount:</Text>
+              <Text style={styles.mockAmount}>₹{(options.amount / 100).toFixed(2)}</Text>
+            </View>
+
+            <Text style={styles.mockInstruction}>
+              This is a mock payment for development.{'\n'}
+              Select an option to simulate payment:
+            </Text>
+
+            <View style={styles.mockButtons}>
+              <TouchableOpacity
+                style={[styles.mockButton, styles.mockButtonOutline]}
+                onPress={onCancel}
+              >
+                <Text style={styles.mockButtonTextOutline}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.mockButton, styles.mockButtonDanger]}
+                onPress={() => onFailure(new Error('Payment failed (simulated)'))}
+              >
+                <Text style={styles.mockButtonText}>Simulate Failure</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.mockButton, styles.mockButtonSuccess]}
+                onPress={() => {
+                  onSuccess({
+                    razorpay_order_id: options.orderId,
+                    razorpay_payment_id: `pay_mock_${Date.now()}`,
+                    razorpay_signature: `mock_signature_${Date.now()}`,
+                  });
+                }}
+              >
+                <Text style={styles.mockButtonText}>Simulate Success</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
   }
 
   // For native mobile apps, use WebView
@@ -267,6 +355,101 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.white,
+  },
+  // Mock payment UI styles
+  mockOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  mockContainer: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    width: '100%',
+    maxWidth: 500,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  mockTitle: {
+    fontSize: fontSize['2xl'],
+    fontWeight: 'bold',
+    color: colors.text.primary,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
+  mockSubtitle: {
+    fontSize: fontSize.sm,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  mockDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.secondary[200],
+  },
+  mockLabel: {
+    fontSize: fontSize.md,
+    color: colors.text.secondary,
+  },
+  mockValue: {
+    fontSize: fontSize.md,
+    color: colors.text.primary,
+    fontWeight: '500',
+  },
+  mockAmount: {
+    fontSize: fontSize['2xl'],
+    color: colors.primary[500],
+    fontWeight: 'bold',
+  },
+  mockInstruction: {
+    fontSize: fontSize.sm,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
+    lineHeight: 20,
+  },
+  mockButtons: {
+    gap: spacing.md,
+  },
+  mockButton: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  mockButtonOutline: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.secondary[300],
+  },
+  mockButtonDanger: {
+    backgroundColor: '#dc2626',
+  },
+  mockButtonSuccess: {
+    backgroundColor: colors.primary[500],
+  },
+  mockButtonText: {
+    color: colors.white,
+    fontSize: fontSize.md,
+    fontWeight: '600',
+  },
+  mockButtonTextOutline: {
+    color: colors.text.primary,
+    fontSize: fontSize.md,
+    fontWeight: '600',
   },
 });
 
