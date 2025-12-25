@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Image } from 'react-native';
+import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions } from 'react-native';
 import {
   Text,
   Button,
@@ -10,17 +10,26 @@ import {
   Snackbar,
   Dialog,
   Portal,
+  IconButton,
+  Icon,
+  Checkbox,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery } from '@tanstack/react-query';
 import menuService from '../services/menuService';
 import useCartStore from '../store/cartStore';
+import QuantitySelector from '../components/QuantitySelector';
 import { API_CONFIG } from '../constants/config';
+import { colors, spacing, fontSize } from '../styles/theme';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const ItemDetailScreen = ({ route, navigation }) => {
   const { itemId } = route.params;
   const [selectedSize, setSelectedSize] = useState(null);
   const [selectedAddOns, setSelectedAddOns] = useState([]);
+  const [quantity, setQuantity] = useState(1);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [error, setError] = useState('');
   const addToCart = useCartStore((state) => state.addItem);
@@ -86,18 +95,21 @@ const ItemDetailScreen = ({ route, navigation }) => {
       sizeName: selectedSize?.size,
       sizePrice: selectedSize?.price || 0,
       addOns: selectedAddOns,
-      quantity: 1,
+      quantity: quantity,
       category: item.item.category, // Include category for GST calculation
     };
 
     addToCart(cartItem);
     setDialogVisible(true);
+
+    // Reset selections after adding to cart
+    setQuantity(1);
   };
 
   const getTotal = () => {
     const sizePrice = selectedSize?.price || 0;
     const addOnsTotal = selectedAddOns.reduce((sum, addOn) => sum + parseFloat(addOn.price), 0);
-    return (parseFloat(sizePrice) + addOnsTotal).toFixed(2);
+    return ((parseFloat(sizePrice) + addOnsTotal) * quantity).toFixed(2);
   };
 
   if (isLoading) {
@@ -109,154 +121,278 @@ const ItemDetailScreen = ({ route, navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <Appbar.Header>
-        <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title={item?.item?.name} />
-      </Appbar.Header>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Hero Image with Gradient Overlay */}
+        <View style={styles.heroContainer}>
+          <Image
+            source={{
+              uri: item?.item?.imageUrl
+                ? `${API_CONFIG.BASE_URL.replace('/api', '')}${item.item.imageUrl}`
+                : 'https://via.placeholder.com/400'
+            }}
+            style={styles.heroImage}
+            resizeMode="cover"
+          />
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.7)']}
+            style={styles.imageGradient}
+          />
 
-      <ScrollView style={styles.scrollView}>
-        <Image
-          source={{
-            uri: item?.item?.imageUrl
-              ? `${API_CONFIG.BASE_URL.replace('/api', '')}${item.item.imageUrl}`
-              : 'https://via.placeholder.com/400'
-          }}
-          style={styles.image}
-          resizeMode="cover"
-        />
+          {/* Circular Back Button */}
+          <IconButton
+            icon="arrow-left"
+            iconColor={colors.white}
+            size={24}
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          />
 
-        <Surface style={styles.content} elevation={0}>
-          <View style={styles.titleContainer}>
+          {/* Unavailable Badge */}
+          {!item?.item?.isAvailable && (
+            <View style={styles.unavailableBadge}>
+              <Icon source="close-circle" size={16} color={colors.white} />
+              <Text style={styles.unavailableBadgeText}>Unavailable</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Floating Details Card */}
+        <Surface style={styles.detailsCard} elevation={4}>
+          <View style={styles.titleSection}>
             <Text variant="headlineMedium" style={styles.title}>
               {item?.item?.name}
             </Text>
-            {!item?.item?.isAvailable && (
-              <Chip icon="close-circle" style={styles.unavailableChip} textStyle={styles.unavailableChipText}>
-                Unavailable
-              </Chip>
-            )}
+            <Text variant="bodyLarge" style={styles.description}>
+              {item?.item?.description}
+            </Text>
           </View>
-          <Text variant="bodyLarge" style={styles.description}>
-            {item?.item?.description}
-          </Text>
 
+          {/* Size Selection */}
           {item?.item?.sizes?.length > 0 && (
             <View style={styles.section}>
               <Text variant="titleLarge" style={styles.sectionTitle}>
                 Select Size
               </Text>
-              <View style={styles.chipsContainer}>
-                {item.item.sizes.map((size) => (
-                  <Chip
-                    key={size.id}
-                    selected={selectedSize?.id === size.id}
-                    onPress={() => {
-                      if (size.isAvailable && item.item.isAvailable) {
-                        setSelectedSize(size);
-                      }
-                    }}
-                    style={[
-                      styles.sizeChip,
-                      !size.isAvailable && styles.unavailableSizeChip
-                    ]}
-                    disabled={!size.isAvailable || !item.item.isAvailable}
-                  >
-                    {size.size.charAt(0).toUpperCase() + size.size.slice(1)} - ₹{size.price}
-                    {!size.isAvailable && ' (Unavailable)'}
-                  </Chip>
-                ))}
+              <View style={styles.sizesGrid}>
+                {item.item.sizes.map((size) => {
+                  const isSelected = selectedSize?.id === size.id;
+                  const isAvailable = size.isAvailable && item.item.isAvailable;
+
+                  return (
+                    <TouchableOpacity
+                      key={size.id}
+                      style={[
+                        styles.sizeCard,
+                        isSelected && styles.sizeCardSelected,
+                        !isAvailable && styles.sizeCardDisabled,
+                      ]}
+                      onPress={() => {
+                        if (isAvailable) {
+                          setSelectedSize(size);
+                        }
+                      }}
+                      disabled={!isAvailable}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.sizeCardContent}>
+                        <Text style={[
+                          styles.sizeName,
+                          isSelected && styles.sizeNameSelected,
+                          !isAvailable && styles.sizeNameDisabled,
+                        ]}>
+                          {size.size.charAt(0).toUpperCase() + size.size.slice(1)}
+                        </Text>
+                        <Text style={[
+                          styles.sizePrice,
+                          isSelected && styles.sizePriceSelected,
+                          !isAvailable && styles.sizePriceDisabled,
+                        ]}>
+                          ₹{size.price}
+                        </Text>
+                      </View>
+                      {isSelected && (
+                        <View style={styles.checkmark}>
+                          <Icon source="check" size={16} color={colors.white} />
+                        </View>
+                      )}
+                      {!isAvailable && (
+                        <View style={styles.unavailableOverlay}>
+                          <Text style={styles.unavailableOverlayText}>N/A</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
           )}
 
-          {/* Combine item add-ons and category add-ons */}
+          {/* Add-ons Section */}
           {((item?.item?.addOns?.length > 0) || (categoryData?.category?.addOns?.length > 0)) && (
             <View style={styles.section}>
               <Text variant="titleLarge" style={styles.sectionTitle}>
-                Add-ons
+                Add-ons (Optional)
               </Text>
 
               {/* Item-specific add-ons */}
               {item?.item?.addOns?.length > 0 && (
                 <View style={styles.addOnSubsection}>
-                  <Text variant="bodyMedium" style={styles.addOnSubtitle}>
-                    Item Add-ons
-                  </Text>
-                  <View style={styles.chipsContainer}>
-                    {item.item.addOns.map((addOn) => (
-                      <Chip
+                  {item.item.addOns.map((addOn) => {
+                    const isSelected = !!selectedAddOns.find((a) => a.id === addOn.id);
+                    const isAvailable = addOn.isAvailable && item.item.isAvailable;
+
+                    return (
+                      <TouchableOpacity
                         key={`item-${addOn.id}`}
-                        selected={selectedAddOns.find((a) => a.id === addOn.id)}
+                        style={[
+                          styles.addOnCard,
+                          isSelected && styles.addOnCardSelected,
+                          !isAvailable && styles.addOnCardDisabled,
+                        ]}
                         onPress={() => {
-                          if (addOn.isAvailable && item.item.isAvailable) {
+                          if (isAvailable) {
                             handleAddOnToggle(addOn);
                           }
                         }}
-                        style={[
-                          styles.addOnChip,
-                          !addOn.isAvailable && styles.unavailableAddOnChip
-                        ]}
-                        disabled={!addOn.isAvailable || !item.item.isAvailable}
+                        disabled={!isAvailable}
+                        activeOpacity={0.7}
                       >
-                        {addOn.name} +₹{addOn.price}
-                        {!addOn.isAvailable && ' (Unavailable)'}
-                      </Chip>
-                    ))}
-                  </View>
+                        <View style={styles.addOnCardLeft}>
+                          <Checkbox
+                            status={isSelected ? 'checked' : 'unchecked'}
+                            color={colors.primary[500]}
+                            disabled={!isAvailable}
+                          />
+                          <View style={styles.addOnInfo}>
+                            <Text style={[
+                              styles.addOnName,
+                              !isAvailable && styles.addOnNameDisabled,
+                            ]}>
+                              {addOn.name}
+                            </Text>
+                            {!isAvailable && (
+                              <Text style={styles.addOnUnavailable}>Unavailable</Text>
+                            )}
+                          </View>
+                        </View>
+                        <Text style={[
+                          styles.addOnPrice,
+                          !isAvailable && styles.addOnPriceDisabled,
+                        ]}>
+                          +₹{addOn.price}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               )}
 
               {/* Category add-ons */}
               {categoryData?.category?.addOns?.length > 0 && (
                 <View style={styles.addOnSubsection}>
-                  <Text variant="bodyMedium" style={styles.addOnSubtitle}>
+                  <Text variant="bodyMedium" style={styles.categoryAddOnTitle}>
                     {item?.item?.category?.name || 'Category'} Add-ons
                   </Text>
-                  <View style={styles.chipsContainer}>
-                    {categoryData.category.addOns.map((addOn) => (
-                      <Chip
+                  {categoryData.category.addOns.map((addOn) => {
+                    const isSelected = !!selectedAddOns.find((a) => a.id === addOn.id);
+                    const isAvailable = addOn.isAvailable && item.item.isAvailable;
+
+                    return (
+                      <TouchableOpacity
                         key={`category-${addOn.id}`}
-                        selected={selectedAddOns.find((a) => a.id === addOn.id)}
+                        style={[
+                          styles.addOnCard,
+                          isSelected && styles.addOnCardSelected,
+                          !isAvailable && styles.addOnCardDisabled,
+                        ]}
                         onPress={() => {
-                          if (addOn.isAvailable && item.item.isAvailable) {
+                          if (isAvailable) {
                             handleAddOnToggle(addOn);
                           }
                         }}
-                        style={[
-                          styles.addOnChip,
-                          !addOn.isAvailable && styles.unavailableAddOnChip
-                        ]}
-                        disabled={!addOn.isAvailable || !item.item.isAvailable}
+                        disabled={!isAvailable}
+                        activeOpacity={0.7}
                       >
-                        {addOn.name} +₹{addOn.price}
-                        {!addOn.isAvailable && ' (Unavailable)'}
-                      </Chip>
-                    ))}
-                  </View>
+                        <View style={styles.addOnCardLeft}>
+                          <Checkbox
+                            status={isSelected ? 'checked' : 'unchecked'}
+                            color={colors.primary[500]}
+                            disabled={!isAvailable}
+                          />
+                          <View style={styles.addOnInfo}>
+                            <Text style={[
+                              styles.addOnName,
+                              !isAvailable && styles.addOnNameDisabled,
+                            ]}>
+                              {addOn.name}
+                            </Text>
+                            {!isAvailable && (
+                              <Text style={styles.addOnUnavailable}>Unavailable</Text>
+                            )}
+                          </View>
+                        </View>
+                        <Text style={[
+                          styles.addOnPrice,
+                          !isAvailable && styles.addOnPriceDisabled,
+                        ]}>
+                          +₹{addOn.price}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               )}
             </View>
           )}
+
+          {/* Quantity Selector */}
+          <View style={styles.section}>
+            <Text variant="titleLarge" style={styles.sectionTitle}>
+              Quantity
+            </Text>
+            <QuantitySelector
+              quantity={quantity}
+              onIncrement={() => setQuantity(q => q + 1)}
+              onDecrement={() => setQuantity(q => Math.max(1, q - 1))}
+              min={1}
+              max={99}
+              size="lg"
+            />
+          </View>
         </Surface>
       </ScrollView>
 
-      <Surface style={styles.bottomBar} elevation={4}>
-        <View style={styles.totalContainer}>
-          <Text variant="titleMedium">Total</Text>
-          <Text variant="headlineSmall" style={styles.total}>
-            ₹{getTotal()}
-          </Text>
+      {/* Sticky Add to Cart Button */}
+      <LinearGradient
+        colors={[colors.primary[500], colors.primary[600]]}
+        style={styles.bottomBar}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+      >
+        <View style={styles.bottomBarContent}>
+          <View style={styles.totalSection}>
+            <Text variant="bodySmall" style={styles.totalLabel}>
+              Total Amount
+            </Text>
+            <Text variant="headlineSmall" style={styles.totalAmount}>
+              ₹{getTotal()}
+            </Text>
+          </View>
+          <Button
+            mode="contained"
+            onPress={handleAddToCart}
+            style={styles.addButton}
+            contentStyle={styles.addButtonContent}
+            labelStyle={styles.addButtonLabel}
+            buttonColor={colors.white}
+            textColor={colors.primary[500]}
+            disabled={!item?.item?.isAvailable}
+          >
+            {item?.item?.isAvailable ? 'Add to Cart' : 'Unavailable'}
+          </Button>
         </View>
-        <Button
-          mode="contained"
-          onPress={handleAddToCart}
-          style={styles.addButton}
-          disabled={!item?.item?.isAvailable}
-        >
-          {item?.item?.isAvailable ? 'Add to Cart' : 'Unavailable'}
-        </Button>
-      </Surface>
+      </LinearGradient>
 
       <Portal>
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
@@ -298,102 +434,255 @@ const ItemDetailScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fafaf9',
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: colors.background,
   },
   scrollView: {
     flex: 1,
   },
-  image: {
+  heroContainer: {
+    position: 'relative',
+    height: SCREEN_WIDTH * 0.75, // 75% of screen width for 4:3 aspect ratio
+  },
+  heroImage: {
     width: '100%',
-    height: 300,
+    height: '100%',
   },
-  content: {
-    padding: 16,
-    backgroundColor: '#ffffff',
+  imageGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
   },
-  titleContainer: {
+  backButton: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.md,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  unavailableBadge: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
+    gap: spacing.xs,
+    backgroundColor: colors.error,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 20,
+  },
+  unavailableBadgeText: {
+    color: colors.white,
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+  },
+  detailsCard: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -24,
+    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: 100, // Extra padding for sticky button
+  },
+  titleSection: {
+    marginBottom: spacing.xl,
   },
   title: {
     fontWeight: 'bold',
-    flex: 1,
-  },
-  unavailableChip: {
-    backgroundColor: '#dc2626',
-    marginLeft: 8,
-  },
-  unavailableChipText: {
-    color: '#ffffff',
+    color: colors.text.primary,
+    marginBottom: spacing.sm,
   },
   description: {
-    color: '#78716c',
-    marginBottom: 16,
-  },
-  basePrice: {
-    color: '#dc2626',
-    fontWeight: 'bold',
-    marginBottom: 24,
+    color: colors.text.secondary,
+    lineHeight: 24,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: spacing.xl,
   },
   sectionTitle: {
     fontWeight: 'bold',
-    marginBottom: 12,
+    color: colors.text.primary,
+    marginBottom: spacing.md,
   },
-  addOnSubsection: {
-    marginBottom: 16,
-  },
-  addOnSubtitle: {
-    fontWeight: '600',
-    color: '#57534e',
-    marginBottom: 8,
-  },
-  chipsContainer: {
+  // Size Selection Styles
+  sizesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.md,
   },
-  sizeChip: {
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  unavailableSizeChip: {
-    opacity: 0.5,
-  },
-  addOnChip: {
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  unavailableAddOnChip: {
-    opacity: 0.5,
-  },
-  bottomBar: {
-    padding: 16,
-    backgroundColor: '#ffffff',
-    borderTopWidth: 1,
-    borderTopColor: '#e7e5e4',
-  },
-  totalContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  sizeCard: {
+    position: 'relative',
+    width: '30%',
+    backgroundColor: colors.white,
+    borderWidth: 2,
+    borderColor: colors.secondary[300],
+    borderRadius: 12,
+    padding: spacing.md,
     alignItems: 'center',
-    marginBottom: 12,
   },
-  total: {
-    color: '#dc2626',
+  sizeCardSelected: {
+    borderColor: colors.primary[500],
+    backgroundColor: colors.primary[50],
+  },
+  sizeCardDisabled: {
+    opacity: 0.5,
+  },
+  sizeCardContent: {
+    alignItems: 'center',
+  },
+  sizeName: {
+    fontSize: fontSize.base,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
+  },
+  sizeNameSelected: {
+    color: colors.primary[700],
+  },
+  sizeNameDisabled: {
+    color: colors.text.disabled,
+  },
+  sizePrice: {
+    fontSize: fontSize.lg,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+  },
+  sizePriceSelected: {
+    color: colors.primary[600],
+  },
+  sizePriceDisabled: {
+    color: colors.text.disabled,
+  },
+  checkmark: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.primary[500],
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  unavailableOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+  },
+  unavailableOverlayText: {
+    fontSize: fontSize.xs,
+    fontWeight: 'bold',
+    color: colors.text.disabled,
+  },
+  // Add-ons Styles
+  addOnSubsection: {
+    gap: spacing.sm,
+  },
+  categoryAddOnTitle: {
+    fontWeight: '600',
+    color: colors.text.secondary,
+    marginBottom: spacing.sm,
+    marginTop: spacing.md,
+  },
+  addOnCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.secondary[300],
+    borderRadius: 12,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  addOnCardSelected: {
+    borderColor: colors.primary[500],
+    backgroundColor: colors.primary[50],
+  },
+  addOnCardDisabled: {
+    opacity: 0.5,
+  },
+  addOnCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  addOnInfo: {
+    marginLeft: spacing.sm,
+    flex: 1,
+  },
+  addOnName: {
+    fontSize: fontSize.base,
+    fontWeight: '500',
+    color: colors.text.primary,
+  },
+  addOnNameDisabled: {
+    color: colors.text.disabled,
+  },
+  addOnUnavailable: {
+    fontSize: fontSize.xs,
+    color: colors.error,
+    marginTop: spacing.xs,
+  },
+  addOnPrice: {
+    fontSize: fontSize.base,
+    fontWeight: 'bold',
+    color: colors.primary[600],
+  },
+  addOnPriceDisabled: {
+    color: colors.text.disabled,
+  },
+  // Bottom Bar Styles
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  bottomBarContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  totalSection: {
+    flex: 1,
+  },
+  totalLabel: {
+    color: colors.white,
+    opacity: 0.9,
+    marginBottom: spacing.xs,
+  },
+  totalAmount: {
+    color: colors.white,
     fontWeight: 'bold',
   },
   addButton: {
-    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  addButtonContent: {
+    paddingVertical: 8,
+    paddingHorizontal: spacing.lg,
+  },
+  addButtonLabel: {
+    fontSize: fontSize.base,
+    fontWeight: '600',
   },
   dialogTitle: {
     textAlign: 'center',
