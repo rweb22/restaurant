@@ -277,7 +277,7 @@ const HomeScreen = ({ navigation }) => {
           label={`${cartItemCount} ${cartItemCount === 1 ? 'item' : 'items'}`}
           style={styles.fab}
           color={colors.white}
-          onPress={() => navigation.navigate('CartTab')}
+          onPress={() => navigation.getParent()?.navigate('CartTab')}
         />
       )}
 

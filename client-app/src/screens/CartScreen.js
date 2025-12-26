@@ -346,7 +346,7 @@ const CartScreen = ({ navigation }) => {
           </Text>
           <Button
             mode="contained"
-            onPress={() => navigation.getParent().navigate('HomeTab')}
+            onPress={() => navigation.navigate('HomeTab')}
             style={styles.browseButton}
           >
             Browse Menu
@@ -699,7 +699,7 @@ const CartScreen = ({ navigation }) => {
               mode="contained"
               onPress={() => {
                 setClearCartSuccessModalVisible(false);
-                navigation.navigate('HomeTab');
+                navigation.getParent()?.navigate('HomeTab');
               }}
               style={styles.paymentModalButton}
             >
