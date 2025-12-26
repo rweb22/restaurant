@@ -1,21 +1,28 @@
 /**
  * App Configuration
  */
+import {
+  API_BASE_URL,
+  APP_NAME,
+  APP_TAGLINE,
+  APP_LOGO_TYPE,
+  APP_LOGO_ICON,
+  APP_VERSION,
+} from '@env';
 
 // API Configuration
 export const API_CONFIG = {
-  // Update this to your backend URL
-  // For local development on physical device, use your computer's IP address
-  // For Android emulator, use 10.0.2.2
-  // For iOS simulator, use localhost
-  BASE_URL: 'http://localhost:3000/api',
+  BASE_URL: API_BASE_URL || 'http://localhost:3000/api',
   TIMEOUT: 30000, // 30 seconds
 };
 
 // App Configuration
 export const APP_CONFIG = {
-  APP_NAME: 'Restaurant App',
-  VERSION: '1.0.0',
+  APP_NAME: APP_NAME || 'Restaurant App',
+  VERSION: APP_VERSION || '1.0.0',
+  TAGLINE: APP_TAGLINE || 'Delicious food, delivered fast',
+  LOGO_TYPE: APP_LOGO_TYPE || 'icon', // 'icon' or 'image'
+  LOGO_ICON: APP_LOGO_ICON || 'food', // Material Design icon name
 };
 
 // Storage Keys

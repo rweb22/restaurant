@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { Text, TextInput, Button, Surface, Snackbar, Icon } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import authService from '../services/authService';
 import useAuthStore from '../store/authStore';
 import { colors, spacing, fontSize } from '../styles/theme';
+import { APP_CONFIG } from '../constants/config';
 
 const LoginScreen = ({ navigation }) => {
   const [phone, setPhone] = useState('');
@@ -49,13 +50,21 @@ const LoginScreen = ({ navigation }) => {
             {/* Hero Section */}
             <View style={styles.heroSection}>
               <View style={styles.iconContainer}>
-                <Icon source="food" size={80} color={colors.white} />
+                {APP_CONFIG.LOGO_TYPE === 'image' ? (
+                  <Image
+                    source={require('../../assets/logo.png')}
+                    style={styles.logoImage}
+                    resizeMode="contain"
+                  />
+                ) : (
+                  <Icon source={APP_CONFIG.LOGO_ICON} size={80} color={colors.white} />
+                )}
               </View>
               <Text variant="displayMedium" style={styles.appName}>
-                FoodHub
+                {APP_CONFIG.APP_NAME}
               </Text>
               <Text variant="titleMedium" style={styles.tagline}>
-                Delicious food, delivered fast 🍕
+                {APP_CONFIG.TAGLINE}
               </Text>
             </View>
 
@@ -156,6 +165,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.xl,
+  },
+  logoImage: {
+    width: 80,
+    height: 80,
   },
   appName: {
     color: colors.white,
