@@ -63,6 +63,26 @@ const ItemDetailScreen = ({ route, navigation }) => {
     }
   }, [item?.item?.sizes]);
 
+  // Merge and deduplicate addons from both item and category
+  const getAllAddOns = () => {
+    const itemAddOns = item?.item?.addOns || [];
+    const categoryAddOns = categoryData?.category?.addOns || [];
+
+    // Combine both arrays
+    const allAddOns = [...itemAddOns, ...categoryAddOns];
+
+    // Remove duplicates based on addon id
+    const uniqueAddOns = allAddOns.reduce((acc, current) => {
+      const exists = acc.find(addon => addon.id === current.id);
+      if (!exists) {
+        acc.push(current);
+      }
+      return acc;
+    }, []);
+
+    return uniqueAddOns;
+  };
+
   const handleAddOnToggle = (addOn) => {
     setSelectedAddOns((prev) => {
       const exists = prev.find((a) => a.id === addOn.id);
@@ -241,120 +261,62 @@ const ItemDetailScreen = ({ route, navigation }) => {
           )}
 
           {/* Add-ons Section */}
-          {((item?.item?.addOns?.length > 0) || (categoryData?.category?.addOns?.length > 0)) && (
+          {getAllAddOns().length > 0 && (
             <View style={styles.section}>
               <Text variant="titleLarge" style={styles.sectionTitle}>
                 Add-ons (Optional)
               </Text>
 
-              {/* Item-specific add-ons */}
-              {item?.item?.addOns?.length > 0 && (
-                <View style={styles.addOnSubsection}>
-                  {item.item.addOns.map((addOn) => {
-                    const isSelected = !!selectedAddOns.find((a) => a.id === addOn.id);
-                    const isAvailable = addOn.isAvailable && item.item.isAvailable;
+              {/* Merged and deduplicated add-ons */}
+              <View style={styles.addOnSubsection}>
+                {getAllAddOns().map((addOn) => {
+                  const isSelected = !!selectedAddOns.find((a) => a.id === addOn.id);
+                  const isAvailable = addOn.isAvailable && item.item.isAvailable;
 
-                    return (
-                      <TouchableOpacity
-                        key={`item-${addOn.id}`}
-                        style={[
-                          styles.addOnCard,
-                          isSelected && styles.addOnCardSelected,
-                          !isAvailable && styles.addOnCardDisabled,
-                        ]}
-                        onPress={() => {
-                          if (isAvailable) {
-                            handleAddOnToggle(addOn);
-                          }
-                        }}
-                        disabled={!isAvailable}
-                        activeOpacity={0.7}
-                      >
-                        <View style={styles.addOnCardLeft}>
-                          <Checkbox
-                            status={isSelected ? 'checked' : 'unchecked'}
-                            color={colors.primary[500]}
-                            disabled={!isAvailable}
-                          />
-                          <View style={styles.addOnInfo}>
-                            <Text style={[
-                              styles.addOnName,
-                              !isAvailable && styles.addOnNameDisabled,
-                            ]}>
-                              {addOn.name}
-                            </Text>
-                            {!isAvailable && (
-                              <Text style={styles.addOnUnavailable}>Unavailable</Text>
-                            )}
-                          </View>
+                  return (
+                    <TouchableOpacity
+                      key={addOn.id}
+                      style={[
+                        styles.addOnCard,
+                        isSelected && styles.addOnCardSelected,
+                        !isAvailable && styles.addOnCardDisabled,
+                      ]}
+                      onPress={() => {
+                        if (isAvailable) {
+                          handleAddOnToggle(addOn);
+                        }
+                      }}
+                      disabled={!isAvailable}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.addOnCardLeft}>
+                        <Checkbox
+                          status={isSelected ? 'checked' : 'unchecked'}
+                          color={colors.primary[500]}
+                          disabled={!isAvailable}
+                        />
+                        <View style={styles.addOnInfo}>
+                          <Text style={[
+                            styles.addOnName,
+                            !isAvailable && styles.addOnNameDisabled,
+                          ]}>
+                            {addOn.name}
+                          </Text>
+                          {!isAvailable && (
+                            <Text style={styles.addOnUnavailable}>Unavailable</Text>
+                          )}
                         </View>
-                        <Text style={[
-                          styles.addOnPrice,
-                          !isAvailable && styles.addOnPriceDisabled,
-                        ]}>
-                          +₹{addOn.price}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              )}
-
-              {/* Category add-ons */}
-              {categoryData?.category?.addOns?.length > 0 && (
-                <View style={styles.addOnSubsection}>
-                  <Text variant="bodyMedium" style={styles.categoryAddOnTitle}>
-                    {item?.item?.category?.name || 'Category'} Add-ons
-                  </Text>
-                  {categoryData.category.addOns.map((addOn) => {
-                    const isSelected = !!selectedAddOns.find((a) => a.id === addOn.id);
-                    const isAvailable = addOn.isAvailable && item.item.isAvailable;
-
-                    return (
-                      <TouchableOpacity
-                        key={`category-${addOn.id}`}
-                        style={[
-                          styles.addOnCard,
-                          isSelected && styles.addOnCardSelected,
-                          !isAvailable && styles.addOnCardDisabled,
-                        ]}
-                        onPress={() => {
-                          if (isAvailable) {
-                            handleAddOnToggle(addOn);
-                          }
-                        }}
-                        disabled={!isAvailable}
-                        activeOpacity={0.7}
-                      >
-                        <View style={styles.addOnCardLeft}>
-                          <Checkbox
-                            status={isSelected ? 'checked' : 'unchecked'}
-                            color={colors.primary[500]}
-                            disabled={!isAvailable}
-                          />
-                          <View style={styles.addOnInfo}>
-                            <Text style={[
-                              styles.addOnName,
-                              !isAvailable && styles.addOnNameDisabled,
-                            ]}>
-                              {addOn.name}
-                            </Text>
-                            {!isAvailable && (
-                              <Text style={styles.addOnUnavailable}>Unavailable</Text>
-                            )}
-                          </View>
-                        </View>
-                        <Text style={[
-                          styles.addOnPrice,
-                          !isAvailable && styles.addOnPriceDisabled,
-                        ]}>
-                          +₹{addOn.price}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              )}
+                      </View>
+                      <Text style={[
+                        styles.addOnPrice,
+                        !isAvailable && styles.addOnPriceDisabled,
+                      ]}>
+                        +₹{addOn.price}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
           )}
 
@@ -605,12 +567,6 @@ const styles = StyleSheet.create({
   // Add-ons Styles
   addOnSubsection: {
     // No gap needed, marginBottom on cards handles spacing
-  },
-  categoryAddOnTitle: {
-    fontWeight: '600',
-    color: colors.text.secondary,
-    marginBottom: spacing.sm,
-    marginTop: spacing.md,
   },
   addOnCard: {
     flexDirection: 'row',
