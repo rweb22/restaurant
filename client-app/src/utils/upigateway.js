@@ -5,7 +5,7 @@
  */
 
 import { API_BASE_URL } from '../constants/config';
-import { useAuthStore } from '../store/authStore';
+import useAuthStore from '../store/authStore';
 
 /**
  * Initiate UPIGateway payment for an order
