@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Image, ActivityIndicator, Alert } from 'react-native';
 import { Modal, Portal, Text, Button, IconButton } from 'react-native-paper';
-import { theme } from '../styles/theme';
+import { colors, spacing, fontSize, borderRadius } from '../styles/theme';
 import { checkPaymentStatus } from '../utils/upigateway';
 
 const UPIGatewayCheckout = ({ visible, onDismiss, paymentData, onSuccess, onFailure }) => {
@@ -155,100 +155,100 @@ const UPIGatewayCheckout = ({ visible, onDismiss, paymentData, onSuccess, onFail
 const styles = StyleSheet.create({
   modal: {
     backgroundColor: 'white',
-    margin: theme.spacing.lg,
-    borderRadius: theme.borderRadius.lg,
+    margin: spacing.lg,
+    borderRadius: borderRadius.lg,
     maxHeight: '90%',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: theme.spacing.lg,
+    padding: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.gray[200],
+    borderBottomColor: colors.secondary[200],
   },
   title: {
-    fontSize: theme.fontSizes.xl,
+    fontSize: fontSize.xl,
     fontWeight: '600',
-    color: theme.colors.gray[900],
+    color: colors.secondary[900],
   },
   closeButton: {
     margin: 0,
   },
   content: {
-    padding: theme.spacing.lg,
+    padding: spacing.lg,
   },
   subtitle: {
-    fontSize: theme.fontSizes.lg,
+    fontSize: fontSize.lg,
     fontWeight: '500',
-    color: theme.colors.gray[700],
+    color: colors.secondary[700],
     textAlign: 'center',
-    marginBottom: theme.spacing.md,
+    marginBottom: spacing.md,
   },
   amountContainer: {
-    backgroundColor: theme.colors.primary[50],
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-    marginBottom: theme.spacing.lg,
+    backgroundColor: colors.primary[50],
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.lg,
     alignItems: 'center',
   },
   amountLabel: {
-    fontSize: theme.fontSizes.sm,
-    color: theme.colors.gray[600],
-    marginBottom: theme.spacing.xs,
+    fontSize: fontSize.sm,
+    color: colors.secondary[600],
+    marginBottom: spacing.xs,
   },
   amount: {
-    fontSize: theme.fontSizes['3xl'],
+    fontSize: fontSize['3xl'],
     fontWeight: '700',
-    color: theme.colors.primary[600],
+    color: colors.primary[600],
   },
   qrContainer: {
     alignItems: 'center',
-    marginBottom: theme.spacing.lg,
-    padding: theme.spacing.md,
+    marginBottom: spacing.lg,
+    padding: spacing.md,
     backgroundColor: 'white',
-    borderRadius: theme.borderRadius.md,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
-    borderColor: theme.colors.gray[200],
+    borderColor: colors.secondary[200],
   },
   qrCode: {
     width: 250,
     height: 250,
   },
   instructionsContainer: {
-    backgroundColor: theme.colors.gray[50],
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-    marginBottom: theme.spacing.lg,
+    backgroundColor: colors.secondary[50],
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.lg,
   },
   instructionsTitle: {
-    fontSize: theme.fontSizes.md,
+    fontSize: fontSize.base,
     fontWeight: '600',
-    color: theme.colors.gray[900],
-    marginBottom: theme.spacing.sm,
+    color: colors.secondary[900],
+    marginBottom: spacing.sm,
   },
   instruction: {
-    fontSize: theme.fontSizes.sm,
-    color: theme.colors.gray[700],
-    marginBottom: theme.spacing.xs,
-    paddingLeft: theme.spacing.sm,
+    fontSize: fontSize.sm,
+    color: colors.secondary[700],
+    marginBottom: spacing.xs,
+    paddingLeft: spacing.sm,
   },
   pollingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: theme.spacing.md,
-    backgroundColor: theme.colors.primary[50],
-    borderRadius: theme.borderRadius.md,
-    marginBottom: theme.spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.primary[50],
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
   },
   pollingText: {
-    fontSize: theme.fontSizes.sm,
-    color: theme.colors.primary[700],
-    marginLeft: theme.spacing.sm,
+    fontSize: fontSize.sm,
+    color: colors.primary[700],
+    marginLeft: spacing.sm,
   },
   cancelButton: {
-    borderColor: theme.colors.error,
+    borderColor: colors.error,
   },
 });
 
