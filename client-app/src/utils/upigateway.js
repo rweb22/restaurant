@@ -4,8 +4,10 @@
  * Helper functions for UPIGateway payment integration
  */
 
-import { API_BASE_URL } from '../constants/config';
+import { API_CONFIG } from '../constants/config';
 import useAuthStore from '../store/authStore';
+
+const API_BASE_URL = API_CONFIG.BASE_URL;
 
 /**
  * Initiate UPIGateway payment for an order
