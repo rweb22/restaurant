@@ -58,12 +58,18 @@ class PaymentService {
         ? `${order.user.phone.replace(/\+/g, '')}@customer.restaurant.com`
         : 'customer@restaurant.com';
 
+      // UPIGateway requires 10-digit mobile number without country code
+      // Convert +919999999999 to 9999999999
+      const customerMobile = order.user?.phone
+        ? order.user.phone.replace(/^\+91/, '').replace(/\+/g, '')
+        : '';
+
       const upigatewayOrder = await upigatewayService.createOrder(
         order.totalPrice,
         clientTxnId,
         order.user?.name || 'Customer',
         customerEmail,
-        order.user?.phone || '',
+        customerMobile,
         customFields
       );
 
