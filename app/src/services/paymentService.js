@@ -25,7 +25,7 @@ class PaymentService {
           {
             model: User,
             as: 'user',
-            attributes: ['id', 'name', 'phone', 'email']
+            attributes: ['id', 'name', 'phone']
           }
         ]
       });
@@ -56,7 +56,7 @@ class PaymentService {
         order.totalPrice,
         clientTxnId,
         order.user?.name || 'Customer',
-        order.user?.email || '',
+        '', // email - not available in User model
         order.user?.phone || '',
         customFields
       );
