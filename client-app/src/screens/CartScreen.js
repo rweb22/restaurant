@@ -181,7 +181,7 @@ const CartScreen = ({ navigation }) => {
               style: 'destructive',
               onPress: () => {
                 clearCart();
-                navigation.navigate('Main', { screen: 'HomeTab' });
+                navigation.navigate('HomeTab');
               }
             },
           ]
