@@ -16,6 +16,10 @@ export const initiatePayment = async (orderId) => {
   try {
     const token = useAuthStore.getState().token;
 
+    console.log('[UPIGateway] Initiating payment for order:', orderId);
+    console.log('[UPIGateway] API URL:', `${API_BASE_URL}/payments/initiate`);
+    console.log('[UPIGateway] Token:', token ? 'Present' : 'Missing');
+
     const response = await fetch(`${API_BASE_URL}/payments/initiate`, {
       method: 'POST',
       headers: {
@@ -25,7 +29,21 @@ export const initiatePayment = async (orderId) => {
       body: JSON.stringify({ orderId })
     });
 
-    const data = await response.json();
+    console.log('[UPIGateway] Response status:', response.status);
+    console.log('[UPIGateway] Response headers:', response.headers);
+
+    // Get response text first to see what we're actually receiving
+    const responseText = await response.text();
+    console.log('[UPIGateway] Response text:', responseText);
+
+    // Try to parse as JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('[UPIGateway] Failed to parse response as JSON:', parseError);
+      throw new Error(`Server returned invalid JSON: ${responseText.substring(0, 200)}`);
+    }
 
     if (!response.ok) {
       throw new Error(data.message || 'Failed to initiate payment');
