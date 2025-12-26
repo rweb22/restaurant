@@ -703,7 +703,7 @@ const CartScreen = ({ navigation }) => {
               mode="contained"
               onPress={() => {
                 setClearCartSuccessModalVisible(false);
-                navigation.getParent()?.navigate('HomeTab');
+                navigation.navigate('HomeTab');
               }}
               style={styles.paymentModalButton}
             >
