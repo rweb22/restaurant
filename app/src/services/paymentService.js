@@ -86,6 +86,8 @@ class PaymentService {
           qr_code: upigatewayOrder.qrCode,
           qr_string: upigatewayOrder.qrString,
           payment_url: upigatewayOrder.paymentUrl,
+          upi_intent: upigatewayOrder.upiIntent,
+          upi_id_hash: upigatewayOrder.upiIdHash,
           upigateway_order: upigatewayOrder
         }
       });
@@ -111,6 +113,8 @@ class PaymentService {
         qrCode: upigatewayOrder.qrCode,
         qrString: upigatewayOrder.qrString,
         paymentUrl: upigatewayOrder.paymentUrl,
+        upiIntent: upigatewayOrder.upiIntent,
+        upiIdHash: upigatewayOrder.upiIdHash,
         amount: order.totalPrice,
         currency: 'INR',
         merchantKey: upigatewayConfig.merchantKey

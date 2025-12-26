@@ -1,6 +1,6 @@
 'use strict';
 
-const { Address, User, Location, sequelize } = require('../models');
+const { Address, User, sequelize } = require('../models');
 const logger = require('../utils/logger');
 
 class AddressService {
@@ -15,11 +15,6 @@ class AddressService {
       const addresses = await Address.findAll({
         where,
         include: [
-          {
-            model: Location,
-            as: 'location',
-            attributes: ['id', 'name', 'area', 'city', 'pincode', 'deliveryCharge', 'estimatedDeliveryTime', 'isAvailable']
-          },
           {
             model: User,
             as: 'user',
@@ -54,11 +49,6 @@ class AddressService {
         where,
         include: [
           {
-            model: Location,
-            as: 'location',
-            attributes: ['id', 'name', 'area', 'city', 'pincode', 'deliveryCharge', 'estimatedDeliveryTime', 'isAvailable']
-          },
-          {
             model: User,
             as: 'user',
             attributes: ['id', 'name', 'phone']
@@ -83,23 +73,6 @@ class AddressService {
    */
   async createAddress(userId, addressData) {
     try {
-      // Validate that location exists and is available
-      if (addressData.locationId) {
-        const location = await Location.findByPk(addressData.locationId);
-
-        if (!location) {
-          const error = new Error('Location not found');
-          error.name = 'NotFoundError';
-          throw error;
-        }
-
-        if (!location.isAvailable) {
-          const error = new Error('This location is not available for delivery');
-          error.name = 'ValidationError';
-          throw error;
-        }
-      }
-
       // If this is set as default, unset other defaults for this user
       if (addressData.isDefault) {
         await Address.update(
@@ -114,15 +87,6 @@ class AddressService {
       };
 
       const address = await Address.create(createData);
-
-      // Reload with location data
-      await address.reload({
-        include: [{
-          model: Location,
-          as: 'location',
-          attributes: ['id', 'name', 'area', 'city', 'pincode', 'deliveryCharge', 'estimatedDeliveryTime', 'isAvailable']
-        }]
-      });
 
       logger.success(`Address created: ${address.id} for user ${userId}`);
       return address;
@@ -145,23 +109,6 @@ class AddressService {
         throw error;
       }
 
-      // Validate location if being updated
-      if (addressData.locationId) {
-        const location = await Location.findByPk(addressData.locationId);
-
-        if (!location) {
-          const error = new Error('Location not found');
-          error.name = 'NotFoundError';
-          throw error;
-        }
-
-        if (!location.isAvailable) {
-          const error = new Error('This location is not available for delivery');
-          error.name = 'ValidationError';
-          throw error;
-        }
-      }
-
       // If setting this as default, unset other defaults for this user
       if (addressData.isDefault && !address.isDefault) {
         await Address.update(
@@ -171,15 +118,6 @@ class AddressService {
       }
 
       await address.update(addressData);
-
-      // Reload with location data
-      await address.reload({
-        include: [{
-          model: Location,
-          as: 'location',
-          attributes: ['id', 'name', 'area', 'city', 'pincode', 'deliveryCharge', 'estimatedDeliveryTime', 'isAvailable']
-        }]
-      });
 
       logger.success(`Address updated: ${id}`);
       return address;

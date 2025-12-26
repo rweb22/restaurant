@@ -9,6 +9,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 router.get('/status', restaurantController.getStatus);
 router.get('/info', restaurantController.getInfo);
 router.get('/hours', restaurantController.getOperatingHours);
+router.get('/delivery-fee', restaurantController.getDeliveryFee);
 
 // Admin routes - require authentication and admin role
 router.get('/settings', authenticate, requireRole(['admin']), restaurantController.getSettings);

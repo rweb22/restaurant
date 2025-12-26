@@ -30,7 +30,7 @@ import { colors, spacing, fontSize, borderRadius, shadows } from '../styles/them
 
 const CartScreen = ({ navigation }) => {
   const { items, updateQuantity, removeItem, clearCart, getTotal, getItemCount } = useCartStore();
-  const { selectedAddress, selectedLocation, loadDeliveryInfo, setSelectedAddress } = useDeliveryStore();
+  const { selectedAddress, loadDeliveryInfo, setSelectedAddress, getDeliveryCharge } = useDeliveryStore();
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [offersModalVisible, setOffersModalVisible] = useState(false);
   const [appliedOffer, setAppliedOffer] = useState(null);
@@ -91,11 +91,10 @@ const CartScreen = ({ navigation }) => {
       return total + gst;
     }, 0);
 
-    // Get delivery charge from selected location
-    let deliveryCharge = selectedLocation?.deliveryCharge || 0;
+    // Get delivery charge from delivery store
+    let deliveryCharge = getDeliveryCharge();
 
     // Debug logging for delivery charge
-    console.log('[CartScreen] Selected Location:', selectedLocation);
     console.log('[CartScreen] Delivery Charge:', deliveryCharge);
 
     // Apply offer discount
@@ -291,7 +290,8 @@ const CartScreen = ({ navigation }) => {
   };
 
   const handlePaymentFailure = (error) => {
-    console.log('[CartScreen] Payment failed:', error);
+    console.log('[CartScreen] handlePaymentFailure called:', error);
+    console.log('[CartScreen] Setting paymentModalVisible to false');
     setPaymentModalVisible(false);
     setRazorpayOptions(null);
     setIsCheckingOut(false);
@@ -304,7 +304,8 @@ const CartScreen = ({ navigation }) => {
   };
 
   const handlePaymentCancel = () => {
-    console.log('[CartScreen] Payment cancelled');
+    console.log('[CartScreen] handlePaymentCancel called');
+    console.log('[CartScreen] Setting paymentModalVisible to false');
     setPaymentModalVisible(false);
     setRazorpayOptions(null);
     setIsCheckingOut(false);
@@ -472,11 +473,13 @@ const CartScreen = ({ navigation }) => {
                   {selectedAddress.addressLine1}
                   {selectedAddress.addressLine2 ? `, ${selectedAddress.addressLine2}` : ''}
                 </Text>
-                {selectedLocation ? (
+                {selectedAddress.city && (
                   <Text variant="bodySmall" style={styles.addressLocationText}>
-                    {selectedLocation.area}, {selectedLocation.city} - {selectedLocation.pincode}
+                    {selectedAddress.city}
+                    {selectedAddress.state ? `, ${selectedAddress.state}` : ''}
+                    {selectedAddress.postalCode ? ` - ${selectedAddress.postalCode}` : ''}
                   </Text>
-                ) : null}
+                )}
               </View>
               <Button
                 mode="text"
@@ -560,8 +563,8 @@ const CartScreen = ({ navigation }) => {
             deliveryFee={priceBreakdown.deliveryCharge}
             discount={appliedOffer && parseFloat(priceBreakdown.discountAmount) > 0 ? priceBreakdown.discountAmount : null}
             total={priceBreakdown.grandTotal}
-            showWarning={!selectedLocation}
-            warningText="Select delivery address to see accurate delivery charge"
+            showWarning={!selectedAddress}
+            warningText="Select delivery address to continue"
           />
         </View>
       </ScrollView>
@@ -626,6 +629,7 @@ const CartScreen = ({ navigation }) => {
       />
 
       {/* UPIGateway Payment Checkout */}
+      {console.log('[CartScreen] Rendering UPIGatewayCheckout, paymentModalVisible:', paymentModalVisible)}
       <UPIGatewayCheckout
         visible={paymentModalVisible}
         paymentData={razorpayOptions}

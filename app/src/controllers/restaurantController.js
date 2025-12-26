@@ -51,6 +51,26 @@ class RestaurantController {
   }
 
   /**
+   * Get delivery fee (public)
+   * GET /api/restaurant/delivery-fee
+   */
+  async getDeliveryFee(req, res) {
+    try {
+      const deliveryInfo = await restaurantService.getDeliveryFee();
+      res.json({
+        success: true,
+        data: deliveryInfo
+      });
+    } catch (error) {
+      console.error('Error getting delivery fee:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get delivery fee'
+      });
+    }
+  }
+
+  /**
    * Get operating hours (public)
    * GET /api/restaurant/hours
    */

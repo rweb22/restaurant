@@ -44,6 +44,16 @@ module.exports = {
         type: Sequelize.INTEGER,
         defaultValue: 30
       },
+      delivery_fee: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 40.00
+      },
+      estimated_delivery_time_minutes: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 30
+      },
       restaurant_name: {
         type: Sequelize.STRING(255),
         allowNull: true
@@ -180,6 +190,8 @@ module.exports = {
       tax_percentage: 5.0,
       minimum_order_value: 100,
       estimated_prep_time_minutes: 30,
+      delivery_fee: 40.00,
+      estimated_delivery_time_minutes: 30,
       is_manually_closed: false,
       created_at: new Date(),
       updated_at: new Date()

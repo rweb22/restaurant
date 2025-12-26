@@ -25,10 +25,15 @@ class OtpService {
     this.apiKey = config.apiKey;
     this.timeout = config.timeout;
     this.otpExpiry = config.otpExpiry;
+    this.smsTemplateName = config.smsTemplateName;
 
     // Validate configuration
     if (!this.apiKey) {
       logger.warn('OTP_SERVICE_API_KEY is not configured. OTP functionality will not work.');
+    }
+
+    if (!this.smsTemplateName) {
+      logger.warn('OTP_SMS_TEMPLATE_NAME is not configured. You may receive voice calls instead of SMS. Please create an SMS template in your 2Factor.in dashboard.');
     }
   }
 
@@ -42,8 +47,18 @@ class OtpService {
       // Format phone for 2Factor.in (remove + prefix)
       const formattedPhone = formatPhoneFor2Factor(phone);
 
-      // 2Factor.in endpoint: GET /API/V1/{api_key}/SMS/{phone}/AUTOGEN
-      const url = `${this.baseUrl}/${this.apiKey}/SMS/${formattedPhone}/AUTOGEN`;
+      // 2Factor.in endpoint for SMS OTP
+      // If template name is provided, append it to the URL
+      // Otherwise, use default (which may result in voice calls if account default is voice)
+      let url = `${this.baseUrl}/${this.apiKey}/SMS/${formattedPhone}/AUTOGEN`;
+      if (this.smsTemplateName) {
+        url += `/${this.smsTemplateName}`;
+        logger.info(`Using SMS template: ${this.smsTemplateName}`);
+      } else {
+        logger.warn('No SMS template specified. Using default delivery method from 2Factor.in account.');
+      }
+
+      logger.info(`2Factor.in API URL: ${url.replace(this.apiKey, 'API_KEY_HIDDEN')}`);
 
       logger.info(`Sending OTP to phone: ${formattedPhone}`);
 

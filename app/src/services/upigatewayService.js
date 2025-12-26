@@ -115,9 +115,11 @@ class UPIGatewayService {
         return {
           success: true,
           orderId: response.data.data.order_id,
-          qrCode: response.data.data.qr_code, // Base64 QR code image
-          qrString: response.data.data.qr_string, // UPI intent string
+          qrCode: response.data.data.qr_code, // Base64 QR code image (may not be present)
+          qrString: response.data.data.qr_string, // UPI intent string (may not be present)
           paymentUrl: response.data.data.payment_url, // Payment page URL
+          upiIntent: response.data.data.upi_intent, // UPI intent links (bhim, phonepe, paytm, gpay)
+          upiIdHash: response.data.data.upi_id_hash, // UPI ID hash
           amount: amount,
           currency: 'INR',
           clientTxnId: clientTxnId

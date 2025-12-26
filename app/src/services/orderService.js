@@ -1,6 +1,6 @@
 'use strict';
 
-const { Order, OrderItem, OrderItemAddOn, User, Address, Location, Offer, Item, ItemSize, AddOn, Category, sequelize } = require('../models');
+const { Order, OrderItem, OrderItemAddOn, User, Address, Offer, Item, ItemSize, AddOn, Category, sequelize } = require('../models');
 const logger = require('../utils/logger');
 const offerService = require('./offerService');
 const notificationService = require('./notificationService');
@@ -55,20 +55,12 @@ class OrderService {
         order: [['created_at', 'DESC']]
       });
 
-      // Manually fetch address and location data for each order
+      // Manually fetch address data for each order
       for (const order of orders) {
         if (order.addressId) {
           const address = await Address.findByPk(order.addressId);
           if (address) {
             order.address = address;
-
-            // Fetch location data for the address
-            if (address.locationId) {
-              const location = await Location.findByPk(address.locationId);
-              if (location) {
-                order.address.location = location;
-              }
-            }
           }
         }
       }
@@ -123,19 +115,11 @@ class OrderService {
       });
 
       if (order) {
-        // Manually fetch address and location data
+        // Manually fetch address data
         if (order.addressId) {
           const address = await Address.findByPk(order.addressId);
           if (address) {
             order.address = address;
-
-            // Fetch location data for the address
-            if (address.locationId) {
-              const location = await Location.findByPk(address.locationId);
-              if (location) {
-                order.address.location = location;
-              }
-            }
           }
         }
         logger.info(`Retrieved order: ${id}`);
@@ -304,8 +288,14 @@ class OrderService {
         discountAmount = offerValidation.discountAmount;
       }
 
+      // Get delivery charge from restaurant settings if not provided
+      let deliveryCharge = orderData.deliveryCharge;
+      if (deliveryCharge === undefined || deliveryCharge === null) {
+        const deliveryInfo = await restaurantService.getDeliveryFee();
+        deliveryCharge = deliveryInfo.deliveryFee;
+      }
+
       // Calculate total price (subtotal + GST + delivery - discount)
-      const deliveryCharge = orderData.deliveryCharge || 0;
       const totalPrice = subtotal + gstAmount + deliveryCharge - discountAmount;
 
       // Create order

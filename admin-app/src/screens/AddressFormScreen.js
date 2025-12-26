@@ -11,7 +11,6 @@ import {
 } from 'react-native-paper';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getAddressById, createAddress, updateAddress } from '../services/addressService';
-import { getAllLocations } from '../services/locationService';
 import { getAllUsers } from '../services/userService';
 
 const AddressFormScreen = ({ route, navigation }) => {
@@ -29,7 +28,6 @@ const AddressFormScreen = ({ route, navigation }) => {
     pincode: '',
     country: 'India',
     landmark: '',
-    locationId: '',
     isDefault: false
   });
 
@@ -40,12 +38,6 @@ const AddressFormScreen = ({ route, navigation }) => {
     queryKey: ['address', addressId],
     queryFn: () => getAddressById(addressId),
     enabled: isEdit
-  });
-
-  // Fetch locations
-  const { data: locationsData } = useQuery({
-    queryKey: ['locations'],
-    queryFn: () => getAllLocations()
   });
 
   // Fetch users
@@ -66,7 +58,6 @@ const AddressFormScreen = ({ route, navigation }) => {
         pincode: addressData.data.pincode || '',
         country: addressData.data.country || 'India',
         landmark: addressData.data.landmark || '',
-        locationId: addressData.data.locationId?.toString() || '',
         isDefault: addressData.data.isDefault || false
       });
     }
@@ -94,7 +85,6 @@ const AddressFormScreen = ({ route, navigation }) => {
 
     if (!formData.userId) newErrors.userId = 'User is required';
     if (!formData.addressLine1) newErrors.addressLine1 = 'Address line 1 is required';
-    if (!formData.locationId) newErrors.locationId = 'Location is required';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -103,8 +93,7 @@ const AddressFormScreen = ({ route, navigation }) => {
 
     const dataToSave = {
       ...formData,
-      userId: parseInt(formData.userId),
-      locationId: parseInt(formData.locationId)
+      userId: parseInt(formData.userId)
     };
 
     saveMutation.mutate(dataToSave);
@@ -212,18 +201,6 @@ const AddressFormScreen = ({ route, navigation }) => {
           onChangeText={(value) => updateField('landmark', value)}
           style={styles.input}
         />
-
-        <TextInput
-          label="Location ID *"
-          value={formData.locationId}
-          onChangeText={(value) => updateField('locationId', value)}
-          keyboardType="numeric"
-          error={!!errors.locationId}
-          style={styles.input}
-        />
-        <HelperText type="error" visible={!!errors.locationId}>
-          {errors.locationId}
-        </HelperText>
 
         <View style={styles.switchRow}>
           <Text>Set as default address</Text>

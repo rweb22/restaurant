@@ -65,6 +65,16 @@ const NotificationsScreen = ({ navigation }) => {
     }
   };
 
+  const handleNotificationPress = (notification) => {
+    // Mark as read
+    handleMarkAsRead(notification);
+
+    // Navigate to order details if notification has orderId
+    if (notification.orderId) {
+      navigation.navigate('OrderDetails', { orderId: notification.orderId });
+    }
+  };
+
   const getTypeIcon = (type) => {
     const icons = {
       order_status: 'receipt',
@@ -98,7 +108,7 @@ const NotificationsScreen = ({ navigation }) => {
   const renderNotification = ({ item }) => (
     <Card
       style={[styles.card, !item.isRead && styles.unreadCard]}
-      onPress={() => handleMarkAsRead(item)}
+      onPress={() => handleNotificationPress(item)}
     >
       <Card.Content>
         <View style={styles.header}>

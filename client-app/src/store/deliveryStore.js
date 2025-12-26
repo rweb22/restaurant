@@ -1,30 +1,46 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../constants/config';
+import api from '../services/api';
 
 /**
  * Delivery Store
- * Manages selected address and location for delivery
+ * Manages selected address for delivery
  */
 const useDeliveryStore = create((set, get) => ({
   // State
   selectedAddress: null,
-  selectedLocation: null,
+  deliveryFee: 40, // Default delivery fee
+  estimatedDeliveryTime: 30, // Default estimated delivery time in minutes
 
   // Actions
   loadDeliveryInfo: async () => {
     try {
       const addressData = await AsyncStorage.getItem(STORAGE_KEYS.SELECTED_ADDRESS);
-      const locationData = await AsyncStorage.getItem(STORAGE_KEYS.SELECTED_LOCATION);
-      
+
       if (addressData) {
         set({ selectedAddress: JSON.parse(addressData) });
       }
-      if (locationData) {
-        set({ selectedLocation: JSON.parse(locationData) });
-      }
+
+      // Fetch delivery fee from restaurant settings
+      await get().fetchDeliveryFee();
     } catch (error) {
       console.error('Error loading delivery info:', error);
+    }
+  },
+
+  fetchDeliveryFee: async () => {
+    try {
+      const response = await api.get('/restaurant/delivery-fee');
+      if (response.data.success) {
+        set({
+          deliveryFee: response.data.data.deliveryFee,
+          estimatedDeliveryTime: response.data.data.estimatedDeliveryTime,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching delivery fee:', error);
+      // Keep default values if fetch fails
     }
   },
 
@@ -32,30 +48,15 @@ const useDeliveryStore = create((set, get) => ({
     try {
       await AsyncStorage.setItem(STORAGE_KEYS.SELECTED_ADDRESS, JSON.stringify(address));
       set({ selectedAddress: address });
-      
-      // If address has location, set it too
-      if (address?.location) {
-        await get().setSelectedLocation(address.location);
-      }
     } catch (error) {
       console.error('Error setting selected address:', error);
-    }
-  },
-
-  setSelectedLocation: async (location) => {
-    try {
-      await AsyncStorage.setItem(STORAGE_KEYS.SELECTED_LOCATION, JSON.stringify(location));
-      set({ selectedLocation: location });
-    } catch (error) {
-      console.error('Error setting selected location:', error);
     }
   },
 
   clearDeliveryInfo: async () => {
     try {
       await AsyncStorage.removeItem(STORAGE_KEYS.SELECTED_ADDRESS);
-      await AsyncStorage.removeItem(STORAGE_KEYS.SELECTED_LOCATION);
-      set({ selectedAddress: null, selectedLocation: null });
+      set({ selectedAddress: null });
     } catch (error) {
       console.error('Error clearing delivery info:', error);
     }
@@ -63,13 +64,13 @@ const useDeliveryStore = create((set, get) => ({
 
   // Computed values
   getDeliveryCharge: () => {
-    const { selectedLocation } = get();
-    return selectedLocation?.deliveryCharge || 0;
+    const { deliveryFee } = get();
+    return deliveryFee;
   },
 
   getEstimatedDeliveryTime: () => {
-    const { selectedLocation } = get();
-    return selectedLocation?.estimatedDeliveryTime || null;
+    const { estimatedDeliveryTime } = get();
+    return estimatedDeliveryTime;
   },
 }));
 

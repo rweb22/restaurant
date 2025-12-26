@@ -9,34 +9,32 @@ import {
   ActivityIndicator,
   Menu,
   Divider,
+  IconButton,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import locationService from '../services/locationService';
 import addressService from '../services/addressService';
+import MapPicker from '../components/MapPicker';
 
 const EditAddressScreen = ({ navigation, route }) => {
   const queryClient = useQueryClient();
   const { addressId } = route.params;
-  
+
   const [label, setLabel] = useState('');
   const [addressLine1, setAddressLine1] = useState('');
   const [addressLine2, setAddressLine2] = useState('');
   const [landmark, setLandmark] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState(null);
-  const [locationMenuVisible, setLocationMenuVisible] = useState(false);
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [postalCode, setPostalCode] = useState('');
   const [successModalVisible, setSuccessModalVisible] = useState(false);
+  const [mapPickerVisible, setMapPickerVisible] = useState(false);
+  const [selectedCoordinates, setSelectedCoordinates] = useState(null);
 
   // Fetch address details
   const { data: addressData, isLoading: addressLoading } = useQuery({
     queryKey: ['address', addressId],
     queryFn: () => addressService.getAddressById(addressId),
-  });
-
-  // Fetch locations
-  const { data: locationsData, isLoading: locationsLoading } = useQuery({
-    queryKey: ['locations'],
-    queryFn: () => locationService.getLocations({ available: true }),
   });
 
   // Populate form when address data is loaded
@@ -47,9 +45,9 @@ const EditAddressScreen = ({ navigation, route }) => {
       setAddressLine1(address.addressLine1 || '');
       setAddressLine2(address.addressLine2 || '');
       setLandmark(address.landmark || '');
-      if (address.location) {
-        setSelectedLocation(address.location);
-      }
+      setCity(address.city || '');
+      setState(address.state || '');
+      setPostalCode(address.postalCode || '');
     }
   }, [addressData]);
 
@@ -74,6 +72,18 @@ const EditAddressScreen = ({ navigation, route }) => {
     },
   });
 
+  const handleLocationSelect = (locationData) => {
+    console.log('[EditAddress] Location selected from map:', locationData);
+    setAddressLine1(locationData.addressLine1 || '');
+    setCity(locationData.city || '');
+    setState(locationData.state || '');
+    setPostalCode(locationData.postalCode || '');
+    setSelectedCoordinates({
+      latitude: locationData.latitude,
+      longitude: locationData.longitude,
+    });
+  };
+
   const handleSave = () => {
     if (!label.trim()) {
       Alert.alert('Error', 'Please enter an address label');
@@ -85,8 +95,8 @@ const EditAddressScreen = ({ navigation, route }) => {
       return;
     }
 
-    if (!selectedLocation) {
-      Alert.alert('Error', 'Please select a location');
+    if (!city.trim()) {
+      Alert.alert('Error', 'Please enter city');
       return;
     }
 
@@ -94,14 +104,17 @@ const EditAddressScreen = ({ navigation, route }) => {
       label: label.trim(),
       addressLine1: addressLine1.trim(),
       addressLine2: addressLine2.trim() || null,
+      city: city.trim(),
+      state: state.trim() || null,
+      postalCode: postalCode.trim() || null,
+      country: 'India',
       landmark: landmark.trim() || null,
-      locationId: selectedLocation.id,
     };
 
     updateAddressMutation.mutate({ id: addressId, data: addressData });
   };
 
-  if (addressLoading || locationsLoading) {
+  if (addressLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <Appbar.Header>
@@ -115,8 +128,6 @@ const EditAddressScreen = ({ navigation, route }) => {
     );
   }
 
-  const locations = locationsData?.locations || [];
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header>
@@ -129,6 +140,16 @@ const EditAddressScreen = ({ navigation, route }) => {
           <Text variant="titleMedium" style={styles.sectionTitle}>
             Address Details
           </Text>
+
+          {/* Pick on Map Button */}
+          <Button
+            mode="outlined"
+            icon="map-marker"
+            onPress={() => setMapPickerVisible(true)}
+            style={styles.mapButton}
+          >
+            Pick Location on Map
+          </Button>
 
           <TextInput
             label="Label (e.g., Home, Office)"
@@ -168,47 +189,33 @@ const EditAddressScreen = ({ navigation, route }) => {
             placeholder="Nearby landmark (optional)"
           />
 
-          <Menu
-            visible={locationMenuVisible}
-            onDismiss={() => setLocationMenuVisible(false)}
-            anchor={
-              <Button
-                mode="outlined"
-                onPress={() => setLocationMenuVisible(true)}
-                style={styles.locationButton}
-                contentStyle={styles.locationButtonContent}
-                icon="map-marker"
-              >
-                {selectedLocation ? selectedLocation.name : 'Select Location *'}
-              </Button>
-            }
-          >
-            {locations.map((location) => (
-              <Menu.Item
-                key={location.id}
-                onPress={() => {
-                  setSelectedLocation(location);
-                  setLocationMenuVisible(false);
-                }}
-                title={location.name}
-                leadingIcon={selectedLocation?.id === location.id ? 'check' : undefined}
-              />
-            ))}
-          </Menu>
+          <TextInput
+            label="City *"
+            value={city}
+            onChangeText={setCity}
+            mode="outlined"
+            style={styles.input}
+            placeholder="Enter city"
+          />
 
-          {selectedLocation && (
-            <Surface style={styles.locationInfo} elevation={0}>
-              <Text variant="bodySmall" style={styles.locationInfoText}>
-                📍 {selectedLocation.area}, {selectedLocation.city} - {selectedLocation.pincode}
-              </Text>
-              <Text variant="bodySmall" style={styles.locationInfoText}>
-                🚚 Delivery Charge: ₹{selectedLocation.deliveryCharge}
-              </Text>
-              <Text variant="bodySmall" style={styles.locationInfoText}>
-                ⏱️ Estimated Time: {selectedLocation.estimatedDeliveryTime}
-              </Text>
-            </Surface>
-          )}
+          <TextInput
+            label="State"
+            value={state}
+            onChangeText={setState}
+            mode="outlined"
+            style={styles.input}
+            placeholder="Enter state (optional)"
+          />
+
+          <TextInput
+            label="Postal Code"
+            value={postalCode}
+            onChangeText={setPostalCode}
+            mode="outlined"
+            style={styles.input}
+            placeholder="Enter postal code (optional)"
+            keyboardType="numeric"
+          />
 
           <Button
             mode="contained"
@@ -255,6 +262,14 @@ const EditAddressScreen = ({ navigation, route }) => {
           </Surface>
         </View>
       </Modal>
+
+      {/* Map Picker Modal */}
+      <MapPicker
+        visible={mapPickerVisible}
+        onDismiss={() => setMapPickerVisible(false)}
+        onLocationSelect={handleLocationSelect}
+        initialLocation={selectedCoordinates}
+      />
     </SafeAreaView>
   );
 };
@@ -284,6 +299,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 16,
     color: '#292524',
+  },
+  mapButton: {
+    marginBottom: 16,
+    borderColor: '#FF9800',
   },
   input: {
     marginBottom: 16,

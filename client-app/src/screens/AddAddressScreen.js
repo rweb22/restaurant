@@ -9,12 +9,13 @@ import {
   ActivityIndicator,
   Menu,
   Divider,
+  IconButton,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import locationService from '../services/locationService';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import addressService from '../services/addressService';
 import useDeliveryStore from '../store/deliveryStore';
+import MapPicker from '../components/MapPicker';
 
 const AddAddressScreen = ({ navigation, route }) => {
   const queryClient = useQueryClient();
@@ -23,22 +24,16 @@ const AddAddressScreen = ({ navigation, route }) => {
   const [addressLine1, setAddressLine1] = useState('');
   const [addressLine2, setAddressLine2] = useState('');
   const [landmark, setLandmark] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState(null);
-  const [locationMenuVisible, setLocationMenuVisible] = useState(false);
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  const [mapPickerVisible, setMapPickerVisible] = useState(false);
+  const [selectedCoordinates, setSelectedCoordinates] = useState(null);
 
   // Check if this is the first address (user must add one)
   const isFirstAddress = route.params?.isFirstAddress || false;
-
-  const { data: locationsData, isLoading: locationsLoading } = useQuery({
-    queryKey: ['locations'],
-    queryFn: () => locationService.getLocations({ available: true }),
-  });
-
-  useEffect(() => {
-    if (locationsData) {
-      console.log('[AddAddress] Locations loaded:', locationsData.locations?.length || 0);
-    }
-  }, [locationsData]);
+  // Check if navigated from modal
+  const fromModal = route.params?.fromModal || false;
 
   const createAddressMutation = useMutation({
     mutationFn: addressService.createAddress,
@@ -68,6 +63,12 @@ const AddAddressScreen = ({ navigation, route }) => {
   });
 
   const handleBack = () => {
+    // If coming from modal, just go back (modal will reappear)
+    if (fromModal) {
+      navigation.goBack();
+      return;
+    }
+
     // If this is the first address and user hasn't selected one yet, warn them
     if (isFirstAddress && !selectedAddress) {
       Alert.alert(
@@ -83,6 +84,18 @@ const AddAddressScreen = ({ navigation, route }) => {
     }
   };
 
+  const handleLocationSelect = (locationData) => {
+    console.log('[AddAddress] Location selected from map:', locationData);
+    setAddressLine1(locationData.addressLine1 || '');
+    setCity(locationData.city || '');
+    setState(locationData.state || '');
+    setPostalCode(locationData.postalCode || '');
+    setSelectedCoordinates({
+      latitude: locationData.latitude,
+      longitude: locationData.longitude,
+    });
+  };
+
   const handleSave = () => {
     console.log('[AddAddress] Save button clicked');
     console.log('[AddAddress] Current state:', {
@@ -90,7 +103,9 @@ const AddAddressScreen = ({ navigation, route }) => {
       addressLine1,
       addressLine2,
       landmark,
-      selectedLocation,
+      city,
+      state,
+      postalCode,
     });
 
     if (!label.trim()) {
@@ -103,9 +118,9 @@ const AddAddressScreen = ({ navigation, route }) => {
       Alert.alert('Error', 'Please enter address line 1');
       return;
     }
-    if (!selectedLocation) {
-      console.log('[AddAddress] Validation failed: No location selected');
-      Alert.alert('Error', 'Please select a location');
+    if (!city.trim()) {
+      console.log('[AddAddress] Validation failed: No city');
+      Alert.alert('Error', 'Please enter city');
       return;
     }
 
@@ -113,15 +128,16 @@ const AddAddressScreen = ({ navigation, route }) => {
       label: label.trim(),
       addressLine1: addressLine1.trim(),
       addressLine2: addressLine2.trim() || null,
+      city: city.trim(),
+      state: state.trim() || null,
+      postalCode: postalCode.trim() || null,
+      country: 'India',
       landmark: landmark.trim() || null,
-      locationId: selectedLocation.id,
     };
 
     console.log('[AddAddress] Validation passed! Creating address with data:', addressData);
     createAddressMutation.mutate(addressData);
   };
-
-  const locations = locationsData?.locations || [];
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -138,6 +154,16 @@ const AddAddressScreen = ({ navigation, route }) => {
           <Text variant="bodySmall" style={styles.helperText}>
             Fields marked with * are required
           </Text>
+
+          {/* Pick on Map Button */}
+          <Button
+            mode="outlined"
+            icon="map-marker"
+            onPress={() => setMapPickerVisible(true)}
+            style={styles.mapButton}
+          >
+            Pick Location on Map
+          </Button>
 
           <TextInput
             label="Label *"
@@ -181,56 +207,34 @@ const AddAddressScreen = ({ navigation, route }) => {
             style={styles.input}
           />
 
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            Delivery Location *
-          </Text>
+          <TextInput
+            label="City *"
+            placeholder="Enter city"
+            value={city}
+            onChangeText={setCity}
+            mode="outlined"
+            style={styles.input}
+            error={!city.trim() && city !== ''}
+          />
 
-          {locationsLoading ? (
-            <ActivityIndicator style={styles.loader} />
-          ) : (
-            <Menu
-              visible={locationMenuVisible}
-              onDismiss={() => setLocationMenuVisible(false)}
-              anchor={
-                <Button
-                  mode="outlined"
-                  onPress={() => setLocationMenuVisible(true)}
-                  icon="map-marker"
-                  style={styles.locationButton}
-                  contentStyle={styles.locationButtonContent}
-                >
-                  {selectedLocation
-                    ? `${selectedLocation.area}, ${selectedLocation.city}`
-                    : 'Select Location'}
-                </Button>
-              }
-            >
-              {locations.map((location) => (
-                <View key={location.id}>
-                  <Menu.Item
-                    onPress={() => {
-                      setSelectedLocation(location);
-                      setLocationMenuVisible(false);
-                    }}
-                    title={`${location.area}, ${location.city}`}
-                    leadingIcon={selectedLocation?.id === location.id ? 'check' : 'map-marker'}
-                  />
-                  <Divider />
-                </View>
-              ))}
-            </Menu>
-          )}
+          <TextInput
+            label="State"
+            placeholder="Enter state (Optional)"
+            value={state}
+            onChangeText={setState}
+            mode="outlined"
+            style={styles.input}
+          />
 
-          {selectedLocation && (
-            <Surface style={styles.locationInfo} elevation={0}>
-              <Text variant="bodyMedium" style={styles.locationInfoText}>
-                📍 {selectedLocation.name}
-              </Text>
-              <Text variant="bodySmall" style={styles.deliveryInfo}>
-                🚚 Delivery: ₹{selectedLocation.deliveryCharge} • {selectedLocation.estimatedDeliveryTime} mins
-              </Text>
-            </Surface>
-          )}
+          <TextInput
+            label="Postal Code"
+            placeholder="Enter postal code (Optional)"
+            value={postalCode}
+            onChangeText={setPostalCode}
+            mode="outlined"
+            style={styles.input}
+            keyboardType="numeric"
+          />
         </Surface>
       </ScrollView>
 
@@ -246,6 +250,14 @@ const AddAddressScreen = ({ navigation, route }) => {
           Save Address
         </Button>
       </Surface>
+
+      {/* Map Picker Modal */}
+      <MapPicker
+        visible={mapPickerVisible}
+        onDismiss={() => setMapPickerVisible(false)}
+        onLocationSelect={handleLocationSelect}
+        initialLocation={selectedCoordinates}
+      />
     </SafeAreaView>
   );
 };
@@ -272,6 +284,10 @@ const styles = StyleSheet.create({
   helperText: {
     color: '#78716c',
     marginBottom: 12,
+  },
+  mapButton: {
+    marginBottom: 16,
+    borderColor: '#FF9800',
   },
   input: {
     marginBottom: 16,

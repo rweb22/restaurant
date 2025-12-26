@@ -12,7 +12,9 @@ export default function GeneralSettingsTab({ settings, onUpdate, showSnackbar })
     restaurantAddress: '',
     taxPercentage: '',
     minimumOrderValue: '',
-    estimatedPrepTimeMinutes: ''
+    estimatedPrepTimeMinutes: '',
+    deliveryFee: '',
+    estimatedDeliveryTimeMinutes: ''
   });
   const [saving, setSaving] = useState(false);
 
@@ -24,7 +26,9 @@ export default function GeneralSettingsTab({ settings, onUpdate, showSnackbar })
         restaurantAddress: settings.restaurantAddress || '',
         taxPercentage: settings.taxPercentage?.toString() || '',
         minimumOrderValue: settings.minimumOrderValue?.toString() || '',
-        estimatedPrepTimeMinutes: settings.estimatedPrepTimeMinutes?.toString() || ''
+        estimatedPrepTimeMinutes: settings.estimatedPrepTimeMinutes?.toString() || '',
+        deliveryFee: settings.deliveryFee?.toString() || '',
+        estimatedDeliveryTimeMinutes: settings.estimatedDeliveryTimeMinutes?.toString() || ''
       });
     }
   }, [settings]);
@@ -38,7 +42,9 @@ export default function GeneralSettingsTab({ settings, onUpdate, showSnackbar })
         restaurantAddress: formData.restaurantAddress,
         taxPercentage: parseFloat(formData.taxPercentage) || 0,
         minimumOrderValue: parseFloat(formData.minimumOrderValue) || 0,
-        estimatedPrepTimeMinutes: parseInt(formData.estimatedPrepTimeMinutes) || 30
+        estimatedPrepTimeMinutes: parseInt(formData.estimatedPrepTimeMinutes) || 30,
+        deliveryFee: parseFloat(formData.deliveryFee) || 40,
+        estimatedDeliveryTimeMinutes: parseInt(formData.estimatedDeliveryTimeMinutes) || 30
       });
       showSnackbar('Settings updated successfully');
       onUpdate();
@@ -102,6 +108,24 @@ export default function GeneralSettingsTab({ settings, onUpdate, showSnackbar })
           label="Estimated Prep Time (minutes)"
           value={formData.estimatedPrepTimeMinutes}
           onChangeText={(text) => setFormData({ ...formData, estimatedPrepTimeMinutes: text })}
+          mode="outlined"
+          keyboardType="number-pad"
+          style={styles.input}
+        />
+
+        <TextInput
+          label="Delivery Fee (₹)"
+          value={formData.deliveryFee}
+          onChangeText={(text) => setFormData({ ...formData, deliveryFee: text })}
+          mode="outlined"
+          keyboardType="decimal-pad"
+          style={styles.input}
+        />
+
+        <TextInput
+          label="Estimated Delivery Time (minutes)"
+          value={formData.estimatedDeliveryTimeMinutes}
+          onChangeText={(text) => setFormData({ ...formData, estimatedDeliveryTimeMinutes: text })}
           mode="outlined"
           keyboardType="number-pad"
           style={styles.input}

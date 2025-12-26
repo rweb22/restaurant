@@ -110,32 +110,6 @@ const menuService = {
     return response.data;
   },
 
-  // Locations
-  getLocations: async (params = {}) => {
-    const response = await api.get('/locations', { params });
-    return response.data;
-  },
-
-  getLocationById: async (locationId) => {
-    const response = await api.get(`/locations/${locationId}`);
-    return response.data;
-  },
-
-  createLocation: async (data) => {
-    const response = await api.post('/locations', data);
-    return response.data;
-  },
-
-  updateLocation: async (locationId, data) => {
-    const response = await api.put(`/locations/${locationId}`, data);
-    return response.data;
-  },
-
-  deleteLocation: async (locationId) => {
-    const response = await api.delete(`/locations/${locationId}`);
-    return response.data;
-  },
-
   // Users
   getUsers: async (params = {}) => {
     const response = await api.get('/users', { params });

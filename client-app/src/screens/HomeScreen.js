@@ -26,12 +26,13 @@ import AddressSelectionModal from '../components/AddressSelectionModal';
 import FoodCard from '../components/FoodCard';
 import CategoryChip from '../components/CategoryChip';
 import { API_CONFIG } from '../constants/config';
-import { colors, spacing, fontSize } from '../styles/theme';
+import { colors, spacing, fontSize, borderRadius } from '../styles/theme';
 
-const HomeScreen = ({ navigation }) => {
+const HomeScreen = ({ navigation, route }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [shouldReopenModal, setShouldReopenModal] = useState(false);
   const { getItemCount, clearCart } = useCartStore();
   const { logout, user } = useAuthStore();
   const { selectedAddress, loadDeliveryInfo, clearDeliveryInfo } = useDeliveryStore();
@@ -74,14 +75,15 @@ const HomeScreen = ({ navigation }) => {
   // Listen for navigation focus to check if address is selected
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      // When screen comes into focus, check if address is selected
-      if (!selectedAddress) {
+      // When screen comes into focus, check if we should reopen modal
+      if (!selectedAddress || shouldReopenModal) {
         setAddressModalVisible(true);
+        setShouldReopenModal(false);
       }
     });
 
     return unsubscribe;
-  }, [navigation, selectedAddress]);
+  }, [navigation, selectedAddress, shouldReopenModal]);
 
   const { data: categories, isLoading: categoriesLoading } = useQuery({
     queryKey: ['categories', 'available'],
@@ -110,24 +112,27 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.headerContent}>
           {/* Greeting and Address Row */}
           <View style={styles.topRow}>
+            {/* Greeting on Left */}
             <View style={styles.greetingSection}>
-              <Text variant="bodySmall" style={styles.greetingLabel}>
+              <Text variant="titleMedium" style={styles.greetingLabel}>
                 {user?.name ? `Hi, ${user.name}! 👋` : "Welcome! 👋"}
               </Text>
-              {selectedAddress && (
-                <TouchableOpacity
-                  onPress={() => setAddressModalVisible(true)}
-                  activeOpacity={0.7}
-                  style={styles.addressButton}
-                >
-                  <Icon source="map-marker" size={16} color={colors.white} />
-                  <Text variant="bodyMedium" style={styles.addressText} numberOfLines={1}>
-                    {selectedAddress.label || 'Select Address'}
-                  </Text>
-                  <Icon source="chevron-down" size={16} color={colors.white} />
-                </TouchableOpacity>
-              )}
             </View>
+
+            {/* Address on Right */}
+            {selectedAddress && (
+              <TouchableOpacity
+                onPress={() => setAddressModalVisible(true)}
+                activeOpacity={0.7}
+                style={styles.addressButton}
+              >
+                <Icon source="map-marker" size={16} color={colors.white} />
+                <Text variant="bodySmall" style={styles.addressText} numberOfLines={1}>
+                  {selectedAddress.label || 'Select Address'}
+                </Text>
+                <Icon source="chevron-down" size={16} color={colors.white} />
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Search Bar */}
@@ -291,12 +296,18 @@ const HomeScreen = ({ navigation }) => {
           }
         }}
         onAddAddress={() => {
+          // Close modal, set flag to reopen, and navigate to AddAddress
           setAddressModalVisible(false);
-          navigation.navigate('AddAddress', { isFirstAddress: !selectedAddress });
+          setShouldReopenModal(true);
+          navigation.navigate('AddAddress', {
+            isFirstAddress: !selectedAddress,
+            fromModal: true
+          });
         }}
         onManageAddresses={() => {
+          // Close modal and navigate to AddressesTab
           setAddressModalVisible(false);
-          navigation.navigate('Addresses');
+          navigation.navigate('AddressesTab');
         }}
       />
     </SafeAreaView>
@@ -319,7 +330,7 @@ const styles = StyleSheet.create({
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: spacing.md,
   },
   greetingSection: {
@@ -327,31 +338,33 @@ const styles = StyleSheet.create({
   },
   greetingLabel: {
     color: colors.white,
-    fontWeight: '600',
-    marginBottom: spacing.xs,
+    fontWeight: '700',
   },
   addressButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: spacing.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
+    borderRadius: borderRadius.full,
+    marginLeft: spacing.sm,
   },
   addressText: {
     color: colors.white,
     fontWeight: '600',
-    maxWidth: 150,
+    maxWidth: 120,
     marginHorizontal: spacing.xs,
   },
   searchBar: {
     backgroundColor: colors.white,
-    borderRadius: 12,
+    borderRadius: borderRadius.md,
     elevation: 2,
+    height: 44,
   },
   searchInput: {
     fontSize: fontSize.sm,
+    minHeight: 0,
+    paddingVertical: 0,
   },
   statusBanner: {
     paddingHorizontal: spacing.lg,
@@ -409,11 +422,10 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginHorizontal: -spacing.xs,
+    justifyContent: 'space-between',
   },
   foodCard: {
     width: '48%',
-    marginHorizontal: spacing.xs,
     marginBottom: spacing.md,
   },
   fab: {

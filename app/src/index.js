@@ -4,6 +4,10 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const logger = require('./utils/logger');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+
+const execAsync = promisify(exec);
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -15,7 +19,6 @@ const addOnRoutes = require('./routes/addOns');
 const categoryAddOnRoutes = require('./routes/categoryAddOns');
 const itemAddOnRoutes = require('./routes/itemAddOns');
 const addressRoutes = require('./routes/addresses');
-const locationRoutes = require('./routes/locations');
 const offerRoutes = require('./routes/offers');
 const orderRoutes = require('./routes/orders');
 const paymentRoutes = require('./routes/payments');
@@ -85,7 +88,6 @@ app.use('/api/add-ons', addOnRoutes);
 app.use('/api/category-add-ons', categoryAddOnRoutes);
 app.use('/api/item-add-ons', itemAddOnRoutes);
 app.use('/api/addresses', addressRoutes);
-app.use('/api/locations', locationRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
@@ -131,23 +133,58 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Function to run database migrations
+async function runMigrations() {
+  try {
+    logger.info('🔄 Running database migrations...');
+    const { stdout, stderr } = await execAsync('npx sequelize-cli db:migrate', {
+      cwd: __dirname + '/..'
+    });
+
+    if (stdout) {
+      logger.success('✅ Migrations completed successfully');
+      // Log migration output (only show if there were actual migrations)
+      if (!stdout.includes('No migrations were executed')) {
+        logger.info(stdout.trim());
+      }
+    }
+
+    if (stderr && !stderr.includes('Loaded configuration')) {
+      logger.warn('Migration warnings:', stderr);
+    }
+  } catch (error) {
+    logger.error('❌ Migration failed:', error.message);
+    if (error.stdout) logger.error('stdout:', error.stdout);
+    if (error.stderr) logger.error('stderr:', error.stderr);
+    throw error;
+  }
+}
+
 // Start server only if not in test environment or not being required
 if (process.env.NODE_ENV !== 'test' && require.main === module) {
-  app.listen(PORT, '0.0.0.0', () => {
-    logger.success(`Server running on port ${PORT}`);
-    logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    logger.info(`Health check: http://localhost:${PORT}/health`);
-    logger.info(`Auth API: http://localhost:${PORT}/api/auth`);
-    logger.info(`Categories API: http://localhost:${PORT}/api/categories`);
-    logger.info(`Items API: http://localhost:${PORT}/api/items`);
-    logger.info(`Item Sizes API: http://localhost:${PORT}/api/item-sizes`);
-    logger.info(`Add-Ons API: http://localhost:${PORT}/api/add-ons`);
-    logger.info(`Category Add-Ons API: http://localhost:${PORT}/api/category-add-ons`);
-    logger.info(`Item Add-Ons API: http://localhost:${PORT}/api/item-add-ons`);
-    logger.info(`Addresses API: http://localhost:${PORT}/api/addresses`);
-    logger.info(`Offers API: http://localhost:${PORT}/api/offers`);
-    logger.info(`Orders API: http://localhost:${PORT}/api/orders`);
-  });
+  // Run migrations before starting the server
+  runMigrations()
+    .then(() => {
+      app.listen(PORT, '0.0.0.0', () => {
+        logger.success(`Server running on port ${PORT}`);
+        logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+        logger.info(`Health check: http://localhost:${PORT}/health`);
+        logger.info(`Auth API: http://localhost:${PORT}/api/auth`);
+        logger.info(`Categories API: http://localhost:${PORT}/api/categories`);
+        logger.info(`Items API: http://localhost:${PORT}/api/items`);
+        logger.info(`Item Sizes API: http://localhost:${PORT}/api/item-sizes`);
+        logger.info(`Add-Ons API: http://localhost:${PORT}/api/add-ons`);
+        logger.info(`Category Add-Ons API: http://localhost:${PORT}/api/category-add-ons`);
+        logger.info(`Item Add-Ons API: http://localhost:${PORT}/api/item-add-ons`);
+        logger.info(`Addresses API: http://localhost:${PORT}/api/addresses`);
+        logger.info(`Offers API: http://localhost:${PORT}/api/offers`);
+        logger.info(`Orders API: http://localhost:${PORT}/api/orders`);
+      });
+    })
+    .catch((error) => {
+      logger.error('Failed to start server due to migration error');
+      process.exit(1);
+    });
 }
 
 module.exports = app;

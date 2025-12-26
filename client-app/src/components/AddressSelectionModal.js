@@ -9,19 +9,27 @@ import {
   Surface,
   Divider,
   ActivityIndicator,
+  Icon,
 } from 'react-native-paper';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery } from '@tanstack/react-query';
 import addressService from '../services/addressService';
 import useDeliveryStore from '../store/deliveryStore';
+import { colors, spacing, fontSize, borderRadius, shadows } from '../styles/theme';
 
 const AddressSelectionModal = ({ visible, onDismiss, onAddAddress, onManageAddresses }) => {
   const { selectedAddress, setSelectedAddress } = useDeliveryStore();
   const [tempSelectedAddress, setTempSelectedAddress] = useState(null);
 
-  const { data: addressesData, isLoading, refetch } = useQuery({
+  const { data: addressesData, isLoading, error, refetch } = useQuery({
     queryKey: ['addresses'],
     queryFn: addressService.getAddresses,
     enabled: visible,
+    retry: 1,
+    onError: (error) => {
+      console.error('[AddressSelectionModal] Error fetching addresses:', error);
+      console.error('[AddressSelectionModal] Error response:', error.response?.data);
+    },
   });
 
   const addresses = addressesData?.addresses || [];
@@ -54,6 +62,8 @@ const AddressSelectionModal = ({ visible, onDismiss, onAddAddress, onManageAddre
   }, [visible, isLoading, addresses.length]);
 
   const handleConfirm = () => {
+    console.log('[AddressSelectionModal] Confirm button pressed');
+    console.log('[AddressSelectionModal] tempSelectedAddress:', tempSelectedAddress);
     if (tempSelectedAddress) {
       setSelectedAddress(tempSelectedAddress);
       onDismiss();
@@ -71,108 +81,155 @@ const AddressSelectionModal = ({ visible, onDismiss, onAddAddress, onManageAddre
         onDismiss={onDismiss}
         contentContainerStyle={styles.modalContainer}
         dismissable={!!selectedAddress}
+        dismissableBackButton={!!selectedAddress}
       >
         <Surface style={styles.surface} elevation={4}>
-          <View style={styles.header}>
-            <Text variant="headlineSmall" style={styles.title}>
-              Select Delivery Address
-            </Text>
-            {selectedAddress && (
-              <IconButton icon="close" size={24} onPress={onDismiss} />
-            )}
-          </View>
+            {/* Header with Gradient */}
+            <LinearGradient
+              colors={[colors.primary[500], colors.primary[600]]}
+              style={styles.headerGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <View style={styles.header}>
+                <View style={styles.headerLeft}>
+                  <Icon source="map-marker" size={20} color={colors.white} />
+                  <Text variant="titleLarge" style={styles.title}>
+                    Delivery Address
+                  </Text>
+                </View>
+                {selectedAddress && (
+                  <IconButton
+                    icon="close"
+                    size={20}
+                    iconColor={colors.white}
+                    onPress={onDismiss}
+                  />
+                )}
+              </View>
+            </LinearGradient>
 
-          <Divider />
-
-          {isLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" />
-            </View>
-          ) : addresses.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Text variant="bodyLarge" style={styles.emptyText}>
-                No saved addresses found
-              </Text>
-              <Text variant="bodyMedium" style={styles.emptySubtext}>
-                Add a delivery address to continue
-              </Text>
-            </View>
-          ) : (
-            <ScrollView style={styles.scrollView}>
-              {addresses.map((address) => (
-                <TouchableOpacity
-                  key={address.id}
-                  onPress={() => handleAddressSelect(address)}
-                  activeOpacity={0.7}
-                >
-                  <Surface
-                    style={[
-                      styles.addressCard,
-                      tempSelectedAddress?.id === address.id && styles.selectedCard,
-                    ]}
-                    elevation={tempSelectedAddress?.id === address.id ? 2 : 0}
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.primary[500]} />
+                <Text variant="bodyMedium" style={styles.loadingText}>
+                  Loading addresses...
+                </Text>
+              </View>
+            ) : addresses.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <View style={styles.emptyIconContainer}>
+                  <Icon source="map-marker-off" size={64} color={colors.secondary[300]} />
+                </View>
+                <Text variant="titleLarge" style={styles.emptyText}>
+                  No saved addresses
+                </Text>
+                <Text variant="bodyMedium" style={styles.emptySubtext}>
+                  Add a delivery address to get started
+                </Text>
+              </View>
+            ) : (
+              <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+                {addresses.map((address, index) => (
+                  <TouchableOpacity
+                    key={address.id}
+                    onPress={() => handleAddressSelect(address)}
+                    activeOpacity={0.7}
                   >
-                    <View style={styles.addressHeader}>
-                      <Text variant="titleMedium" style={styles.addressLabel}>
-                        {address.label || 'Address'}
+                    <View
+                      style={[
+                        styles.addressCard,
+                        tempSelectedAddress?.id === address.id && styles.selectedCard,
+                      ]}
+                    >
+                      <View style={styles.addressHeader}>
+                        <View style={styles.addressLabelContainer}>
+                          <View style={[
+                            styles.labelIcon,
+                            tempSelectedAddress?.id === address.id && styles.selectedLabelIcon
+                          ]}>
+                            <Icon
+                              source={address.label === 'Home' ? 'home' : address.label === 'Work' ? 'briefcase' : 'map-marker'}
+                              size={20}
+                              color={tempSelectedAddress?.id === address.id ? colors.white : colors.primary[500]}
+                            />
+                          </View>
+                          <Text variant="titleMedium" style={[
+                            styles.addressLabel,
+                            tempSelectedAddress?.id === address.id && styles.selectedAddressLabel
+                          ]}>
+                            {address.label || 'Address'}
+                          </Text>
+                        </View>
+                        {tempSelectedAddress?.id === address.id && (
+                          <View style={styles.checkIconContainer}>
+                            <Icon source="check-circle" size={24} color={colors.success} />
+                          </View>
+                        )}
+                      </View>
+                      <Text variant="bodyMedium" style={styles.addressText}>
+                        {address.addressLine1}
                       </Text>
-                      {tempSelectedAddress?.id === address.id && (
-                        <IconButton icon="check-circle" iconColor="#16a34a" size={24} />
+                      {address.addressLine2 && (
+                        <Text variant="bodyMedium" style={styles.addressText}>
+                          {address.addressLine2}
+                        </Text>
+                      )}
+                      {address.landmark && (
+                        <View style={styles.landmarkContainer}>
+                          <Icon source="map-marker-radius" size={14} color={colors.secondary[400]} />
+                          <Text variant="bodySmall" style={styles.landmark}>
+                            {address.landmark}
+                          </Text>
+                        </View>
                       )}
                     </View>
-                    <Text variant="bodyMedium" style={styles.addressText}>
-                      {address.addressLine1}
-                    </Text>
-                    {address.addressLine2 && (
-                      <Text variant="bodyMedium" style={styles.addressText}>
-                        {address.addressLine2}
-                      </Text>
-                    )}
-                    {address.landmark && (
-                      <Text variant="bodySmall" style={styles.landmark}>
-                        Landmark: {address.landmark}
-                      </Text>
-                    )}
-                    {address.location && (
-                      <View style={styles.locationInfo}>
-                        <Text variant="bodySmall" style={styles.locationText}>
-                          📍 {address.location.area}, {address.location.city}
-                        </Text>
-                        <Text variant="bodySmall" style={styles.deliveryInfo}>
-                          🚚 ₹{address.location.deliveryCharge} • {address.location.estimatedDeliveryTime} mins
-                        </Text>
-                      </View>
-                    )}
-                  </Surface>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
 
-          <Divider />
-          <View style={styles.footer}>
-            <View style={styles.footerRow}>
-              <Button mode="outlined" onPress={onAddAddress} icon="plus" style={styles.addButton}>
-                Add New
-              </Button>
-              {onManageAddresses && addresses.length > 0 && (
-                <Button mode="outlined" onPress={onManageAddresses} icon="cog" style={styles.manageButton}>
-                  Manage
+            <Divider style={styles.divider} />
+
+            <View style={styles.footer}>
+              <View style={styles.footerRow}>
+                <Button
+                  mode="outlined"
+                  onPress={onAddAddress}
+                  icon="plus"
+                  style={styles.addButton}
+                  labelStyle={styles.addButtonLabel}
+                  textColor={colors.primary[500]}
+                >
+                  Add New
+                </Button>
+                {onManageAddresses && addresses.length > 0 && (
+                  <Button
+                    mode="outlined"
+                    onPress={onManageAddresses}
+                    icon="cog"
+                    style={styles.manageButton}
+                    labelStyle={styles.manageButtonLabel}
+                    textColor={colors.secondary[600]}
+                  >
+                    Manage
+                  </Button>
+                )}
+              </View>
+              {addresses.length > 0 && (
+                <Button
+                  mode="contained"
+                  onPress={handleConfirm}
+                  disabled={!tempSelectedAddress}
+                  style={styles.confirmButton}
+                  buttonColor={colors.primary[500]}
+                  labelStyle={styles.confirmButtonLabel}
+                >
+                  {tempSelectedAddress ? 'Confirm Address' : 'Select an Address'}
                 </Button>
               )}
             </View>
-            {addresses.length > 0 && (
-              <Button
-                mode="contained"
-                onPress={handleConfirm}
-                disabled={!tempSelectedAddress}
-                style={styles.confirmButton}
-              >
-                Confirm
-              </Button>
-            )}
-          </View>
-        </Surface>
+          </Surface>
       </Modal>
     </Portal>
   );
@@ -184,105 +241,215 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   surface: {
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
+    backgroundColor: colors.white,
+    borderTopLeftRadius: borderRadius['2xl'],
+    borderTopRightRadius: borderRadius['2xl'],
+    maxHeight: '95%',
+    ...shadows.xl,
+  },
+  headerGradient: {
+    borderTopLeftRadius: borderRadius['2xl'],
+    borderTopRightRadius: borderRadius['2xl'],
+    paddingTop: spacing.xs / 2,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    paddingBottom: 12,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flex: 1,
   },
   title: {
     fontWeight: 'bold',
+    color: colors.white,
   },
   loadingContainer: {
-    padding: 40,
+    padding: spacing['3xl'],
     alignItems: 'center',
+    gap: spacing.md,
+  },
+  loadingText: {
+    color: colors.secondary[600],
   },
   emptyContainer: {
-    padding: 40,
+    padding: spacing['3xl'],
     alignItems: 'center',
+    gap: spacing.md,
+  },
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: colors.secondary[50],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
   },
   emptyText: {
-    color: '#78716c',
-    marginBottom: 8,
+    color: colors.secondary[700],
+    fontWeight: '600',
     textAlign: 'center',
   },
   emptySubtext: {
-    color: '#a8a29e',
+    color: colors.secondary[500],
     textAlign: 'center',
   },
   scrollView: {
     maxHeight: 400,
+    paddingVertical: spacing.sm,
   },
   addressCard: {
-    padding: 16,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    backgroundColor: '#fafaf9',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e7e5e4',
+    padding: spacing.lg,
+    marginHorizontal: spacing.lg,
+    marginVertical: spacing.xs,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
+    borderWidth: 2,
+    borderColor: colors.secondary[200],
+    ...shadows.sm,
   },
   selectedCard: {
-    backgroundColor: '#f0fdf4',
-    borderColor: '#16a34a',
-    borderWidth: 2,
+    backgroundColor: colors.primary[50],
+    borderColor: colors.primary[500],
+    ...shadows.md,
   },
   addressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
+  },
+  addressLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flex: 1,
+  },
+  labelIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.primary[50],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectedLabelIcon: {
+    backgroundColor: colors.primary[500],
+  },
+  checkIconContainer: {
+    marginLeft: spacing.sm,
   },
   addressLabel: {
-    fontWeight: 'bold',
-    color: '#292524',
+    fontWeight: '600',
+    color: colors.secondary[900],
+    fontSize: fontSize.md,
+  },
+  selectedAddressLabel: {
+    color: colors.primary[700],
   },
   addressText: {
-    color: '#57534e',
-    marginBottom: 4,
+    color: colors.secondary[600],
+    marginBottom: spacing.xs,
+    lineHeight: 20,
+  },
+  landmarkContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
   },
   landmark: {
-    color: '#78716c',
-    marginTop: 4,
+    color: colors.secondary[500],
+    flex: 1,
   },
   locationInfo: {
-    marginTop: 8,
-    paddingTop: 8,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#e7e5e4',
+    borderTopColor: colors.secondary[200],
+    gap: spacing.xs,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   locationText: {
-    color: '#78716c',
-    marginBottom: 4,
+    color: colors.secondary[600],
+    flex: 1,
+  },
+  deliveryRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.xs,
+  },
+  deliveryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.success + '15',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.md,
   },
   deliveryInfo: {
-    color: '#16a34a',
-    fontWeight: '500',
+    color: colors.success,
+    fontWeight: '600',
+  },
+  timeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.primary[50],
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.md,
+  },
+  timeInfo: {
+    color: colors.primary[600],
+    fontWeight: '600',
+  },
+  divider: {
+    backgroundColor: colors.secondary[200],
   },
   footer: {
-    padding: 16,
-    gap: 8,
+    padding: spacing.md,
+    gap: spacing.sm,
+    backgroundColor: colors.secondary[50],
   },
   footerRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.sm,
   },
   addButton: {
     flex: 1,
-    borderColor: '#dc2626',
+    borderColor: colors.primary[500],
+    borderWidth: 2,
+  },
+  addButtonLabel: {
+    fontWeight: '600',
   },
   manageButton: {
     flex: 1,
-    borderColor: '#78716c',
+    borderColor: colors.secondary[300],
+  },
+  manageButtonLabel: {
+    fontWeight: '600',
   },
   confirmButton: {
-    paddingVertical: 4,
+    borderRadius: borderRadius.lg,
+    ...shadows.md,
+  },
+  confirmButtonLabel: {
+    fontSize: fontSize.md,
+    fontWeight: '600',
+    paddingVertical: spacing.xs / 2,
   },
 });
 

@@ -85,9 +85,14 @@ const formatInitiatePaymentResponse = (data) => {
       orderId: data.orderId,
       transactionId: data.transactionId,
       gatewayOrderId: data.gatewayOrderId,
+      clientTxnId: data.clientTxnId,
+      qrCode: data.qrCode,
+      qrString: data.qrString,
+      paymentUrl: data.paymentUrl,
+      upiIntent: data.upiIntent,
+      upiIdHash: data.upiIdHash,
       amount: parseFloat(data.amount),
-      currency: data.currency,
-      razorpayKeyId: data.razorpayKeyId
+      currency: data.currency
     }
   };
 };

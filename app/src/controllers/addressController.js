@@ -70,16 +70,19 @@ const createAddress = async (req, res) => {
       return sendError(res, 400, 'Address line 1 is required');
     }
 
-    if (!req.body.locationId) {
-      return sendError(res, 400, 'Location ID is required');
+    if (!req.body.city || !req.body.city.trim()) {
+      return sendError(res, 400, 'City is required');
     }
 
     const addressData = {
       label: req.body.label,
       addressLine1: req.body.addressLine1,
       addressLine2: req.body.addressLine2,
+      city: req.body.city,
+      state: req.body.state,
+      postalCode: req.body.postalCode,
+      country: req.body.country || 'India',
       landmark: req.body.landmark,
-      locationId: req.body.locationId,
       isDefault: req.body.isDefault || false
     };
 
@@ -99,7 +102,7 @@ const createAddress = async (req, res) => {
       return sendError(res, 400, validationErrors.join(', '));
     }
     if (error.name === 'SequelizeForeignKeyConstraintError') {
-      return sendError(res, 400, 'Invalid location ID');
+      return sendError(res, 400, 'Invalid foreign key reference');
     }
     logger.error('Error in createAddress controller', error);
     return sendError(res, 500, 'Failed to create address');
@@ -121,8 +124,11 @@ const updateAddress = async (req, res) => {
       label: req.body.label,
       addressLine1: req.body.addressLine1,
       addressLine2: req.body.addressLine2,
+      city: req.body.city,
+      state: req.body.state,
+      postalCode: req.body.postalCode,
+      country: req.body.country,
       landmark: req.body.landmark,
-      locationId: req.body.locationId,
       isDefault: req.body.isDefault
     };
 

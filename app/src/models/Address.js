@@ -12,13 +12,6 @@ module.exports = (sequelize, DataTypes) => {
         onDelete: 'CASCADE'
       });
 
-      // Address belongs to one location
-      Address.belongsTo(models.Location, {
-        foreignKey: 'location_id',
-        as: 'location',
-        onDelete: 'SET NULL'
-      });
-
       // Address has many orders
       Address.hasMany(models.Order, {
         foreignKey: 'address_id',
@@ -39,7 +32,6 @@ module.exports = (sequelize, DataTypes) => {
         postalCode: this.postalCode,
         country: this.country,
         landmark: this.landmark,
-        locationId: this.locationId,
         isDefault: this.isDefault,
         createdAt: this.createdAt,
         updatedAt: this.updatedAt
@@ -132,20 +124,6 @@ module.exports = (sequelize, DataTypes) => {
           len: { args: [0, 255], msg: 'Landmark must not exceed 255 characters' }
         }
       },
-      locationId: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-        field: 'location_id',
-        references: {
-          model: 'locations',
-          key: 'id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'SET NULL',
-        validate: {
-          isInt: { msg: 'Location ID must be an integer' }
-        }
-      },
       isDefault: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
@@ -161,8 +139,7 @@ module.exports = (sequelize, DataTypes) => {
       underscored: true,
       indexes: [
         { fields: ['user_id'] },
-        { fields: ['user_id', 'is_default'] },
-        { fields: ['location_id'] }
+        { fields: ['user_id', 'is_default'] }
       ]
     }
   );

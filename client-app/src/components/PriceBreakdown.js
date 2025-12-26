@@ -52,7 +52,7 @@ const PriceBreakdown = ({
 
         {tax > 0 && (
           <View style={styles.row}>
-            <Text style={styles.label}>Tax & Fees</Text>
+            <Text style={styles.label}>GST</Text>
             <Text style={styles.value}>₹{tax}</Text>
           </View>
         )}

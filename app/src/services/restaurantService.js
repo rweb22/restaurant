@@ -24,11 +24,29 @@ class RestaurantService {
         id: 1,
         restaurantName: 'My Restaurant',
         taxPercentage: 5.0,
-        estimatedPrepTimeMinutes: 30
+        estimatedPrepTimeMinutes: 30,
+        deliveryFee: 40.00,
+        estimatedDeliveryTimeMinutes: 30
       });
     }
 
     return settings;
+  }
+
+  /**
+   * Get delivery fee and estimated delivery time
+   */
+  async getDeliveryFee() {
+    try {
+      const settings = await this.getSettings();
+      return {
+        deliveryFee: parseFloat(settings.deliveryFee),
+        estimatedDeliveryTime: settings.estimatedDeliveryTimeMinutes
+      };
+    } catch (error) {
+      logger.error('Error getting delivery fee', error);
+      throw error;
+    }
   }
 
   /**

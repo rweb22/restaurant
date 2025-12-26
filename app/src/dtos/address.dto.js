@@ -71,16 +71,6 @@ const createAddressSchema = Joi.object({
     .messages({
       'string.max': 'Landmark must not exceed 255 characters'
     }),
-  locationId: Joi.number()
-    .integer()
-    .positive()
-    .required()
-    .messages({
-      'number.base': 'Location ID must be a number',
-      'number.integer': 'Location ID must be an integer',
-      'number.positive': 'Location ID must be positive',
-      'any.required': 'Location ID is required'
-    }),
   isDefault: Joi.boolean()
     .optional()
     .default(false)
@@ -150,14 +140,6 @@ const updateAddressSchema = Joi.object({
     .messages({
       'string.max': 'Landmark must not exceed 255 characters'
     }),
-  locationId: Joi.number()
-    .integer()
-    .allow(null)
-    .optional()
-    .messages({
-      'number.base': 'Location ID must be a number',
-      'number.integer': 'Location ID must be an integer'
-    }),
   isDefault: Joi.boolean()
     .optional()
     .messages({
@@ -183,7 +165,6 @@ const formatAddressResponse = (address) => {
     postalCode: address.postalCode || address.postal_code,
     country: address.country,
     landmark: address.landmark,
-    locationId: address.locationId !== undefined ? address.locationId : address.location_id,
     isDefault: address.isDefault !== undefined ? address.isDefault : address.is_default,
     createdAt: address.createdAt || address.created_at,
     updatedAt: address.updatedAt || address.updated_at
@@ -195,28 +176,6 @@ const formatAddressResponse = (address) => {
       id: address.user.id,
       name: address.user.name,
       phone: address.user.phone
-    };
-  }
-
-  // Include location data if available
-  if (address.location) {
-    const loc = address.location;
-    // Handle both camelCase (from Sequelize with underscored: true) and snake_case (raw data)
-    const deliveryCharge = loc.deliveryCharge !== undefined ? loc.deliveryCharge : loc.delivery_charge;
-    const estimatedDeliveryTime = loc.estimatedDeliveryTime !== undefined ? loc.estimatedDeliveryTime : loc.estimated_delivery_time;
-    const isAvailable = loc.isAvailable !== undefined ? loc.isAvailable : loc.is_available;
-
-    const parsedDeliveryCharge = deliveryCharge !== undefined && deliveryCharge !== null ? parseFloat(deliveryCharge) : 0;
-
-    response.location = {
-      id: loc.id,
-      name: loc.name,
-      area: loc.area,
-      city: loc.city,
-      pincode: loc.pincode,
-      deliveryCharge: parsedDeliveryCharge,
-      estimatedDeliveryTime: estimatedDeliveryTime || 30,
-      isAvailable: isAvailable !== undefined ? isAvailable : true
     };
   }
 

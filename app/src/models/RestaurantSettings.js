@@ -58,6 +58,25 @@ module.exports = (sequelize) => {
         defaultValue: 30,
         field: 'estimated_prep_time_minutes'
       },
+      // Delivery Settings
+      deliveryFee: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 40.00,
+        field: 'delivery_fee',
+        validate: {
+          min: { args: [0], msg: 'Delivery fee must be non-negative' }
+        }
+      },
+      estimatedDeliveryTimeMinutes: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 30,
+        field: 'estimated_delivery_time_minutes',
+        validate: {
+          min: { args: [0], msg: 'Estimated delivery time must be non-negative' }
+        }
+      },
       // Contact Information
       restaurantName: {
         type: DataTypes.STRING(255),

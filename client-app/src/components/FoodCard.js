@@ -39,7 +39,7 @@ const FoodCard = ({
   };
 
   return (
-    <Animated.View style={[{ transform: [{ scale: scaleAnim }] }, style]}>
+    <Animated.View style={[style, { transform: [{ scale: scaleAnim }] }]}>
       <TouchableOpacity
         style={styles.card}
         onPress={onPress}
@@ -99,6 +99,7 @@ const FoodCard = ({
 
 const styles = StyleSheet.create({
   card: {
+    flex: 1,
     backgroundColor: colors.white,
     borderRadius: borderRadius.xl,
     overflow: 'hidden',

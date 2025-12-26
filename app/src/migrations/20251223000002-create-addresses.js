@@ -50,16 +50,6 @@ module.exports = {
         type: Sequelize.STRING(255),
         allowNull: true
       },
-      location_id: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-        references: {
-          model: 'locations',
-          key: 'id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'SET NULL'
-      },
       is_default: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
@@ -80,7 +70,6 @@ module.exports = {
     // Create indexes
     await queryInterface.addIndex('addresses', ['user_id']);
     await queryInterface.addIndex('addresses', ['user_id', 'is_default']);
-    await queryInterface.addIndex('addresses', ['location_id']);
   },
 
   down: async (queryInterface, Sequelize) => {

@@ -22,8 +22,6 @@ import ItemsScreen from './src/screens/ItemsScreen';
 import ItemFormScreen from './src/screens/ItemFormScreen';
 import AddOnsScreen from './src/screens/AddOnsScreen';
 import AddOnFormScreen from './src/screens/AddOnFormScreen';
-import LocationsScreen from './src/screens/LocationsScreen';
-import LocationFormScreen from './src/screens/LocationFormScreen';
 import UsersScreen from './src/screens/UsersScreen';
 import UserFormScreen from './src/screens/UserFormScreen';
 import OffersScreen from './src/screens/OffersScreen';
@@ -262,6 +260,64 @@ function CategoriesStack({ navigation }) {
   );
 }
 
+function OrdersStack({ navigation }) {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: lightTheme.colors.primary,
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}
+    >
+      <Stack.Screen
+        name="OrdersList"
+        component={OrdersScreen}
+        options={({ navigation: screenNavigation }) => ({
+          title: 'Orders',
+          headerLeft: () => (
+            <IconButton
+              icon="menu"
+              iconColor="#fff"
+              onPress={() => navigation.openDrawer()}
+            />
+          ),
+          headerRight: () => {
+            const { clearAuth } = useAuthStore.getState();
+            return (
+              <View style={{ flexDirection: 'row', marginRight: 8 }}>
+                <IconButton
+                  icon="bell"
+                  iconColor="#fff"
+                  onPress={() => {
+                    const parent = screenNavigation.getParent();
+                    if (parent) {
+                      parent.navigate('Main', { screen: 'Notifications' });
+                    }
+                  }}
+                />
+                <IconButton
+                  icon="logout"
+                  iconColor="#fff"
+                  onPress={clearAuth}
+                />
+              </View>
+            );
+          },
+        })}
+      />
+      <Stack.Screen
+        name="OrderDetails"
+        component={OrderDetailsScreen}
+        options={{ title: 'Order Details' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 function ItemsStack({ navigation }) {
   return (
     <Stack.Navigator
@@ -354,66 +410,6 @@ function AddOnsStack({ navigation }) {
         component={AddOnFormScreen}
         options={({ route }) => ({
           title: route.params?.addOnId ? 'Edit Add-on' : 'Create Add-on',
-        })}
-      />
-    </Stack.Navigator>
-  );
-}
-
-function LocationsStack({ navigation }) {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: lightTheme.colors.primary,
-        },
-        headerTintColor: '#fff',
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
-      }}
-    >
-      <Stack.Screen
-        name="LocationsList"
-        component={LocationsScreen}
-        options={({ navigation: screenNavigation }) => ({
-          title: 'Locations',
-          headerLeft: () => (
-            <IconButton
-              icon="menu"
-              iconColor="#fff"
-              onPress={() => navigation.openDrawer()}
-            />
-          ),
-          headerRight: () => {
-            const { clearAuth } = useAuthStore.getState();
-            return (
-              <View style={{ flexDirection: 'row', marginRight: 8 }}>
-                <IconButton
-                  icon="bell"
-                  iconColor="#fff"
-                  onPress={() => {
-                    const parent = screenNavigation.getParent();
-                    if (parent) {
-                      parent.navigate('Main', { screen: 'Notifications' });
-                    }
-                  }}
-                />
-                <IconButton
-                  icon="logout"
-                  iconColor="#fff"
-                  onPress={clearAuth}
-                />
-              </View>
-            );
-          },
-        })}
-      />
-      <Stack.Screen
-        name="LocationForm"
-        component={LocationFormScreen}
-        options={({ route }) => ({
-          title: route.params?.locationId ? 'Edit Location' : 'Create Location',
         })}
       />
     </Stack.Navigator>
@@ -745,36 +741,13 @@ function DrawerNavigator() {
       />
       <Drawer.Screen
         name="OrdersDrawer"
-        component={OrdersScreen}
-        options={({ navigation }) => ({
+        component={OrdersStack}
+        options={{
           drawerLabel: 'Orders',
           drawerIcon: ({ color, size }) => (
             <Icon source="receipt" color={color} size={size} />
           ),
-          headerShown: true,
-          headerStyle: {
-            backgroundColor: lightTheme.colors.primary,
-          },
-          headerTintColor: '#fff',
-          headerTitle: 'Orders',
-          headerRight: () => {
-            const { clearAuth } = useAuthStore.getState();
-            return (
-              <View style={{ flexDirection: 'row', marginRight: 8 }}>
-                <IconButton
-                  icon="bell"
-                  iconColor="#fff"
-                  onPress={() => navigation.navigate('Main', { screen: 'Notifications' })}
-                />
-                <IconButton
-                  icon="logout"
-                  iconColor="#fff"
-                  onPress={clearAuth}
-                />
-              </View>
-            );
-          },
-        })}
+        }}
       />
       <Drawer.Screen
         name="MenuManagementDrawer"
@@ -793,16 +766,6 @@ function DrawerNavigator() {
           drawerLabel: 'Add-ons',
           drawerIcon: ({ color, size }) => (
             <Icon source="puzzle" color={color} size={size} />
-          ),
-        }}
-      />
-      <Drawer.Screen
-        name="LocationsDrawer"
-        component={LocationsStack}
-        options={{
-          drawerLabel: 'Locations',
-          drawerIcon: ({ color, size }) => (
-            <Icon source="map-marker" color={color} size={size} />
           ),
         }}
       />

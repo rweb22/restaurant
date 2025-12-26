@@ -5,6 +5,7 @@ module.exports = {
   url: process.env.OTP_SERVICE_URL || 'https://2factor.in/API/V1',
   apiKey: process.env.OTP_SERVICE_API_KEY || '',
   timeout: parseInt(process.env.OTP_SERVICE_TIMEOUT) || 10000,
-  otpExpiry: 300 // 5 minutes (2Factor.in default)
+  otpExpiry: 300, // 5 minutes (2Factor.in default)
+  smsTemplateName: process.env.OTP_SMS_TEMPLATE_NAME || '' // Optional SMS template name
 };
 
