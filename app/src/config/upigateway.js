@@ -29,7 +29,10 @@ module.exports = {
   
   // Feature flag
   enabled: process.env.PAYMENT_ENABLED === 'true',
-  
+
+  // Test mode (simulates UPIGateway responses without calling actual API)
+  testMode: process.env.UPIGATEWAY_TEST_MODE === 'true',
+
   // UPIGateway API base URL
   apiBaseUrl: 'https://api.upigateway.com/api/v1',
   

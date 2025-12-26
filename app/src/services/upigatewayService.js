@@ -50,6 +50,31 @@ class UPIGatewayService {
       throw new Error('Payment service is disabled');
     }
 
+    // Test mode - return mock response without calling actual API
+    if (upigatewayConfig.testMode) {
+      logger.warn('UPIGateway TEST MODE: Returning mock payment response');
+      logger.info('Creating UPIGateway order (TEST MODE):', {
+        clientTxnId,
+        amount,
+        customerMobile
+      });
+
+      const mockOrderId = `test_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      const mockQrString = `upi://pay?pa=merchant@upi&pn=${encodeURIComponent(customerName || 'Customer')}&am=${amount}&tn=${encodeURIComponent(clientTxnId)}`;
+      const mockQrCode = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='; // 1x1 transparent PNG
+
+      return {
+        success: true,
+        orderId: mockOrderId,
+        qrCode: mockQrCode,
+        qrString: mockQrString,
+        paymentUrl: `https://test.upigateway.com/pay/${mockOrderId}`,
+        amount: amount,
+        currency: 'INR',
+        clientTxnId: clientTxnId
+      };
+    }
+
     try {
       const payload = {
         key: this.merchantKey,
@@ -65,12 +90,12 @@ class UPIGatewayService {
         udf3: customFields.udf3 || ''
       };
 
-      logger.info('Creating UPIGateway order:', { 
-        clientTxnId, 
+      logger.info('Creating UPIGateway order:', {
+        clientTxnId,
         amount,
-        customerMobile 
+        customerMobile
       });
-      
+
       const response = await axios.post(`${this.apiBaseUrl}/create_order`, payload, {
         headers: {
           'Content-Type': 'application/json',
@@ -82,11 +107,11 @@ class UPIGatewayService {
       logger.debug('UPIGateway API response:', response.data);
 
       if (response.data.status === true || response.data.status === 'true') {
-        logger.info('UPIGateway order created successfully:', { 
+        logger.info('UPIGateway order created successfully:', {
           clientTxnId,
-          gatewayOrderId: response.data.data?.order_id 
+          gatewayOrderId: response.data.data?.order_id
         });
-        
+
         return {
           success: true,
           orderId: response.data.data.order_id,
@@ -99,10 +124,10 @@ class UPIGatewayService {
         };
       } else {
         const errorMsg = response.data.msg || response.data.message || 'Failed to create UPIGateway order';
-        logger.error('UPIGateway order creation failed:', { 
-          clientTxnId, 
+        logger.error('UPIGateway order creation failed:', {
+          clientTxnId,
           error: errorMsg,
-          response: response.data 
+          response: response.data
         });
         throw new Error(errorMsg);
       }
@@ -132,6 +157,22 @@ class UPIGatewayService {
   async checkTransactionStatus(clientTxnId) {
     if (!upigatewayConfig.enabled) {
       throw new Error('Payment service is disabled');
+    }
+
+    // Test mode - return mock pending status
+    if (upigatewayConfig.testMode) {
+      logger.warn('UPIGateway TEST MODE: Returning mock transaction status (pending)');
+      logger.info('Checking transaction status (TEST MODE):', { clientTxnId });
+
+      return {
+        success: true,
+        status: 'pending', // Always return pending in test mode
+        txnId: `test_txn_${Date.now()}`,
+        upiTxnId: `test_upi_${Date.now()}`,
+        amount: 0,
+        customerVpa: 'test@upi',
+        clientTxnId: clientTxnId
+      };
     }
 
     try {
