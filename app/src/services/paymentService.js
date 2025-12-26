@@ -52,11 +52,17 @@ class PaymentService {
         udf3: ''
       };
 
+      // Generate placeholder email from phone number (User model doesn't have email field)
+      // UPIGateway requires email, so we create one from phone: +919999999999 -> 9999999999@customer.restaurant.com
+      const customerEmail = order.user?.phone
+        ? `${order.user.phone.replace(/\+/g, '')}@customer.restaurant.com`
+        : 'customer@restaurant.com';
+
       const upigatewayOrder = await upigatewayService.createOrder(
         order.totalPrice,
         clientTxnId,
         order.user?.name || 'Customer',
-        '', // email - not available in User model
+        customerEmail,
         order.user?.phone || '',
         customFields
       );
