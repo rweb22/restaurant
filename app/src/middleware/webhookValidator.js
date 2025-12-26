@@ -14,6 +14,12 @@ const logger = require('../utils/logger');
  */
 const validateUPIGatewayWebhook = (req, res, next) => {
   try {
+    // If webhook secret is not configured, skip validation (testing mode)
+    if (!upigatewayConfig.webhookSecret || upigatewayConfig.webhookSecret === 'test_webhook_secret_not_required_for_polling') {
+      logger.warn('UPIGateway webhook secret not configured - skipping signature validation (TESTING MODE)');
+      return next();
+    }
+
     // Get signature from headers
     const receivedSignature = req.headers['x-upigateway-signature'];
 

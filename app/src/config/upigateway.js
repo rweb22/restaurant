@@ -63,23 +63,32 @@ module.exports = {
   // Validation
   validate() {
     const errors = [];
-    
+    const warnings = [];
+
+    // Merchant key is required
     if (!this.merchantKey) {
       errors.push('UPIGATEWAY_MERCHANT_KEY is not configured');
     }
-    
+
+    // Webhook secret and callback URL are optional for testing (polling will work without them)
     if (!this.webhookSecret) {
-      errors.push('UPIGATEWAY_WEBHOOK_SECRET is not configured');
+      warnings.push('UPIGATEWAY_WEBHOOK_SECRET is not configured - webhook verification will be skipped');
     }
-    
+
     if (!this.callbackUrl) {
-      errors.push('UPIGATEWAY_CALLBACK_URL is not configured');
+      warnings.push('UPIGATEWAY_CALLBACK_URL is not configured - webhooks will not work (polling will be used)');
     }
-    
+
+    // Log warnings
+    if (warnings.length > 0) {
+      console.warn('[UPIGateway Config] Warnings:', warnings.join(', '));
+    }
+
+    // Only throw error if merchant key is missing
     if (this.enabled && errors.length > 0) {
       throw new Error(`UPIGateway configuration errors: ${errors.join(', ')}`);
     }
-    
+
     return errors.length === 0;
   }
 };
