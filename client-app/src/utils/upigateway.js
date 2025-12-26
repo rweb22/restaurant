@@ -1,11 +1,11 @@
 /**
  * UPIGateway Utility Functions
- * 
+ *
  * Helper functions for UPIGateway payment integration
  */
 
 import { API_BASE_URL } from '../constants/config';
-import { getAuthToken } from './auth';
+import { useAuthStore } from '../store/authStore';
 
 /**
  * Initiate UPIGateway payment for an order
@@ -14,8 +14,8 @@ import { getAuthToken } from './auth';
  */
 export const initiatePayment = async (orderId) => {
   try {
-    const token = await getAuthToken();
-    
+    const token = useAuthStore.getState().token;
+
     const response = await fetch(`${API_BASE_URL}/payments/initiate`, {
       method: 'POST',
       headers: {
@@ -49,8 +49,8 @@ export const initiatePayment = async (orderId) => {
  */
 export const checkPaymentStatus = async (orderId) => {
   try {
-    const token = await getAuthToken();
-    
+    const token = useAuthStore.getState().token;
+
     const response = await fetch(`${API_BASE_URL}/payments/check-status`, {
       method: 'POST',
       headers: {
@@ -84,8 +84,8 @@ export const checkPaymentStatus = async (orderId) => {
  */
 export const getPaymentStatus = async (orderId) => {
   try {
-    const token = await getAuthToken();
-    
+    const token = useAuthStore.getState().token;
+
     const response = await fetch(`${API_BASE_URL}/payments/status/${orderId}`, {
       method: 'GET',
       headers: {
