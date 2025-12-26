@@ -28,8 +28,6 @@ services:
     build:
       context: ./app
       dockerfile: Dockerfile
-      args:
-        NODE_ENV: ${NODE_ENV:-development}
     container_name: restaurant_app
     restart: unless-stopped
     environment:

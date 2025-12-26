@@ -52,7 +52,7 @@ const LoginScreen = ({ navigation }) => {
               <View style={styles.iconContainer}>
                 {APP_CONFIG.LOGO_TYPE === 'image' ? (
                   <Image
-                    source={require('../../assets/logo.png')}
+                    source={require('../../assets/icon.png')}
                     style={styles.logoImage}
                     resizeMode="contain"
                   />

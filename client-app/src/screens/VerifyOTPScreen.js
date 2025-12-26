@@ -20,6 +20,18 @@ const VerifyOTPScreen = ({ navigation }) => {
       return;
     }
 
+    console.log('[VerifyOTP] Attempting verification with:', {
+      phone: tempPhone,
+      otp: otp,
+      hasSecret: !!tempSecret,
+      secretLength: tempSecret?.length
+    });
+
+    if (!tempPhone || !tempSecret) {
+      setError('Session expired. Please request a new OTP.');
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await authService.verifyOTP(tempPhone, otp, tempSecret);
@@ -33,7 +45,9 @@ const VerifyOTPScreen = ({ navigation }) => {
       console.log('[VerifyOTP] Login successful');
     } catch (err) {
       console.error('[VerifyOTP] Error:', err);
-      setError(err.message || 'Invalid OTP. Please try again.');
+      console.error('[VerifyOTP] Error response:', err.response?.data);
+      const errorMessage = err.response?.data?.message || err.message || 'Invalid OTP. Please try again.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

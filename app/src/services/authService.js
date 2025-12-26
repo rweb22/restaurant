@@ -96,13 +96,22 @@ class AuthService {
         return user;
       }
 
-      // Create new client user
+      // Check if this phone number should be an admin
+      const adminPhone = process.env.ADMIN_PHONE;
+      const isAdmin = adminPhone && phone === adminPhone;
+
+      // Create new user (admin or client based on phone)
       user = await User.create({
         phone,
-        role: 'client'
+        role: isAdmin ? 'admin' : 'client',
+        name: isAdmin ? 'Admin User' : null
       });
 
-      logger.success(`New user created: ${user.id}`, { phone });
+      if (isAdmin) {
+        logger.success(`New ADMIN user created: ${user.id}`, { phone });
+      } else {
+        logger.success(`New client user created: ${user.id}`, { phone });
+      }
 
       return user;
     } catch (error) {
