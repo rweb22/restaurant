@@ -84,7 +84,7 @@ class UPIGatewayService {
         customer_name: customerName || 'Customer',
         customer_email: customerEmail || '',
         customer_mobile: customerMobile || '',
-        redirect_url: upigatewayConfig.callbackUrl,
+        redirect_url: upigatewayConfig.callbackUrl || 'https://example.com/payment-success',
         udf1: customFields.udf1 || '',
         udf2: customFields.udf2 || '',
         udf3: customFields.udf3 || ''
