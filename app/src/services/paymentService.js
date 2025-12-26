@@ -389,7 +389,7 @@ class PaymentService {
         gatewayPaymentId: successfulTransaction.gatewayPaymentId,
         amount: refundAmount,
         currency: 'INR',
-        status: 'refund_pending',
+        status: 'created', // Refund transaction created, pending manual processing
         paymentMethod: 'upi',
         upiVpa: successfulTransaction.upiVpa,
         metadata: {
@@ -402,9 +402,9 @@ class PaymentService {
         }
       });
 
-      // Update order payment status to refund_pending
+      // Update order payment status to processing (refund being processed manually)
       await order.update({
-        paymentStatus: 'refund_pending'
+        paymentStatus: 'processing'
       });
 
       logger.info('Refund initiated (manual processing required):', {
@@ -439,7 +439,7 @@ class PaymentService {
         orderId: order.id,
         refundTransactionId: refundTransaction.id,
         amount: refundAmount,
-        status: 'refund_pending',
+        status: 'processing',
         customerVpa: successfulTransaction.upiVpa,
         message: 'Refund initiated. Please process manually through your UPI merchant app.',
         instructions: `Send ₹${refundAmount} to ${successfulTransaction.upiVpa} using your UPI merchant app.`
