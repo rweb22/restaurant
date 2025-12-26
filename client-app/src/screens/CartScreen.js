@@ -94,6 +94,10 @@ const CartScreen = ({ navigation }) => {
     // Get delivery charge from selected location
     let deliveryCharge = selectedLocation?.deliveryCharge || 0;
 
+    // Debug logging for delivery charge
+    console.log('[CartScreen] Selected Location:', selectedLocation);
+    console.log('[CartScreen] Delivery Charge:', deliveryCharge);
+
     // Apply offer discount
     let discountAmount = 0;
     if (appliedOffer) {
@@ -552,8 +556,8 @@ const CartScreen = ({ navigation }) => {
           <Text variant="titleMedium" style={styles.sectionTitle}>Bill Details</Text>
           <PriceBreakdown
             subtotal={priceBreakdown.subtotal}
-            gst={priceBreakdown.gstAmount}
-            deliveryCharge={priceBreakdown.deliveryCharge}
+            tax={priceBreakdown.gstAmount}
+            deliveryFee={priceBreakdown.deliveryCharge}
             discount={appliedOffer && parseFloat(priceBreakdown.discountAmount) > 0 ? priceBreakdown.discountAmount : null}
             total={priceBreakdown.grandTotal}
             showWarning={!selectedLocation}
