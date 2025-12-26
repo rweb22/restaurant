@@ -34,7 +34,7 @@ module.exports = {
   testMode: process.env.UPIGATEWAY_TEST_MODE === 'true',
 
   // UPIGateway API base URL
-  apiBaseUrl: 'https://api.upigateway.com/api/v1',
+  apiBaseUrl: 'https://merchant.upigateway.com/api',
   
   // Supported payment methods (UPI only)
   supportedMethods: ['upi'],
