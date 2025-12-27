@@ -2,13 +2,14 @@ import React, { useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { PaperProvider, MD3LightTheme, ActivityIndicator, Badge } from 'react-native-paper';
 import { View, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-paper/src/components/Icon';
 import ConfirmDialog from './src/components/ConfirmDialog';
 import pushNotificationService from './src/services/pushNotificationService';
+import notificationService from './src/services/notificationService';
 
 // Stores
 import useAuthStore from './src/store/authStore';
