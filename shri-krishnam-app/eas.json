@@ -5,12 +5,16 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "android": {
+        "googleServicesFile": "./android/app/google-services.json"
+      }
     },
     "preview": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "googleServicesFile": "./android/app/google-services.json"
       },
       "env": {
         "APP_NAME": "Shri Krishnam",
@@ -23,7 +27,8 @@
     },
     "production": {
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "googleServicesFile": "./android/app/google-services.json"
       },
       "env": {
         "APP_NAME": "Shri Krishnam",
