@@ -33,28 +33,42 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: ${PORT:-3000}
-      
+
       # Database
       DB_HOST: db
       DB_PORT: 5432
       DB_NAME: ${DB_NAME:-restaurant_db}
       DB_USER: ${DB_USER:-restaurant_user}
       DB_PASSWORD: ${DB_PASSWORD:-restaurant_password}
-      
+
       # JWT
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-30d}
-      
+
       # OTP Service
+      USE_MOCK_OTP: ${USE_MOCK_OTP:-true}
       OTP_SERVICE_URL: ${OTP_SERVICE_URL}
       OTP_SERVICE_API_KEY: ${OTP_SERVICE_API_KEY}
       OTP_SERVICE_TIMEOUT: ${OTP_SERVICE_TIMEOUT:-10000}
-      
+      OTP_SMS_TEMPLATE_NAME: ${OTP_SMS_TEMPLATE_NAME:-}
+
       # CORS
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
-      
+
       # Admin
       ADMIN_PHONE: ${ADMIN_PHONE}
+
+      # Payment Gateway (UPIGateway)
+      UPIGATEWAY_MERCHANT_KEY: ${UPIGATEWAY_MERCHANT_KEY}
+      UPIGATEWAY_WEBHOOK_SECRET: ${UPIGATEWAY_WEBHOOK_SECRET}
+      UPIGATEWAY_CALLBACK_URL: ${UPIGATEWAY_CALLBACK_URL}
+      UPIGATEWAY_TEST_MODE: ${UPIGATEWAY_TEST_MODE:-false}
+
+      # Payment Configuration
+      PAYMENT_ENABLED: ${PAYMENT_ENABLED:-true}
+      PAYMENT_CURRENCY: ${PAYMENT_CURRENCY:-INR}
+      PAYMENT_ORDER_EXPIRY: ${PAYMENT_ORDER_EXPIRY:-900}
+      PAYMENT_ORDER_NOTES_PREFIX: ${PAYMENT_ORDER_NOTES_PREFIX:-Restaurant Order}
     ports:
       - "${PORT:-3000}:3000"
     volumes:

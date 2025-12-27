@@ -14,6 +14,8 @@ const LoginScreen = ({ navigation }) => {
   const [error, setError] = useState('');
   const { setTempPhone, setTempSecret } = useAuthStore();
 
+
+
   const handleSendOTP = async () => {
     if (!phone || phone.length < 10) {
       setError('Please enter a valid phone number');
@@ -52,9 +54,10 @@ const LoginScreen = ({ navigation }) => {
               <View style={styles.iconContainer}>
                 {APP_CONFIG.LOGO_TYPE === 'image' ? (
                   <Image
-                    source={require('../../assets/icon.png')}
+                    source={require('../../assets/logo.png')}
                     style={styles.logoImage}
                     resizeMode="contain"
+                    key="logo-image"
                   />
                 ) : (
                   <Icon source={APP_CONFIG.LOGO_ICON} size={80} color={colors.white} />

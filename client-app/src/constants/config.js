@@ -21,7 +21,7 @@ export const APP_CONFIG = {
   APP_NAME: APP_NAME || 'Restaurant App',
   VERSION: APP_VERSION || '1.0.0',
   TAGLINE: APP_TAGLINE || 'Delicious food, delivered fast',
-  LOGO_TYPE: APP_LOGO_TYPE || 'icon', // 'icon' or 'image'
+  LOGO_TYPE: APP_LOGO_TYPE || 'image', // 'icon' or 'image' - Changed default to 'image'
   LOGO_ICON: APP_LOGO_ICON || 'food', // Material Design icon name
 };
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
+import { View, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
 import {
   Text,
   Card,
@@ -10,6 +10,9 @@ import {
   ActivityIndicator,
   useTheme,
   Switch,
+  SegmentedButtons,
+  Divider,
+  Badge,
 } from 'react-native-paper';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import menuService from '../services/menuService';
@@ -17,8 +20,9 @@ import menuService from '../services/menuService';
 export default function MenuManagementScreen({ navigation }) {
   const theme = useTheme();
   const queryClient = useQueryClient();
-  const [expandedCategories, setExpandedCategories] = useState({});
-  const [expandedItems, setExpandedItems] = useState({});
+  const [viewMode, setViewMode] = useState('categories'); // 'categories', 'items', 'sizes'
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [menuVisible, setMenuVisible] = useState(null);
   const [menuType, setMenuType] = useState(null); // 'category', 'item', 'size'
 
@@ -156,19 +160,28 @@ export default function MenuManagementScreen({ navigation }) {
   const categories = categoriesData?.categories || [];
   const itemsByCategory = categoriesData?.itemsByCategory || {};
 
-  const toggleCategory = (categoryId) => {
-    setExpandedCategories(prev => ({
-      ...prev,
-      [categoryId]: !prev[categoryId],
-    }));
-  };
+  // Get all items (flattened)
+  const allItems = Object.values(itemsByCategory).flat();
 
-  const toggleItem = (itemId) => {
-    setExpandedItems(prev => ({
-      ...prev,
-      [itemId]: !prev[itemId],
-    }));
-  };
+  // Get all sizes (flattened)
+  const allSizes = allItems.flatMap(item =>
+    (item.sizes || []).map(size => ({
+      ...size,
+      itemName: item.name,
+      itemId: item.id,
+      categoryName: categories.find(c => c.id === item.categoryId)?.name || 'Unknown'
+    }))
+  );
+
+  // Filter items based on selected category
+  const filteredItems = selectedCategory
+    ? itemsByCategory[selectedCategory] || []
+    : allItems;
+
+  // Filter sizes based on selected item
+  const filteredSizes = selectedItem
+    ? allSizes.filter(size => size.itemId === selectedItem)
+    : allSizes;
 
   const handleMenuOpen = (id, type) => {
     setMenuVisible(id);
@@ -237,85 +250,73 @@ export default function MenuManagementScreen({ navigation }) {
     );
   }
 
-  return (
-    <View style={styles.container}>
-      <ScrollView
-        style={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
-        }
-      >
-        {categories.length === 0 ? (
-          <Card style={styles.card}>
-            <Card.Content>
-              <Text>No categories yet. Create one to get started!</Text>
-            </Card.Content>
-          </Card>
-        ) : (
-          categories.map((category) => {
-            const items = itemsByCategory[category.id] || [];
-            const isExpanded = expandedCategories[category.id];
+  // Render Categories View
+  const renderCategoriesView = () => (
+    <ScrollView
+      style={styles.scrollContent}
+      contentContainerStyle={styles.scrollContentContainer}
+      refreshControl={
+        <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
+      }
+    >
+      {categories.length === 0 ? (
+        <Card style={styles.card}>
+          <Card.Content>
+            <Text>No categories yet. Create one to get started!</Text>
+          </Card.Content>
+        </Card>
+      ) : (
+        categories.map((category) => {
+          const items = itemsByCategory[category.id] || [];
 
-            return (
-              <Card key={category.id} style={styles.categoryCard}>
-                <Card.Content>
-                  {/* Category Header */}
-                  <View style={styles.categoryHeader}>
-                    <IconButton
-                      icon={isExpanded ? 'chevron-down' : 'chevron-right'}
-                      size={24}
-                      onPress={() => toggleCategory(category.id)}
-                      style={styles.expandIcon}
-                    />
-                    <View style={styles.categoryInfo}>
-                      <Text variant="titleLarge" style={styles.categoryName}>
-                        📁 {category.name}
-                      </Text>
-                      <View style={styles.categoryMeta}>
-                        <Chip
-                          compact
-                          mode="flat"
-                          textStyle={{
-                            color: category.isAvailable ? theme.colors.tertiary : theme.colors.error,
-                            fontSize: 11,
-                            lineHeight: 14,
-                          }}
-                          style={{
-                            backgroundColor: category.isAvailable
-                              ? `${theme.colors.tertiary}20`
-                              : `${theme.colors.error}20`,
-                            height: 24,
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                          }}
-                        >
-                          {category.isAvailable ? 'Available' : 'Unavailable'}
+          return (
+            <Card key={category.id} style={styles.categoryCard}>
+              <Card.Content>
+                <View style={styles.cardHeader}>
+                  <View style={styles.cardHeaderLeft}>
+                    <Text variant="headlineSmall" style={styles.cardTitle}>
+                      {category.name}
+                    </Text>
+                    <View style={styles.cardMeta}>
+                      <Chip
+                        compact
+                        mode="flat"
+                        icon={category.isAvailable ? 'check-circle' : 'close-circle'}
+                        textStyle={{ fontSize: 12 }}
+                        style={{
+                          backgroundColor: category.isAvailable
+                            ? `${theme.colors.tertiary}20`
+                            : `${theme.colors.error}20`,
+                        }}
+                      >
+                        {category.isAvailable ? 'Available' : 'Unavailable'}
+                      </Chip>
+                      <Chip compact icon="food" textStyle={{ fontSize: 12 }}>
+                        {items.length} items
+                      </Chip>
+                      <Chip compact icon="percent" textStyle={{ fontSize: 12 }}>
+                        GST {category.gstRate}%
+                      </Chip>
+                      {category.addOns && category.addOns.length > 0 && (
+                        <Chip compact icon="puzzle" textStyle={{ fontSize: 12 }}>
+                          {category.addOns.length} add-ons
                         </Chip>
-                        <Switch
-                          value={category.isAvailable}
-                          onValueChange={() => handleToggleCategoryAvailability(category.id, category.isAvailable)}
-                          disabled={togglingCategoryId === category.id}
-                        />
-                        <Text variant="bodySmall" style={styles.metaText}>
-                          GST: {category.gstRate}%
-                        </Text>
-                        <Text variant="bodySmall" style={styles.metaText}>
-                          {items.length} items
-                        </Text>
-                        {category.addOns && category.addOns.length > 0 && (
-                          <Text variant="bodySmall" style={styles.metaText}>
-                            🧩 {category.addOns.length} add-ons
-                          </Text>
-                        )}
-                      </View>
+                      )}
                     </View>
+                  </View>
+                  <View style={styles.cardActions}>
+                    <Switch
+                      value={category.isAvailable}
+                      onValueChange={() => handleToggleCategoryAvailability(category.id, category.isAvailable)}
+                      disabled={togglingCategoryId === category.id}
+                    />
                     <Menu
                       visible={menuVisible === `cat-${category.id}` && menuType === 'category'}
                       onDismiss={handleMenuClose}
                       anchor={
                         <IconButton
                           icon="dots-vertical"
-                          size={20}
+                          size={24}
                           onPress={() => handleMenuOpen(`cat-${category.id}`, 'category')}
                         />
                       }
@@ -345,199 +346,351 @@ export default function MenuManagementScreen({ navigation }) {
                       />
                     </Menu>
                   </View>
+                </View>
 
-                  {/* Items List (shown when expanded) */}
-                  {isExpanded && (
-                    <View style={styles.itemsContainer}>
-                      {items.length === 0 ? (
-                        <View style={styles.emptyItems}>
-                          <Text variant="bodySmall" style={styles.emptyText}>
-                            No items in this category
-                          </Text>
-                          <IconButton
-                            icon="plus-circle"
-                            size={20}
-                            onPress={() => handleAddItem(category.id)}
-                          />
+                <Divider style={styles.divider} />
+
+                <TouchableOpacity
+                  style={styles.viewItemsButton}
+                  onPress={() => {
+                    setSelectedCategory(category.id);
+                    setViewMode('items');
+                  }}
+                >
+                  <Text variant="labelLarge" style={{ color: theme.colors.primary }}>
+                    View {items.length} Items →
+                  </Text>
+                </TouchableOpacity>
+              </Card.Content>
+            </Card>
+          );
+        })
+      )}
+    </ScrollView>
+  );
+
+  // Render Items View
+  const renderItemsView = () => {
+    const categoryName = selectedCategory
+      ? categories.find(c => c.id === selectedCategory)?.name
+      : 'All Categories';
+
+    return (
+      <>
+        {selectedCategory && (
+          <Card style={styles.breadcrumbCard}>
+            <Card.Content style={styles.breadcrumb}>
+              <TouchableOpacity
+                onPress={() => {
+                  setSelectedCategory(null);
+                  setViewMode('categories');
+                }}
+                style={styles.breadcrumbButton}
+              >
+                <IconButton icon="arrow-left" size={20} style={{ margin: 0 }} />
+                <Text variant="labelLarge">Back to Categories</Text>
+              </TouchableOpacity>
+              <Text variant="titleMedium" style={styles.breadcrumbText}>
+                {categoryName}
+              </Text>
+            </Card.Content>
+          </Card>
+        )}
+
+        <ScrollView
+          style={styles.scrollContent}
+          contentContainerStyle={styles.scrollContentContainer}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
+          }
+        >
+          {filteredItems.length === 0 ? (
+            <Card style={styles.card}>
+              <Card.Content>
+                <Text>No items yet. Create one to get started!</Text>
+              </Card.Content>
+            </Card>
+          ) : (
+            filteredItems.map((item) => {
+              const sizes = item.sizes || [];
+              const category = categories.find(c => c.id === item.categoryId);
+
+              return (
+                <Card key={item.id} style={styles.categoryCard}>
+                  <Card.Content>
+                    <View style={styles.cardHeader}>
+                      <View style={styles.cardHeaderLeft}>
+                        <Text variant="headlineSmall" style={styles.cardTitle}>
+                          {item.name}
+                        </Text>
+                        <View style={styles.cardMeta}>
+                          {!selectedCategory && (
+                            <Chip compact icon="folder" textStyle={{ fontSize: 12 }}>
+                              {category?.name || 'Unknown'}
+                            </Chip>
+                          )}
+                          <Chip
+                            compact
+                            mode="flat"
+                            icon={item.isAvailable ? 'check-circle' : 'close-circle'}
+                            textStyle={{ fontSize: 12 }}
+                            style={{
+                              backgroundColor: item.isAvailable
+                                ? `${theme.colors.tertiary}20`
+                                : `${theme.colors.error}20`,
+                            }}
+                          >
+                            {item.isAvailable ? 'Available' : 'Unavailable'}
+                          </Chip>
+                          <Chip compact icon="resize" textStyle={{ fontSize: 12 }}>
+                            {sizes.length} sizes
+                          </Chip>
+                          {item.addOns && item.addOns.length > 0 && (
+                            <Chip compact icon="puzzle" textStyle={{ fontSize: 12 }}>
+                              {item.addOns.length} add-ons
+                            </Chip>
+                          )}
                         </View>
-                      ) : (
-                        items.map((item) => {
-                          const sizes = item.sizes || [];
-                          const isItemExpanded = expandedItems[item.id];
-
-                          return (
-                            <View key={item.id} style={styles.itemCard}>
-                              {/* Item Header */}
-                              <View style={styles.itemHeader}>
-                                <IconButton
-                                  icon={isItemExpanded ? 'chevron-down' : 'chevron-right'}
-                                  size={20}
-                                  onPress={() => toggleItem(item.id)}
-                                  style={styles.expandIcon}
-                                />
-                                <View style={styles.itemInfo}>
-                                  <Text variant="titleMedium" style={styles.itemName}>
-                                    📦 {item.name}
-                                  </Text>
-                                  <View style={styles.itemMeta}>
-                                    <Chip
-                                      compact
-                                      mode="flat"
-                                      textStyle={{
-                                        color: item.isAvailable ? theme.colors.tertiary : theme.colors.error,
-                                        fontSize: 10,
-                                        lineHeight: 12,
-                                      }}
-                                      style={{
-                                        backgroundColor: item.isAvailable
-                                          ? `${theme.colors.tertiary}20`
-                                          : `${theme.colors.error}20`,
-                                        height: 20,
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                      }}
-                                    >
-                                      {item.isAvailable ? 'Available' : 'Unavailable'}
-                                    </Chip>
-                                    <Switch
-                                      value={item.isAvailable}
-                                      onValueChange={() => handleToggleItemAvailability(item.id, item.isAvailable)}
-                                      disabled={togglingItemId === item.id}
-                                    />
-                                    <Text variant="bodySmall" style={styles.metaText}>
-                                      {sizes.length} sizes
-                                    </Text>
-                                    {item.addOns && item.addOns.length > 0 && (
-                                      <Text variant="bodySmall" style={styles.metaText}>
-                                        🧩 {item.addOns.length} add-ons
-                                      </Text>
-                                    )}
-                                  </View>
-                                </View>
-                                <Menu
-                                  visible={menuVisible === `item-${item.id}` && menuType === 'item'}
-                                  onDismiss={handleMenuClose}
-                                  anchor={
-                                    <IconButton
-                                      icon="dots-vertical"
-                                      size={18}
-                                      onPress={() => handleMenuOpen(`item-${item.id}`, 'item')}
-                                    />
-                                  }
-                                >
-                                  <Menu.Item
-                                    onPress={() => handleEdit(item.id, 'item')}
-                                    title="Edit Item"
-                                    leadingIcon="pencil"
-                                  />
-                                  <Menu.Item
-                                    onPress={() => handleAddSize(item.id)}
-                                    title="Add Size"
-                                    leadingIcon="plus"
-                                  />
-                                  <Menu.Item
-                                    onPress={() => {
-                                      handleMenuClose();
-                                      navigation.navigate('ItemAddOnForm', { itemId: item.id });
-                                    }}
-                                    title="Manage Add-ons"
-                                    leadingIcon="puzzle"
-                                  />
-                                  <Menu.Item
-                                    onPress={() => handleDelete(item.id, 'item')}
-                                    title="Delete Item"
-                                    leadingIcon="delete"
-                                  />
-                                </Menu>
-                              </View>
-
-                              {/* Sizes List (shown when item is expanded) */}
-                              {isItemExpanded && (
-                                <View style={styles.sizesContainer}>
-                                  {sizes.length === 0 ? (
-                                    <View style={styles.emptySizes}>
-                                      <Text variant="bodySmall" style={styles.emptyText}>
-                                        No sizes for this item
-                                      </Text>
-                                      <IconButton
-                                        icon="plus-circle"
-                                        size={16}
-                                        onPress={() => handleAddSize(item.id)}
-                                      />
-                                    </View>
-                                  ) : (
-                                    sizes.map((size) => (
-                                      <View key={size.id} style={styles.sizeRow}>
-                                        <Text variant="bodyMedium" style={styles.sizeName}>
-                                          📏 {size.size}
-                                        </Text>
-                                        <Text variant="bodyMedium" style={styles.sizePrice}>
-                                          ₹{size.price}
-                                        </Text>
-                                        <Chip
-                                          compact
-                                          mode="flat"
-                                          textStyle={{
-                                            color: size.isAvailable ? theme.colors.tertiary : theme.colors.error,
-                                            fontSize: 9,
-                                            lineHeight: 11,
-                                          }}
-                                          style={{
-                                            backgroundColor: size.isAvailable
-                                              ? `${theme.colors.tertiary}20`
-                                              : `${theme.colors.error}20`,
-                                            height: 18,
-                                            justifyContent: 'center',
-                                            alignItems: 'center',
-                                          }}
-                                        >
-                                          {size.isAvailable ? 'Available' : 'Unavailable'}
-                                        </Chip>
-                                        <Menu
-                                          visible={menuVisible === `size-${size.id}` && menuType === 'size'}
-                                          onDismiss={handleMenuClose}
-                                          anchor={
-                                            <IconButton
-                                              icon="dots-vertical"
-                                              size={16}
-                                              onPress={() => handleMenuOpen(`size-${size.id}`, 'size')}
-                                            />
-                                          }
-                                        >
-                                          <Menu.Item
-                                            onPress={() => handleEdit(size.id, 'size')}
-                                            title="Edit Size"
-                                            leadingIcon="pencil"
-                                          />
-                                          <Menu.Item
-                                            onPress={() => handleDelete(size.id, 'size')}
-                                            title="Delete Size"
-                                            leadingIcon="delete"
-                                          />
-                                        </Menu>
-                                      </View>
-                                    ))
-                                  )}
-                                </View>
-                              )}
-                            </View>
-                          );
-                        })
-                      )}
+                      </View>
+                      <View style={styles.cardActions}>
+                        <Switch
+                          value={item.isAvailable}
+                          onValueChange={() => handleToggleItemAvailability(item.id, item.isAvailable)}
+                          disabled={togglingItemId === item.id}
+                        />
+                        <Menu
+                          visible={menuVisible === `item-${item.id}` && menuType === 'item'}
+                          onDismiss={handleMenuClose}
+                          anchor={
+                            <IconButton
+                              icon="dots-vertical"
+                              size={24}
+                              onPress={() => handleMenuOpen(`item-${item.id}`, 'item')}
+                            />
+                          }
+                        >
+                          <Menu.Item
+                            onPress={() => handleEdit(item.id, 'item')}
+                            title="Edit Item"
+                            leadingIcon="pencil"
+                          />
+                          <Menu.Item
+                            onPress={() => handleAddSize(item.id)}
+                            title="Add Size"
+                            leadingIcon="plus"
+                          />
+                          <Menu.Item
+                            onPress={() => {
+                              handleMenuClose();
+                              navigation.navigate('ItemAddOnForm', { itemId: item.id });
+                            }}
+                            title="Manage Add-ons"
+                            leadingIcon="puzzle"
+                          />
+                          <Menu.Item
+                            onPress={() => handleDelete(item.id, 'item')}
+                            title="Delete Item"
+                            leadingIcon="delete"
+                          />
+                        </Menu>
+                      </View>
                     </View>
-                  )}
+
+                    <Divider style={styles.divider} />
+
+                    <TouchableOpacity
+                      style={styles.viewItemsButton}
+                      onPress={() => {
+                        setSelectedItem(item.id);
+                        setViewMode('sizes');
+                      }}
+                    >
+                      <Text variant="labelLarge" style={{ color: theme.colors.primary }}>
+                        View {sizes.length} Sizes →
+                      </Text>
+                    </TouchableOpacity>
+                  </Card.Content>
+                </Card>
+              );
+            })
+          )}
+        </ScrollView>
+      </>
+    );
+  };
+
+  // Render Sizes View
+  const renderSizesView = () => {
+    const itemName = selectedItem
+      ? allItems.find(i => i.id === selectedItem)?.name
+      : 'All Items';
+
+    return (
+      <>
+        {selectedItem && (
+          <Card style={styles.breadcrumbCard}>
+            <Card.Content style={styles.breadcrumb}>
+              <TouchableOpacity
+                onPress={() => {
+                  setSelectedItem(null);
+                  setViewMode('items');
+                }}
+                style={styles.breadcrumbButton}
+              >
+                <IconButton icon="arrow-left" size={20} style={{ margin: 0 }} />
+                <Text variant="labelLarge">Back to Items</Text>
+              </TouchableOpacity>
+              <Text variant="titleMedium" style={styles.breadcrumbText}>
+                {itemName}
+              </Text>
+            </Card.Content>
+          </Card>
+        )}
+
+        <ScrollView
+          style={styles.scrollContent}
+          contentContainerStyle={styles.scrollContentContainer}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
+          }
+        >
+          {filteredSizes.length === 0 ? (
+            <Card style={styles.card}>
+              <Card.Content>
+                <Text>No sizes yet. Create one to get started!</Text>
+              </Card.Content>
+            </Card>
+          ) : (
+            filteredSizes.map((size) => (
+              <Card key={size.id} style={styles.categoryCard}>
+                <Card.Content>
+                  <View style={styles.cardHeader}>
+                    <View style={styles.cardHeaderLeft}>
+                      <Text variant="headlineSmall" style={styles.cardTitle}>
+                        {size.size}
+                      </Text>
+                      <View style={styles.cardMeta}>
+                        {!selectedItem && (
+                          <>
+                            <Chip compact icon="food" textStyle={{ fontSize: 12 }}>
+                              {size.itemName}
+                            </Chip>
+                            <Chip compact icon="folder" textStyle={{ fontSize: 12 }}>
+                              {size.categoryName}
+                            </Chip>
+                          </>
+                        )}
+                        <Chip
+                          compact
+                          mode="flat"
+                          icon={size.isAvailable ? 'check-circle' : 'close-circle'}
+                          textStyle={{ fontSize: 12 }}
+                          style={{
+                            backgroundColor: size.isAvailable
+                              ? `${theme.colors.tertiary}20`
+                              : `${theme.colors.error}20`,
+                          }}
+                        >
+                          {size.isAvailable ? 'Available' : 'Unavailable'}
+                        </Chip>
+                        <Chip
+                          compact
+                          icon="currency-inr"
+                          textStyle={{ fontSize: 12, fontWeight: 'bold' }}
+                          style={{ backgroundColor: `${theme.colors.primary}20` }}
+                        >
+                          ₹{size.price}
+                        </Chip>
+                      </View>
+                    </View>
+                    <View style={styles.cardActions}>
+                      <Menu
+                        visible={menuVisible === `size-${size.id}` && menuType === 'size'}
+                        onDismiss={handleMenuClose}
+                        anchor={
+                          <IconButton
+                            icon="dots-vertical"
+                            size={24}
+                            onPress={() => handleMenuOpen(`size-${size.id}`, 'size')}
+                          />
+                        }
+                      >
+                        <Menu.Item
+                          onPress={() => handleEdit(size.id, 'size')}
+                          title="Edit Size"
+                          leadingIcon="pencil"
+                        />
+                        <Menu.Item
+                          onPress={() => handleDelete(size.id, 'size')}
+                          title="Delete Size"
+                          leadingIcon="delete"
+                        />
+                      </Menu>
+                    </View>
+                  </View>
                 </Card.Content>
               </Card>
-            );
-          })
-        )}
-      </ScrollView>
+            ))
+          )}
+        </ScrollView>
+      </>
+    );
+  };
 
+  return (
+    <View style={styles.container}>
+      {/* Tab Navigation */}
+      <View style={styles.tabContainer}>
+        <SegmentedButtons
+          value={viewMode}
+          onValueChange={setViewMode}
+          buttons={[
+            {
+              value: 'categories',
+              label: 'Categories',
+              icon: 'folder',
+              showSelectedCheck: true,
+            },
+            {
+              value: 'items',
+              label: 'Items',
+              icon: 'food',
+              showSelectedCheck: true,
+            },
+            {
+              value: 'sizes',
+              label: 'Sizes',
+              icon: 'resize',
+              showSelectedCheck: true,
+            },
+          ]}
+          style={styles.segmentedButtons}
+        />
+      </View>
+
+      {/* Content based on selected tab */}
+      {viewMode === 'categories' && renderCategoriesView()}
+      {viewMode === 'items' && renderItemsView()}
+      {viewMode === 'sizes' && renderSizesView()}
+
+      {/* FAB - changes based on view mode */}
       <FAB
         icon="plus"
         style={[styles.fab, { backgroundColor: theme.colors.primary }]}
-        onPress={() => navigation.navigate('CategoryForm')}
-        label="Add Category"
+        onPress={() => {
+          if (viewMode === 'categories') {
+            navigation.navigate('CategoryForm');
+          } else if (viewMode === 'items') {
+            navigation.navigate('ItemForm', selectedCategory ? { categoryId: selectedCategory } : {});
+          } else if (viewMode === 'sizes') {
+            navigation.navigate('ItemSizeForm', selectedItem ? { itemId: selectedItem } : {});
+          }
+        }}
+        label={
+          viewMode === 'categories' ? 'Add Category' :
+          viewMode === 'items' ? 'Add Item' :
+          'Add Size'
+        }
       />
     </View>
   );
@@ -553,9 +706,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  content: {
+  tabContainer: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    elevation: 2,
+  },
+  segmentedButtons: {
+    backgroundColor: '#fff',
+  },
+  scrollContent: {
     flex: 1,
-    padding: 16,
+  },
+  scrollContentContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 80, // Space for FAB
   },
   card: {
     marginBottom: 16,
@@ -564,99 +730,53 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     elevation: 2,
   },
-  categoryHeader: {
+  cardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
   },
-  expandIcon: {
-    margin: 0,
-  },
-  categoryInfo: {
+  cardHeaderLeft: {
     flex: 1,
+    marginRight: 8,
   },
-  categoryName: {
+  cardTitle: {
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 8,
   },
-  categoryMeta: {
+  cardMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     flexWrap: 'wrap',
   },
-  metaText: {
-    color: '#666',
-    fontSize: 12,
-  },
-  itemsContainer: {
-    marginLeft: 32,
-    marginTop: 12,
-    paddingLeft: 12,
-    borderLeftWidth: 2,
-    borderLeftColor: '#e0e0e0',
-  },
-  emptyItems: {
+  cardActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+  },
+  divider: {
+    marginVertical: 12,
+  },
+  viewItemsButton: {
     paddingVertical: 8,
-  },
-  emptyText: {
-    color: '#999',
-    fontStyle: 'italic',
-  },
-  itemCard: {
-    marginBottom: 12,
-    backgroundColor: '#fafafa',
-    borderRadius: 8,
-    padding: 8,
-  },
-  itemHeader: {
-    flexDirection: 'row',
     alignItems: 'center',
   },
-  itemInfo: {
-    flex: 1,
+  breadcrumbCard: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    elevation: 1,
   },
-  itemName: {
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  itemMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  sizesContainer: {
-    marginLeft: 28,
-    marginTop: 8,
-    paddingLeft: 8,
-    borderLeftWidth: 1,
-    borderLeftColor: '#d0d0d0',
-  },
-  emptySizes: {
+  breadcrumb: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 4,
   },
-  sizeRow: {
+  breadcrumbButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    backgroundColor: '#fff',
-    borderRadius: 4,
-    marginBottom: 4,
   },
-  sizeName: {
-    flex: 1,
-    fontWeight: '500',
-  },
-  sizePrice: {
+  breadcrumbText: {
     fontWeight: 'bold',
-    color: '#d32f2f',
-    marginRight: 8,
   },
   fab: {
     position: 'absolute',
