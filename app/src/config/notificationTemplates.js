@@ -130,17 +130,6 @@ const notificationTemplates = {
       return `Refund of ₹${data.refundAmount} processed for order #${data.orderId} (${data.customerPhone}).`;
     },
     getRecipients: (data) => ['admin'] // Admin user
-  },
-
-  // ==================== TEMPORARY TEST NOTIFICATION ====================
-
-  NEW_ORDER_TEMP: {
-    template: 'NEW_ORDER_TEMP',
-    title: '🧪 TEST: New Order Created',
-    getMessage: (data) => {
-      return `🧪 TEMPORARY TEST: Order #${data.orderId} created by ${data.customerName} (${data.customerPhone}). Total: ₹${data.totalPrice}. Payment NOT yet completed.`;
-    },
-    getRecipients: (data) => ['admin'] // Admin user
   }
 };
 
