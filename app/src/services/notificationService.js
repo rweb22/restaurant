@@ -15,26 +15,34 @@ class NotificationService {
    */
   async createNotification(templateName, data) {
     try {
+      logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      logger.info('📝 CREATING NOTIFICATION');
+      logger.info(`📋 Template: ${templateName}`);
+      logger.info(`📦 Data:`, JSON.stringify(data, null, 2));
+
       const template = notificationTemplates[templateName];
-      
+
       if (!template) {
-        logger.error(`Invalid notification template: ${templateName}`);
+        logger.error(`❌ Invalid notification template: ${templateName}`);
         return null;
       }
 
       // Get recipients (can be user IDs or 'admin')
       const recipients = template.getRecipients(data);
-      
+      logger.info(`👥 Raw recipients:`, recipients);
+
       // Resolve admin to actual admin user ID
       const resolvedRecipients = await this._resolveRecipients(recipients);
-      
+      logger.info(`👥 Resolved recipients:`, resolvedRecipients);
+
       if (resolvedRecipients.length === 0) {
-        logger.warn(`No recipients found for notification template: ${templateName}`);
+        logger.warn(`⚠️  No recipients found for notification template: ${templateName}`);
         return null;
       }
 
       // Render message
       const message = template.getMessage(data);
+      logger.info(`💬 Message: "${message}"`);
 
       // Create notifications for all recipients
       const notifications = await Promise.all(
@@ -50,7 +58,8 @@ class NotificationService {
         )
       );
 
-      logger.info(`Created ${notifications.length} notification(s) for template: ${templateName}`);
+      logger.info(`✅ Created ${notifications.length} notification(s) for template: ${templateName}`);
+      logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
       // Send push notifications (don't await - fire and forget)
       pushNotificationService.sendPushNotification(resolvedRecipients, {
@@ -67,7 +76,13 @@ class NotificationService {
 
       return notifications.length === 1 ? notifications[0] : notifications;
     } catch (error) {
-      logger.error(`Error creating notification: ${error.message}`, { templateName, data });
+      logger.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      logger.error(`❌ ERROR CREATING NOTIFICATION`);
+      logger.error(`📋 Template: ${templateName}`);
+      logger.error(`📦 Data:`, JSON.stringify(data, null, 2));
+      logger.error(`❌ Error: ${error.message}`);
+      logger.error(`📚 Stack:`, error.stack);
+      logger.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       // Don't throw - notifications should not break the main flow
       return null;
     }

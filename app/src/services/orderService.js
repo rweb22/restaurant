@@ -439,6 +439,12 @@ class OrderService {
    */
   async cancelOrder(id, userId = null, isAdmin = false) {
     try {
+      logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      logger.info('🗑️  CANCELLING ORDER');
+      logger.info(`📋 Order ID: ${id}`);
+      logger.info(`👤 User ID: ${userId}`);
+      logger.info(`👨‍💼 Is Admin: ${isAdmin}`);
+
       // Get order details before cancellation
       const order = await Order.findByPk(id, {
         include: [
@@ -454,12 +460,17 @@ class OrderService {
         throw new Error('Order not found');
       }
 
+      logger.info(`📦 Order found - User ID: ${order.userId}, Payment Status: ${order.paymentStatus}`);
+
       const cancelledByClient = !isAdmin && userId === order.userId;
+      logger.info(`🔍 Cancelled by client: ${cancelledByClient}`);
 
       // Update order status
       const updatedOrder = await this.updateOrderStatus(id, 'cancelled', userId, isAdmin);
+      logger.info(`✅ Order status updated to cancelled`);
 
       // Send notification to client
+      logger.info(`📤 Sending ORDER_CANCELLED notification to user ${order.userId}`);
       await notificationService.createNotification('ORDER_CANCELLED', {
         userId: order.userId,
         orderId: order.id,
@@ -468,6 +479,7 @@ class OrderService {
 
       // If cancelled by client, notify admin
       if (cancelledByClient) {
+        logger.info(`📤 Sending ORDER_CANCELLED_BY_CLIENT notification to admin`);
         await notificationService.createNotification('ORDER_CANCELLED_BY_CLIENT', {
           orderId: order.id,
           customerPhone: order.user.phone,
@@ -475,9 +487,16 @@ class OrderService {
         });
       }
 
+      logger.info('✅ Order cancellation completed successfully');
+      logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
       return updatedOrder;
     } catch (error) {
-      logger.error(`Error cancelling order ${id}`, error);
+      logger.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      logger.error(`❌ ERROR CANCELLING ORDER ${id}`);
+      logger.error(`Error: ${error.message}`);
+      logger.error(`Stack:`, error.stack);
+      logger.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       throw error;
     }
   }
