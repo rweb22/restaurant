@@ -415,16 +415,24 @@ class OrderService {
         'confirmed': 'ORDER_CONFIRMED',
         'preparing': 'ORDER_PREPARING',
         'ready': 'ORDER_READY',
-        'completed': 'ORDER_COMPLETED'
+        'completed': 'ORDER_COMPLETED',
+        'cancelled': 'ORDER_CANCELLED'
       };
 
       const templateName = notificationTemplates[status];
       if (templateName) {
-        await notificationService.createNotification(templateName, {
+        const notificationData = {
           userId: order.userId,
           orderId: order.id,
           deliveryAddress: order.deliveryAddress
-        });
+        };
+
+        // Add refund amount for cancelled orders
+        if (status === 'cancelled' && order.paymentStatus === 'completed') {
+          notificationData.refundAmount = parseFloat(order.totalPrice).toFixed(2);
+        }
+
+        await notificationService.createNotification(templateName, notificationData);
       }
 
       return await this.getOrderById(id);
