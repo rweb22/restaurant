@@ -63,14 +63,24 @@ class PushNotificationService {
       });
 
       const pushToken = tokenData.data;
-      console.log('Push token obtained:', pushToken);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('📱 ADMIN APP - PUSH TOKEN OBTAINED');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🎫 Token:', pushToken);
+      console.log('👤 User ID:', userId || 'Not provided');
 
       // Send token to backend
       try {
-        await api.post('/auth/register-push-token', { pushToken });
-        console.log('Push token registered with backend');
+        console.log('📤 Sending token to backend...');
+        const response = await api.post('/auth/register-push-token', { pushToken });
+        console.log('✅ Push token registered with backend successfully');
+        console.log('📋 Response:', response.data);
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       } catch (error) {
-        console.error('Failed to register push token with backend:', error);
+        console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.error('❌ Failed to register push token with backend');
+        console.error('Error:', error.response?.data || error.message);
+        console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       }
 
       // Configure notification channel for Android
@@ -94,11 +104,17 @@ class PushNotificationService {
    * Remove push token from backend (on logout)
    */
   async removePushToken() {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🗑️  ADMIN APP - REMOVING PUSH TOKEN');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     try {
       await api.post('/auth/remove-push-token');
-      console.log('Push token removed from backend');
+      console.log('✅ Push token removed from backend successfully');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     } catch (error) {
-      console.error('Failed to remove push token:', error);
+      console.error('❌ Failed to remove push token');
+      console.error('Error:', error.response?.data || error.message);
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     }
   }
 
@@ -108,7 +124,17 @@ class PushNotificationService {
    * @returns {Subscription} - Subscription object to remove listener
    */
   addNotificationReceivedListener(callback) {
-    return Notifications.addNotificationReceivedListener(callback);
+    return Notifications.addNotificationReceivedListener((notification) => {
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🔔 ADMIN APP - NOTIFICATION RECEIVED (FOREGROUND)');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('📝 Title:', notification.request.content.title);
+      console.log('💬 Body:', notification.request.content.body);
+      console.log('📦 Data:', JSON.stringify(notification.request.content.data, null, 2));
+      console.log('⏰ Received at:', new Date().toLocaleString());
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      callback(notification);
+    });
   }
 
   /**
@@ -117,7 +143,17 @@ class PushNotificationService {
    * @returns {Subscription} - Subscription object to remove listener
    */
   addNotificationResponseReceivedListener(callback) {
-    return Notifications.addNotificationResponseReceivedListener(callback);
+    return Notifications.addNotificationResponseReceivedListener((response) => {
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('👆 ADMIN APP - NOTIFICATION TAPPED');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('📝 Title:', response.notification.request.content.title);
+      console.log('💬 Body:', response.notification.request.content.body);
+      console.log('📦 Data:', JSON.stringify(response.notification.request.content.data, null, 2));
+      console.log('🎯 Action:', response.actionIdentifier);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      callback(response);
+    });
   }
 
   /**
