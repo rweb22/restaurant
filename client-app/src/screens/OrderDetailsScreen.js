@@ -182,20 +182,12 @@ const OrderDetailsScreen = ({ route, navigation }) => {
             }
           }
 
-          // Add item to cart with the same quantity
+          // Add item to cart with only IDs (prices will be fetched dynamically)
           addItem({
-            id: item.id,
-            name: item.name,
-            imageUrl: item.imageUrl,
+            itemId: item.id,
             sizeId: size.id,
-            sizeName: size.size,
-            sizePrice: size.price, // Use current price
-            addOns: validAddOns, // Use validated add-ons with current prices
+            addOnIds: validAddOns.map(a => a.id),
             quantity: orderItem.quantity || 1,
-            category: {
-              id: item.categoryId,
-              gstRate: item.category?.gstRate || 5.0,
-            },
           });
 
           successCount++;

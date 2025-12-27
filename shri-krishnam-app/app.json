@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "Shri Krishnam",
+    "slug": "shri-krishnam",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FF9800"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.shrikrishnam.app"
+    },
+    "android": {
+      "package": "com.shrikrishnam.app",
+      "versionCode": 2,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FF9800"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "36941223-0688-437d-9b6e-fccea1435c54"
+      }
+    }
+  }
+}

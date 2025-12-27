@@ -1,0 +1,42 @@
+{
+  "cli": {
+    "version": ">= 16.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "APP_NAME": "Shri Krishnam",
+        "APP_TAGLINE": "Delicious food, delivered fast 🍕",
+        "APP_LOGO_TYPE": "image",
+        "APP_LOGO_ICON": "food",
+        "API_BASE_URL": "http://206.189.141.60:3000/api",
+        "APP_VERSION": "1.0.0"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "APP_NAME": "Shri Krishnam",
+        "APP_TAGLINE": "Delicious food, delivered fast 🍕",
+        "APP_LOGO_TYPE": "image",
+        "APP_LOGO_ICON": "food",
+        "API_BASE_URL": "http://206.189.141.60:3000/api",
+        "APP_VERSION": "1.0.0"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
+

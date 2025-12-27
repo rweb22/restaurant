@@ -1,0 +1,20 @@
+# Logo Image Placeholder
+
+If you want to use a custom logo image instead of a Material Design icon:
+
+1. Place your logo image here as: `logo.png`
+2. Recommended specifications:
+   - Size: 512x512 pixels (or any square size)
+   - Format: PNG with transparent background
+   - Style: Simple, clear, recognizable at small sizes
+   
+3. Update your `.env` file:
+   ```
+   APP_LOGO_TYPE=image
+   ```
+
+4. The logo will automatically appear on the login screen
+
+If this file doesn't exist and APP_LOGO_TYPE=image, the app will show an error.
+Keep APP_LOGO_TYPE=icon to use Material Design icons instead.
+

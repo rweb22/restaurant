@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "Shri Krishnam Admin",
+    "slug": "shri-krishnam-admin",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1976D2"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.shrikrishnam.admin"
+    },
+    "android": {
+      "package": "com.shrikrishnam.admin",
+      "versionCode": 2,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1976D2"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "8f7561f7-8524-4cd2-8cff-ec9572806f33"
+      }
+    }
+  }
+}

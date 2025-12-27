@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions } from 'react-native';
+import { View, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, RefreshControl } from 'react-native';
 import {
   Text,
   Button,
@@ -34,7 +34,7 @@ const ItemDetailScreen = ({ route, navigation }) => {
   const [error, setError] = useState('');
   const addToCart = useCartStore((state) => state.addItem);
 
-  const { data: item, isLoading } = useQuery({
+  const { data: item, isLoading, refetch: refetchItem, isRefetching: isRefetchingItem } = useQuery({
     queryKey: ['item', itemId],
     queryFn: () => menuService.getItemById(itemId, {
       includeSizes: true,
@@ -43,13 +43,26 @@ const ItemDetailScreen = ({ route, navigation }) => {
   });
 
   // Fetch category add-ons
-  const { data: categoryData } = useQuery({
+  const { data: categoryData, refetch: refetchCategory, isRefetching: isRefetchingCategory } = useQuery({
     queryKey: ['category', item?.item?.categoryId],
     queryFn: () => menuService.getCategoryById(item.item.categoryId, {
       includeAddOns: true,
     }),
     enabled: !!item?.item?.categoryId,
   });
+
+  // Pull-to-refresh state
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Handle pull-to-refresh
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([
+      refetchItem(),
+      refetchCategory(),
+    ]);
+    setRefreshing(false);
+  };
 
   // Auto-select size if there's only one available size
   useEffect(() => {
@@ -151,7 +164,18 @@ const ItemDetailScreen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.primary[500]]}
+            tintColor={colors.primary[500]}
+          />
+        }
+      >
         {/* Hero Image with Gradient Overlay */}
         <View style={styles.heroContainer}>
           <Image
