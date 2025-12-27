@@ -27,8 +27,7 @@
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE"
-      ],
-      "googleServicesFile": "./android/app/google-services.json"
+      ]
     },
     "plugins": [
       [
@@ -39,7 +38,14 @@
           }
         }
       ],
-      "@react-native-firebase/app",
+      [
+        "@react-native-firebase/app",
+        {
+          "android": {
+            "googleServicesFile": "./android/app/google-services.json"
+          }
+        }
+      ],
       "@react-native-firebase/messaging"
     ],
     "extra": {
