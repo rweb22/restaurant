@@ -123,9 +123,11 @@ dist
 app/config/firebase-service-account.json
 **/firebase-service-account.json
 
-# Firebase google-services.json (NEVER commit these!)
-**/android/app/google-services.json
-**/ios/GoogleService-Info.plist
+# Firebase google-services.json - Allow for EAS Build
+# Note: google-services.json contains project config (safe to commit)
+# The actual secrets are in firebase-service-account.json (above)
+# **/android/app/google-services.json
+# **/ios/GoogleService-Info.plist
 
 # TernJS port file
 .tern-port
