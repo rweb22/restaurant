@@ -54,11 +54,16 @@ function MainTabs() {
   const { getItemCount, clearCart } = useCartStore();
   const { logout } = useAuthStore();
   const { clearDeliveryInfo } = useDeliveryStore();
-  const [unreadCount, setUnreadCount] = React.useState(0);
   const [showLogoutDialog, setShowLogoutDialog] = React.useState(false);
 
-  // You can add a query here to fetch unread notifications count
-  // For now, we'll use a placeholder
+  // Fetch unread notification count
+  const { data: unreadCountData } = useQuery({
+    queryKey: ['unreadCount'],
+    queryFn: () => notificationService.getUnreadCount(),
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
+  const unreadCount = unreadCountData?.data?.count || 0;
 
   const handleLogout = () => {
     setShowLogoutDialog(true);

@@ -3,12 +3,13 @@ import { View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
-import { PaperProvider, IconButton, Icon } from 'react-native-paper';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { PaperProvider, IconButton, Icon, Badge } from 'react-native-paper';
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { lightTheme } from './src/styles/theme';
 import useAuthStore from './src/store/authStore';
 import pushNotificationService from './src/services/pushNotificationService';
+import notificationService from './src/services/notificationService';
 
 // Screens
 import LoginScreen from './src/screens/LoginScreen';
@@ -55,6 +56,50 @@ const queryClient = new QueryClient({
   },
 });
 
+// Dashboard Header Right Component with Notification Badge
+function DashboardHeaderRight({ navigation }) {
+  const { clearAuth } = useAuthStore.getState();
+
+  // Fetch unread notification count
+  const { data: unreadCountData } = useQuery({
+    queryKey: ['unreadCount'],
+    queryFn: () => notificationService.getUnreadCount(),
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
+  const unreadCount = unreadCountData?.data?.count || 0;
+
+  return (
+    <View style={{ flexDirection: 'row', marginRight: 8 }}>
+      <View style={{ position: 'relative' }}>
+        <IconButton
+          icon="bell"
+          iconColor="#fff"
+          onPress={() => navigation.navigate('Notifications')}
+        />
+        {unreadCount > 0 && (
+          <Badge
+            style={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              backgroundColor: '#FF9800',
+            }}
+            size={18}
+          >
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </Badge>
+        )}
+      </View>
+      <IconButton
+        icon="logout"
+        iconColor="#fff"
+        onPress={clearAuth}
+      />
+    </View>
+  );
+}
+
 function MainStack({ navigation }) {
   return (
     <Stack.Navigator
@@ -80,23 +125,7 @@ function MainStack({ navigation }) {
               onPress={() => navigation.openDrawer()}
             />
           ),
-          headerRight: () => {
-            const { clearAuth } = useAuthStore.getState();
-            return (
-              <View style={{ flexDirection: 'row', marginRight: 8 }}>
-                <IconButton
-                  icon="bell"
-                  iconColor="#fff"
-                  onPress={() => screenNavigation.navigate('Notifications')}
-                />
-                <IconButton
-                  icon="logout"
-                  iconColor="#fff"
-                  onPress={clearAuth}
-                />
-              </View>
-            );
-          },
+          headerRight: () => <DashboardHeaderRight navigation={screenNavigation} />,
         })}
       />
       <Stack.Screen
