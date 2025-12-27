@@ -15,9 +15,9 @@ const notificationTemplates = {
   
   ORDER_CREATED: {
     template: 'ORDER_CREATED',
-    title: 'Order Placed Successfully',
+    title: 'Order Being Processed',
     getMessage: (data) => {
-      return `Your order #${data.orderId} has been placed successfully. Total amount: ₹${data.totalPrice}. Please complete the payment to confirm your order.`;
+      return `Your order #${data.orderId} is being processed. Total amount: ₹${data.totalPrice}. Please complete the payment to confirm your order.`;
     },
     getRecipients: (data) => [data.userId] // Client who created the order
   },
