@@ -408,6 +408,13 @@ class OrderService {
 
       await order.update({ status });
 
+      logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      logger.info('📝 UPDATING ORDER STATUS');
+      logger.info(`📋 Order ID: ${id}`);
+      logger.info(`👤 User ID: ${userId || 'null (admin)'}`);
+      logger.info(`👨‍💼 Is Admin: ${isAdmin}`);
+      logger.info(`📊 Old Status: ${order.status} → New Status: ${status}`);
+      logger.info(`💳 Payment Status: ${order.paymentStatus}`);
       logger.success(`Order ${id} status updated to ${status}`);
 
       // Send notification to client based on status
@@ -421,6 +428,8 @@ class OrderService {
 
       const templateName = notificationTemplates[status];
       if (templateName) {
+        logger.info(`📤 Sending ${templateName} notification to user ${order.userId}`);
+
         const notificationData = {
           userId: order.userId,
           orderId: order.id,
@@ -430,10 +439,14 @@ class OrderService {
         // Add refund amount for cancelled orders
         if (status === 'cancelled' && order.paymentStatus === 'completed') {
           notificationData.refundAmount = parseFloat(order.totalPrice).toFixed(2);
+          logger.info(`💰 Refund amount: ₹${notificationData.refundAmount}`);
         }
 
         await notificationService.createNotification(templateName, notificationData);
+      } else {
+        logger.info(`ℹ️  No notification template for status: ${status}`);
       }
+      logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
       return await this.getOrderById(id);
     } catch (error) {
