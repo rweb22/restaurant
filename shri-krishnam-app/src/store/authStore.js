@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../constants/config';
+import pushNotificationService from '../services/pushNotificationService';
 
 /**
  * Authentication Store
@@ -82,6 +83,10 @@ const useAuthStore = create((set) => ({
   logout: async () => {
     try {
       console.log('[AuthStore] Logging out and clearing auth data...');
+
+      // Remove push token from backend
+      await pushNotificationService.removePushToken();
+
       await AsyncStorage.multiRemove([
         STORAGE_KEYS.AUTH_TOKEN,
         STORAGE_KEYS.USER_DATA,

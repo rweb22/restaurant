@@ -73,5 +73,27 @@ router.put(
   authController.updateProfile
 );
 
+/**
+ * @route   POST /api/auth/register-push-token
+ * @desc    Register push notification token for the user
+ * @access  Private (requires authentication)
+ */
+router.post(
+  '/register-push-token',
+  authenticate,
+  authController.registerPushToken
+);
+
+/**
+ * @route   POST /api/auth/remove-push-token
+ * @desc    Remove push notification token (on logout)
+ * @access  Private (requires authentication)
+ */
+router.post(
+  '/remove-push-token',
+  authenticate,
+  authController.removePushToken
+);
+
 module.exports = router;
 

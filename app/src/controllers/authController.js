@@ -2,6 +2,7 @@
 
 const otpService = require('../services/otpService');
 const authService = require('../services/authService');
+const pushNotificationService = require('../services/pushNotificationService');
 const {
   formatOtpSendResponse,
   formatAuthResponse,
@@ -164,11 +165,57 @@ const updateProfile = async (req, res) => {
   }
 };
 
+/**
+ * Register push notification token
+ * POST /api/auth/register-push-token
+ * Body: { pushToken }
+ */
+const registerPushToken = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { pushToken } = req.body;
+
+    if (!pushToken) {
+      return sendBadRequest(res, 'Push token is required');
+    }
+
+    const success = await pushNotificationService.registerPushToken(userId, pushToken);
+
+    if (!success) {
+      return sendError(res, 400, 'Invalid push token');
+    }
+
+    return sendSuccess(res, 200, { registered: true }, 'Push token registered successfully');
+  } catch (error) {
+    logger.error('Error in registerPushToken controller', error);
+    return sendError(res, 500, error.message || 'Failed to register push token');
+  }
+};
+
+/**
+ * Remove push notification token (on logout)
+ * POST /api/auth/remove-push-token
+ */
+const removePushToken = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    await pushNotificationService.removePushToken(userId);
+
+    return sendSuccess(res, 200, { removed: true }, 'Push token removed successfully');
+  } catch (error) {
+    logger.error('Error in removePushToken controller', error);
+    return sendError(res, 500, error.message || 'Failed to remove push token');
+  }
+};
+
 module.exports = {
   sendOtp,
   verifyOtp,
   refresh,
   getMe,
-  updateProfile
+  updateProfile,
+  registerPushToken,
+  removePushToken
 };
 

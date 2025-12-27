@@ -123,6 +123,11 @@ module.exports = (sequelize, DataTypes) => {
         }
       }
     },
+    pushToken: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: 'push_token'
+    },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,

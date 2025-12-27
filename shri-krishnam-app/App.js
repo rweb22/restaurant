@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -8,6 +8,7 @@ import { PaperProvider, MD3LightTheme, ActivityIndicator, Badge } from 'react-na
 import { View, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-paper/src/components/Icon';
 import ConfirmDialog from './src/components/ConfirmDialog';
+import pushNotificationService from './src/services/pushNotificationService';
 
 // Stores
 import useAuthStore from './src/store/authStore';
@@ -214,6 +215,9 @@ export default function App() {
   const { isAuthenticated, isLoading, loadAuth, user } = useAuthStore();
   const loadCart = useCartStore((state) => state.loadCart);
   const loadDeliveryInfo = useDeliveryStore((state) => state.loadDeliveryInfo);
+  const navigationRef = useRef();
+  const notificationListener = useRef();
+  const responseListener = useRef();
 
   useEffect(() => {
     console.log('[App] Initializing app...');
@@ -244,6 +248,48 @@ export default function App() {
     initApp();
   }, []);
 
+  // Register for push notifications when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log('[App] User authenticated, registering for push notifications...');
+      pushNotificationService.registerForPushNotifications(user.id);
+    }
+  }, [isAuthenticated, user]);
+
+  // Setup push notification listeners
+  useEffect(() => {
+    // Listener for notifications received while app is in foreground
+    notificationListener.current = pushNotificationService.addNotificationReceivedListener(
+      (notification) => {
+        console.log('[App] Notification received:', notification);
+        // You can show an in-app alert or update badge count here
+      }
+    );
+
+    // Listener for when user taps on notification
+    responseListener.current = pushNotificationService.addNotificationResponseReceivedListener(
+      (response) => {
+        console.log('[App] Notification tapped:', response);
+        const data = response.notification.request.content.data;
+
+        // Navigate based on notification data
+        if (data.orderId && navigationRef.current) {
+          navigationRef.current.navigate('OrderDetails', { orderId: data.orderId });
+        }
+      }
+    );
+
+    // Cleanup listeners on unmount
+    return () => {
+      if (notificationListener.current) {
+        notificationListener.current.remove();
+      }
+      if (responseListener.current) {
+        responseListener.current.remove();
+      }
+    };
+  }, []);
+
   console.log('[App] Render - isLoading:', isLoading, 'isAuthenticated:', isAuthenticated);
 
   if (isLoading) {
@@ -262,7 +308,7 @@ export default function App() {
   return (
     <PaperProvider theme={theme}>
       <QueryClientProvider client={queryClient}>
-        <NavigationContainer>
+        <NavigationContainer ref={navigationRef}>
           <StatusBar style="auto" />
           <Stack.Navigator screenOptions={{ headerShown: false }}>
             {!isAuthenticated ? (

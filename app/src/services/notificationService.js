@@ -4,6 +4,7 @@ const { Notification, User, Order } = require('../models');
 const notificationTemplates = require('../config/notificationTemplates');
 const logger = require('../utils/logger');
 const { Op } = require('sequelize');
+const pushNotificationService = require('./pushNotificationService');
 
 class NotificationService {
   /**
@@ -34,7 +35,7 @@ class NotificationService {
 
       // Render message
       const message = template.getMessage(data);
-      
+
       // Create notifications for all recipients
       const notifications = await Promise.all(
         resolvedRecipients.map(userId =>
@@ -50,6 +51,20 @@ class NotificationService {
       );
 
       logger.info(`Created ${notifications.length} notification(s) for template: ${templateName}`);
+
+      // Send push notifications (don't await - fire and forget)
+      pushNotificationService.sendPushNotification(resolvedRecipients, {
+        title: template.title,
+        body: message,
+        data: {
+          template: template.template,
+          orderId: data.orderId || null,
+          ...data
+        }
+      }).catch(error => {
+        logger.error(`Error sending push notification: ${error.message}`);
+      });
+
       return notifications.length === 1 ? notifications[0] : notifications;
     } catch (error) {
       logger.error(`Error creating notification: ${error.message}`, { templateName, data });

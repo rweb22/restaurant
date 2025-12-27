@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { lightTheme } from './src/styles/theme';
 import useAuthStore from './src/store/authStore';
+import pushNotificationService from './src/services/pushNotificationService';
 
 // Screens
 import LoginScreen from './src/screens/LoginScreen';
@@ -841,9 +842,53 @@ function EnterNameNavigator() {
 
 export default function App() {
   const { isAuthenticated, isLoading, initialize, user } = useAuthStore();
+  const navigationRef = useRef();
+  const notificationListener = useRef();
+  const responseListener = useRef();
 
   useEffect(() => {
     initialize();
+  }, []);
+
+  // Register for push notifications when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log('[App] User authenticated, registering for push notifications...');
+      pushNotificationService.registerForPushNotifications(user.id);
+    }
+  }, [isAuthenticated, user]);
+
+  // Setup push notification listeners
+  useEffect(() => {
+    // Listener for notifications received while app is in foreground
+    notificationListener.current = pushNotificationService.addNotificationReceivedListener(
+      (notification) => {
+        console.log('[App] Notification received:', notification);
+      }
+    );
+
+    // Listener for when user taps on notification
+    responseListener.current = pushNotificationService.addNotificationResponseReceivedListener(
+      (response) => {
+        console.log('[App] Notification tapped:', response);
+        const data = response.notification.request.content.data;
+
+        // Navigate based on notification data
+        if (data.orderId && navigationRef.current) {
+          navigationRef.current.navigate('OrderDetails', { orderId: data.orderId });
+        }
+      }
+    );
+
+    // Cleanup listeners on unmount
+    return () => {
+      if (notificationListener.current) {
+        notificationListener.current.remove();
+      }
+      if (responseListener.current) {
+        responseListener.current.remove();
+      }
+    };
   }, []);
 
   if (isLoading) {
@@ -854,7 +899,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <PaperProvider theme={lightTheme}>
         <StatusBar style="auto" />
-        <NavigationContainer>
+        <NavigationContainer ref={navigationRef}>
           {!isAuthenticated ? (
             <AuthNavigator />
           ) : !user?.name ? (

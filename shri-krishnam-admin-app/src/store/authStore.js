@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import pushNotificationService from '../services/pushNotificationService';
 
 const useAuthStore = create((set) => ({
   user: null,
@@ -54,6 +55,9 @@ const useAuthStore = create((set) => ({
   // Clear auth data
   clearAuth: async () => {
     try {
+      // Remove push token from backend
+      await pushNotificationService.removePushToken();
+
       await AsyncStorage.multiRemove(['authToken', 'user']);
       set({ user: null, token: null, isAuthenticated: false });
     } catch (error) {
