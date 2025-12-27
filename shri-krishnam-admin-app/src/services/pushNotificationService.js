@@ -1,68 +1,46 @@
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
+import messaging from '@react-native-firebase/messaging';
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
 import api from './api';
-
-// Check if running in Expo Go
-const isExpoGo = Constants.appOwnership === 'expo';
-
-// Configure how notifications should be handled when app is in foreground
-// Only set if not in Expo Go (SDK 53+ doesn't support push notifications in Expo Go)
-if (!isExpoGo) {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-    }),
-  });
-}
 
 class PushNotificationService {
   /**
-   * Get push token without registering with backend
-   * @returns {Promise<string|null>} - Push token or null if failed
+   * Get FCM push token without registering with backend
+   * @returns {Promise<string|null>} - FCM push token or null if failed
    */
   async getPushToken() {
     try {
-      // Check if running in Expo Go
-      if (isExpoGo) {
-        console.log('[getPushToken] Skipping - Expo Go detected');
-        return null;
-      }
+      console.log('[getPushToken] Requesting Firebase Cloud Messaging token...');
 
-      // Check if running on physical device
-      if (!Device.isDevice) {
-        console.log('[getPushToken] Skipping - Not a physical device');
-        return null;
-      }
+      // Request permission for notifications
+      const authStatus = await messaging().requestPermission();
+      const enabled =
+        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
-      // Check existing permissions
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-
-      // Request permissions if not granted
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-
-      if (finalStatus !== 'granted') {
+      if (!enabled) {
         console.log('[getPushToken] Permission not granted');
+        console.log('[getPushToken] Authorization status:', authStatus);
         return null;
       }
 
-      // Get push token
-      const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: '8f7561f7-8524-4cd2-8cff-ec9572806f33',
-      });
+      console.log('[getPushToken] Permission granted');
 
-      const pushToken = tokenData.data;
-      console.log('[getPushToken] Token obtained:', pushToken);
-      return pushToken;
+      // Get FCM token
+      const fcmToken = await messaging().getToken();
+
+      if (!fcmToken) {
+        console.log('[getPushToken] Failed to get FCM token');
+        return null;
+      }
+
+      console.log('[getPushToken] FCM token obtained');
+      console.log('[getPushToken] Token length:', fcmToken.length, 'chars');
+      console.log('[getPushToken] Token preview:', fcmToken.substring(0, 20) + '...');
+
+      return fcmToken;
     } catch (error) {
       console.error('[getPushToken] Error:', error);
+      console.error('[getPushToken] Error details:', error.message);
       return null;
     }
   }
@@ -70,56 +48,47 @@ class PushNotificationService {
   /**
    * Register for push notifications and send token to backend
    * @param {number} userId - User ID (optional, for logging)
-   * @returns {Promise<string|null>} - Push token or null if failed
+   * @returns {Promise<string|null>} - FCM push token or null if failed
    */
   async registerForPushNotifications(userId = null) {
     try {
-      // Check if running in Expo Go
-      if (isExpoGo) {
-        console.log('⚠️ Push notifications are not supported in Expo Go (SDK 53+)');
-        console.log('📱 To test push notifications, create a development build:');
-        console.log('   npx expo run:android  or  npx expo run:ios');
-        console.log('   Read more: https://docs.expo.dev/develop/development-builds/introduction/');
-        return null;
-      }
-
-      // Check if running on physical device
-      if (!Device.isDevice) {
-        console.log('Push notifications only work on physical devices');
-        return null;
-      }
-
-      // Check existing permissions
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-
-      // Request permissions if not granted
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-
-      if (finalStatus !== 'granted') {
-        console.log('Push notification permission not granted');
-        return null;
-      }
-
-      // Get push token
-      const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: '8f7561f7-8524-4cd2-8cff-ec9572806f33',
-      });
-
-      const pushToken = tokenData.data;
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('📱 ADMIN APP - PUSH TOKEN OBTAINED');
+      console.log('📱 ADMIN APP - REGISTERING FOR PUSH NOTIFICATIONS');
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('🎫 Token:', pushToken);
       console.log('👤 User ID:', userId || 'Not provided');
+
+      // Request permission for notifications
+      const authStatus = await messaging().requestPermission();
+      const enabled =
+        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+      if (!enabled) {
+        console.log('❌ Push notification permission not granted');
+        console.log('   Authorization status:', authStatus);
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        return null;
+      }
+
+      console.log('✅ Permission granted');
+
+      // Get FCM token
+      const fcmToken = await messaging().getToken();
+
+      if (!fcmToken) {
+        console.log('❌ Failed to get FCM token');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        return null;
+      }
+
+      console.log('✅ FCM token obtained');
+      console.log('🎫 Token length:', fcmToken.length, 'chars');
+      console.log('🎫 Token preview:', fcmToken.substring(0, 20) + '...');
 
       // Send token to backend
       try {
         console.log('📤 Sending token to backend...');
-        const response = await api.post('/auth/register-push-token', { pushToken });
+        const response = await api.post('/auth/register-push-token', { pushToken: fcmToken });
         console.log('✅ Push token registered with backend successfully');
         console.log('📋 Response:', response.data);
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -130,19 +99,12 @@ class PushNotificationService {
         console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       }
 
-      // Configure notification channel for Android
-      if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('default', {
-          name: 'default',
-          importance: Notifications.AndroidImportance.MAX,
-          vibrationPattern: [0, 250, 250, 250],
-          lightColor: '#FF231F7C',
-        });
-      }
-
-      return pushToken;
+      return fcmToken;
     } catch (error) {
-      console.error('Error registering for push notifications:', error);
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.error('❌ Error registering for push notifications:', error);
+      console.error('   Error details:', error.message);
+      console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       return null;
     }
   }
@@ -155,6 +117,11 @@ class PushNotificationService {
     console.log('🗑️  ADMIN APP - REMOVING PUSH TOKEN');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     try {
+      // Delete FCM token from device
+      await messaging().deleteToken();
+      console.log('✅ FCM token deleted from device');
+
+      // Remove from backend
       await api.post('/auth/remove-push-token');
       console.log('✅ Push token removed from backend successfully');
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -168,62 +135,79 @@ class PushNotificationService {
   /**
    * Add listener for when notification is received while app is in foreground
    * @param {Function} callback - Function to call when notification is received
-   * @returns {Subscription} - Subscription object to remove listener
+   * @returns {Function} - Unsubscribe function
    */
   addNotificationReceivedListener(callback) {
-    return Notifications.addNotificationReceivedListener((notification) => {
+    return messaging().onMessage(async (remoteMessage) => {
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('🔔 ADMIN APP - NOTIFICATION RECEIVED (FOREGROUND)');
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('📝 Title:', notification.request.content.title);
-      console.log('💬 Body:', notification.request.content.body);
-      console.log('📦 Data:', JSON.stringify(notification.request.content.data, null, 2));
+      console.log('📝 Title:', remoteMessage.notification?.title);
+      console.log('💬 Body:', remoteMessage.notification?.body);
+      console.log('📦 Data:', JSON.stringify(remoteMessage.data, null, 2));
       console.log('⏰ Received at:', new Date().toLocaleString());
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      callback(notification);
+      callback(remoteMessage);
     });
   }
 
   /**
-   * Add listener for when user taps on notification
+   * Add listener for when user taps on notification (background/quit state)
    * @param {Function} callback - Function to call when notification is tapped
-   * @returns {Subscription} - Subscription object to remove listener
+   * @returns {Function} - Unsubscribe function
    */
   addNotificationResponseReceivedListener(callback) {
-    return Notifications.addNotificationResponseReceivedListener((response) => {
+    // Handle notification opened from background state
+    messaging().onNotificationOpenedApp((remoteMessage) => {
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('👆 ADMIN APP - NOTIFICATION TAPPED');
+      console.log('👆 ADMIN APP - NOTIFICATION TAPPED (BACKGROUND)');
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('📝 Title:', response.notification.request.content.title);
-      console.log('💬 Body:', response.notification.request.content.body);
-      console.log('📦 Data:', JSON.stringify(response.notification.request.content.data, null, 2));
-      console.log('🎯 Action:', response.actionIdentifier);
+      console.log('📝 Title:', remoteMessage.notification?.title);
+      console.log('💬 Body:', remoteMessage.notification?.body);
+      console.log('📦 Data:', JSON.stringify(remoteMessage.data, null, 2));
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      callback(response);
+      callback(remoteMessage);
     });
+
+    // Handle notification opened from quit state
+    messaging()
+      .getInitialNotification()
+      .then((remoteMessage) => {
+        if (remoteMessage) {
+          console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          console.log('👆 ADMIN APP - NOTIFICATION TAPPED (QUIT STATE)');
+          console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          console.log('📝 Title:', remoteMessage.notification?.title);
+          console.log('💬 Body:', remoteMessage.notification?.body);
+          console.log('📦 Data:', JSON.stringify(remoteMessage.data, null, 2));
+          console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          callback(remoteMessage);
+        }
+      });
+
+    // Return unsubscribe function
+    return () => {
+      console.log('Unsubscribing from notification tap listeners');
+    };
   }
 
   /**
-   * Get badge count
-   * @returns {Promise<number>}
+   * Set up background message handler
+   * Must be called outside of component lifecycle
    */
-  async getBadgeCount() {
-    return await Notifications.getBadgeCountAsync();
-  }
-
-  /**
-   * Set badge count
-   * @param {number} count
-   */
-  async setBadgeCount(count) {
-    await Notifications.setBadgeCountAsync(count);
-  }
-
-  /**
-   * Clear all notifications
-   */
-  async clearAllNotifications() {
-    await Notifications.dismissAllNotificationsAsync();
+  static setBackgroundMessageHandler(handler) {
+    messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🔔 ADMIN APP - BACKGROUND MESSAGE RECEIVED');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('📝 Title:', remoteMessage.notification?.title);
+      console.log('💬 Body:', remoteMessage.notification?.body);
+      console.log('📦 Data:', JSON.stringify(remoteMessage.data, null, 2));
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      if (handler) {
+        await handler(remoteMessage);
+      }
+    });
   }
 }
 

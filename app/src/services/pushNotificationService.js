@@ -1,13 +1,27 @@
 'use strict';
 
-const { Expo } = require('expo-server-sdk');
+const { admin, isInitialized } = require('../config/firebase');
 const { User } = require('../models');
 const logger = require('../utils/logger');
 
+/**
+ * Validate FCM token format
+ * FCM tokens are typically 152+ characters long
+ * @param {string} token - Token to validate
+ * @returns {boolean}
+ */
+const isFCMToken = (token) => {
+  return token && typeof token === 'string' && token.length >= 140;
+};
+
 class PushNotificationService {
   constructor() {
-    // Create a new Expo SDK client
-    this.expo = new Expo();
+    // Firebase Admin SDK is initialized in config/firebase.js
+    this.messaging = isInitialized() ? admin.messaging() : null;
+
+    if (!this.messaging) {
+      logger.warn('⚠️  Firebase not initialized - push notifications will not work');
+    }
   }
 
   /**
@@ -42,12 +56,12 @@ class PushNotificationService {
       logger.info(`📊 Found ${users.length} user(s) in database:`);
       users.forEach(user => {
         const hasToken = user.pushToken ? '✅' : '❌';
-        const isValid = user.pushToken && Expo.isExpoPushToken(user.pushToken) ? '✅' : '❌';
+        const isValid = user.pushToken && isFCMToken(user.pushToken) ? '✅' : '❌';
         logger.info(`   ${hasToken} User #${user.id} (${user.name || 'No name'}) - Token: ${isValid} ${user.pushToken ? 'Valid' : 'Missing/Invalid'}`);
       });
 
       // Filter users with valid push tokens
-      const usersWithTokens = users.filter(user => user.pushToken && Expo.isExpoPushToken(user.pushToken));
+      const usersWithTokens = users.filter(user => user.pushToken && isFCMToken(user.pushToken));
       const pushTokens = usersWithTokens.map(user => user.pushToken);
 
       if (pushTokens.length === 0) {
@@ -57,77 +71,86 @@ class PushNotificationService {
       }
 
       logger.info(`✅ Found ${pushTokens.length} valid push token(s)`);
-      logger.info(`📤 Preparing to send push notifications...`);
+      logger.info(`📤 Preparing to send push notifications via Firebase...`);
 
-      // Create messages for Expo Push API
-      const messages = pushTokens.map((pushToken, index) => {
-        const user = usersWithTokens[index];
-        logger.info(`📨 Message #${index + 1} for User #${user.id} (${user.name})`);
-        return {
-          to: pushToken,
-          sound: 'default',
-          title: notification.title,
-          body: notification.body,
-          data: notification.data || {},
-          priority: 'high',
-          channelId: 'default'
-        };
-      });
-
-      logger.info(`📮 Total messages prepared: ${messages.length}`);
-
-      // Send notifications in chunks (Expo recommends max 100 per request)
-      const chunks = this.expo.chunkPushNotifications(messages);
-      logger.info(`📦 Split into ${chunks.length} chunk(s) for sending`);
-
-      const tickets = [];
-
-      for (let i = 0; i < chunks.length; i++) {
-        const chunk = chunks[i];
-        logger.info(`🚀 Sending chunk ${i + 1}/${chunks.length} (${chunk.length} messages)...`);
-        try {
-          const ticketChunk = await this.expo.sendPushNotificationsAsync(chunk);
-          tickets.push(...ticketChunk);
-          logger.info(`✅ Chunk ${i + 1} sent successfully`);
-
-          // Log individual ticket results
-          ticketChunk.forEach((ticket, idx) => {
-            if (ticket.status === 'error') {
-              logger.error(`   ❌ Message ${idx + 1}: ${ticket.message} (${ticket.details?.error || 'Unknown error'})`);
-            } else {
-              logger.info(`   ✅ Message ${idx + 1}: Queued with ID ${ticket.id}`);
-            }
-          });
-        } catch (error) {
-          logger.error(`❌ Error sending chunk ${i + 1}:`, error.message);
-          logger.error('   Stack:', error.stack);
-        }
+      // Check if Firebase is initialized
+      if (!this.messaging) {
+        logger.error('❌ Firebase not initialized - cannot send notifications');
+        logger.error('💡 Please configure Firebase service account in .env');
+        return { success: false, error: 'Firebase not initialized' };
       }
 
-      // Log results
-      const successCount = tickets.filter(ticket => ticket.status === 'ok').length;
-      const errorCount = tickets.filter(ticket => ticket.status === 'error').length;
-      const duration = Date.now() - startTime;
-
-      logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      logger.info('📊 PUSH NOTIFICATION RESULTS');
-      logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      logger.info(`✅ Successful: ${successCount}`);
-      logger.info(`❌ Failed: ${errorCount}`);
-      logger.info(`⏱️  Duration: ${duration}ms`);
-      logger.info(`📋 Recipients:`);
-      usersWithTokens.forEach(user => {
-        logger.info(`   - User #${user.id}: ${user.name} (${user.phone})`);
+      // Log each recipient
+      usersWithTokens.forEach((user, index) => {
+        logger.info(`📨 Recipient #${index + 1}: User #${user.id} (${user.name})`);
       });
-      logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-      return {
-        success: true,
-        sent: successCount,
-        failed: errorCount,
-        tickets,
-        recipients: usersWithTokens.map(u => ({ id: u.id, name: u.name, phone: u.phone }))
+      // Prepare Firebase multicast message
+      const message = {
+        notification: {
+          title: notification.title,
+          body: notification.body
+        },
+        data: notification.data ? Object.fromEntries(
+          Object.entries(notification.data).map(([key, value]) => [key, String(value)])
+        ) : {},
+        tokens: pushTokens,
+        android: {
+          priority: 'high',
+          notification: {
+            sound: 'default',
+            channelId: 'default'
+          }
+        }
       };
+
+      logger.info(`📮 Sending to ${pushTokens.length} device(s)...`);
+
+      // Send via Firebase Cloud Messaging
+      try {
+        const response = await this.messaging.sendEachForMulticast(message);
+
+        logger.info(`✅ Firebase response received`);
+        logger.info(`   Success count: ${response.successCount}`);
+        logger.info(`   Failure count: ${response.failureCount}`);
+
+        // Log individual results
+        response.responses.forEach((resp, idx) => {
+          const user = usersWithTokens[idx];
+          if (resp.success) {
+            logger.info(`   ✅ Message ${idx + 1} sent to User #${user.id} (${user.name})`);
+          } else {
+            logger.error(`   ❌ Message ${idx + 1} failed for User #${user.id}: ${resp.error?.message || 'Unknown error'}`);
+            logger.error(`      Error code: ${resp.error?.code || 'N/A'}`);
+          }
+        });
+
+        const duration = Date.now() - startTime;
+
+        logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        logger.info('📊 PUSH NOTIFICATION RESULTS');
+        logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        logger.info(`✅ Successful: ${response.successCount}`);
+        logger.info(`❌ Failed: ${response.failureCount}`);
+        logger.info(`⏱️  Duration: ${duration}ms`);
+        logger.info(`📋 Recipients:`);
+        usersWithTokens.forEach(user => {
+          logger.info(`   - User #${user.id}: ${user.name} (${user.phone})`);
+        });
+        logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+        return {
+          success: true,
+          sent: response.successCount,
+          failed: response.failureCount,
+          responses: response.responses,
+          recipients: usersWithTokens.map(u => ({ id: u.id, name: u.name, phone: u.phone }))
+        };
+      } catch (sendError) {
+        logger.error(`❌ Error sending via Firebase: ${sendError.message}`);
+        logger.error('   Stack:', sendError.stack);
+        throw sendError;
+      }
     } catch (error) {
       const duration = Date.now() - startTime;
       logger.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -144,7 +167,7 @@ class PushNotificationService {
   /**
    * Register or update push token for a user
    * @param {number} userId - User ID
-   * @param {string} pushToken - Expo push token
+   * @param {string} pushToken - FCM push token
    * @returns {Promise<boolean>}
    */
   async registerPushToken(userId, pushToken) {
@@ -160,12 +183,14 @@ class PushNotificationService {
         return false;
       }
 
-      // Validate the push token
-      const isValid = Expo.isExpoPushToken(pushToken);
-      logger.info(`✅ Token validation: ${isValid ? 'VALID' : 'INVALID'}`);
+      // Validate the push token (FCM tokens are 152+ chars)
+      const isValid = isFCMToken(pushToken);
+      logger.info(`✅ Token validation: ${isValid ? 'VALID FCM TOKEN' : 'INVALID'}`);
+      logger.info(`   Token length: ${pushToken.length} chars (FCM tokens are typically 152+ chars)`);
 
       if (!isValid) {
-        logger.warn('❌ Invalid Expo push token format');
+        logger.warn('❌ Invalid FCM push token format');
+        logger.warn('   Expected: 152+ character alphanumeric string');
         return false;
       }
 
