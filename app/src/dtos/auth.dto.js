@@ -37,6 +37,12 @@ const VerifyOtpDto = Joi.object({
     .required()
     .messages({
       'any.required': 'Secret is required'
+    }),
+  pushToken: Joi.string()
+    .optional()
+    .allow(null, '')
+    .messages({
+      'string.base': 'Push token must be a string'
     })
 });
 

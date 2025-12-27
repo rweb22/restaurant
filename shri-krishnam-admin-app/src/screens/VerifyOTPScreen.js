@@ -3,6 +3,7 @@ import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 're
 import { Text, TextInput, Button, Surface, useTheme, HelperText } from 'react-native-paper';
 import { useMutation } from '@tanstack/react-query';
 import authService from '../services/authService';
+import pushNotificationService from '../services/pushNotificationService';
 import useAuthStore from '../store/authStore';
 
 export default function VerifyOTPScreen({ route, navigation }) {
@@ -13,7 +14,9 @@ export default function VerifyOTPScreen({ route, navigation }) {
   const setAuth = useAuthStore((state) => state.setAuth);
 
   const verifyOTPMutation = useMutation({
-    mutationFn: ({ phone, otp, secret }) => authService.verifyOTP(phone, otp, secret),
+    mutationFn: async ({ phone, otp, secret, pushToken }) => {
+      return authService.verifyOTP(phone, otp, secret, pushToken);
+    },
     onSuccess: async (data) => {
       try {
         console.log('Verify OTP response:', data);
@@ -38,7 +41,7 @@ export default function VerifyOTPScreen({ route, navigation }) {
     },
   });
 
-  const handleVerifyOTP = () => {
+  const handleVerifyOTP = async () => {
     setError('');
 
     if (!otp || otp.length !== 6) {
@@ -46,7 +49,19 @@ export default function VerifyOTPScreen({ route, navigation }) {
       return;
     }
 
-    verifyOTPMutation.mutate({ phone, otp, secret });
+    // Try to get push token (non-blocking)
+    let pushToken = null;
+    try {
+      console.log('[VerifyOTP] Attempting to get push token...');
+      pushToken = await pushNotificationService.getPushToken();
+      if (pushToken) {
+        console.log('[VerifyOTP] Push token obtained:', pushToken);
+      }
+    } catch (tokenError) {
+      console.log('[VerifyOTP] Failed to get push token:', tokenError.message);
+    }
+
+    verifyOTPMutation.mutate({ phone, otp, secret, pushToken });
   };
 
   const handleResendOTP = () => {

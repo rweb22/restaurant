@@ -8,8 +8,12 @@ const authService = {
   },
 
   // Verify OTP and get token
-  verifyOTP: async (phone, otp, secret) => {
-    const response = await api.post('/auth/verify-otp', { phone, otp, secret });
+  verifyOTP: async (phone, otp, secret, pushToken = null) => {
+    const payload = { phone, otp, secret };
+    if (pushToken) {
+      payload.pushToken = pushToken;
+    }
+    const response = await api.post('/auth/verify-otp', payload);
     return response.data;
   },
 

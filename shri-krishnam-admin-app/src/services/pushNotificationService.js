@@ -21,6 +21,53 @@ if (!isExpoGo) {
 
 class PushNotificationService {
   /**
+   * Get push token without registering with backend
+   * @returns {Promise<string|null>} - Push token or null if failed
+   */
+  async getPushToken() {
+    try {
+      // Check if running in Expo Go
+      if (isExpoGo) {
+        console.log('[getPushToken] Skipping - Expo Go detected');
+        return null;
+      }
+
+      // Check if running on physical device
+      if (!Device.isDevice) {
+        console.log('[getPushToken] Skipping - Not a physical device');
+        return null;
+      }
+
+      // Check existing permissions
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+
+      // Request permissions if not granted
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+
+      if (finalStatus !== 'granted') {
+        console.log('[getPushToken] Permission not granted');
+        return null;
+      }
+
+      // Get push token
+      const tokenData = await Notifications.getExpoPushTokenAsync({
+        projectId: '8f7561f7-8524-4cd2-8cff-ec9572806f33',
+      });
+
+      const pushToken = tokenData.data;
+      console.log('[getPushToken] Token obtained:', pushToken);
+      return pushToken;
+    } catch (error) {
+      console.error('[getPushToken] Error:', error);
+      return null;
+    }
+  }
+
+  /**
    * Register for push notifications and send token to backend
    * @param {number} userId - User ID (optional, for logging)
    * @returns {Promise<string|null>} - Push token or null if failed

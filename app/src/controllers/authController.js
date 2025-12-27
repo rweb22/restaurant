@@ -58,11 +58,11 @@ const sendOtp = async (req, res) => {
 /**
  * Verify OTP and authenticate user
  * POST /api/auth/verify-otp
- * Body: { phone, otp, secret }
+ * Body: { phone, otp, secret, pushToken? }
  */
 const verifyOtp = async (req, res) => {
   try {
-    const { phone, otp, secret } = req.body;
+    const { phone, otp, secret, pushToken } = req.body;
 
     // Normalize phone number
     const normalizedPhone = normalizePhone(phone);
@@ -77,6 +77,12 @@ const verifyOtp = async (req, res) => {
 
     // Find or create user
     const user = await authService.findOrCreateUser(normalizedPhone);
+
+    // Register push token if provided
+    if (pushToken) {
+      logger.info(`📱 Push token provided during login for user ${user.id}`);
+      await pushNotificationService.registerPushToken(user.id, pushToken);
+    }
 
     // Generate JWT token
     const accessToken = authService.generateToken(user);

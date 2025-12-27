@@ -4,6 +4,7 @@ import { Text, TextInput, Button, Surface, Snackbar, Icon, IconButton } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import authService from '../services/authService';
+import pushNotificationService from '../services/pushNotificationService';
 import useAuthStore from '../store/authStore';
 import { colors, spacing, fontSize } from '../styles/theme';
 
@@ -34,8 +35,25 @@ const VerifyOTPScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
-      const response = await authService.verifyOTP(tempPhone, otp, tempSecret);
+      // Try to get push token (non-blocking)
+      let pushToken = null;
+      try {
+        console.log('[VerifyOTP] Attempting to get push token...');
+        pushToken = await pushNotificationService.getPushToken();
+        if (pushToken) {
+          console.log('[VerifyOTP] Push token obtained:', pushToken);
+        } else {
+          console.log('[VerifyOTP] No push token available (might be Expo Go or permissions denied)');
+        }
+      } catch (tokenError) {
+        console.log('[VerifyOTP] Failed to get push token:', tokenError.message);
+        // Continue with login even if push token fails
+      }
+
+      // Verify OTP and send push token if available
+      const response = await authService.verifyOTP(tempPhone, otp, tempSecret, pushToken);
       console.log('[VerifyOTP] Response:', response);
+
       // Backend returns 'accessToken', not 'token'
       const token = response.accessToken || response.token;
       if (!token) {

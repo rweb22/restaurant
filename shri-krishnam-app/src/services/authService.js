@@ -19,14 +19,22 @@ const authService = {
    * @param {string} phone - Phone number
    * @param {string} otp - OTP code
    * @param {string} secret - Session secret from sendOTP
+   * @param {string} pushToken - Optional push notification token
    * @returns {Promise} - Response with access token and user data
    */
-  verifyOTP: async (phone, otp, secret) => {
-    const response = await api.post('/auth/verify-otp', {
+  verifyOTP: async (phone, otp, secret, pushToken = null) => {
+    const payload = {
       phone,
       otp,
       secret,
-    });
+    };
+
+    // Add push token if provided
+    if (pushToken) {
+      payload.pushToken = pushToken;
+    }
+
+    const response = await api.post('/auth/verify-otp', payload);
     return response.data;
   },
 
