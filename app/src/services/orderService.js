@@ -359,6 +359,15 @@ class OrderService {
         totalPrice: parseFloat(totalPrice).toFixed(2)
       });
 
+      // TEMPORARY: Send notification to admin when order is created (before payment)
+      logger.info('🧪 TEMPORARY: Sending test notification to admin for order creation');
+      await notificationService.createNotification('NEW_ORDER_TEMP', {
+        orderId: order.id,
+        customerName: user.name,
+        customerPhone: user.phone,
+        totalPrice: parseFloat(totalPrice).toFixed(2)
+      });
+
       // Fetch complete order with associations
       return await this.getOrderById(order.id);
     } catch (error) {
