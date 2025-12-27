@@ -27,6 +27,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const pictureRoutes = require('./routes/pictures');
 const uploadRoutes = require('./routes/upload');
 const restaurantRoutes = require('./routes/restaurant');
+const debugRoutes = require('./routes/debug');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -96,6 +97,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/pictures', pictureRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/restaurant', restaurantRoutes);
+app.use('/api/debug', debugRoutes);
 
 // API info endpoint
 app.get('/api', (req, res) => {
