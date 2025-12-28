@@ -1,17 +1,21 @@
 import messaging from '@react-native-firebase/messaging';
 import { Platform } from 'react-native';
-import notifee, { AndroidImportance } from '@notifee/react-native';
 import api from './api';
 
 class PushNotificationService {
   /**
    * Create Android notification channel
    * Required for Android 8.0+ to show notifications with sound/vibration
+   * Uses notifee for advanced channel configuration
    */
   async createNotificationChannel() {
     if (Platform.OS === 'android') {
       try {
         console.log('📱 Creating Android notification channel...');
+
+        // Dynamically import notifee to avoid build-time issues
+        const notifee = require('@notifee/react-native').default;
+        const { AndroidImportance } = require('@notifee/react-native');
 
         await notifee.createChannel({
           id: 'default',
@@ -25,6 +29,7 @@ class PushNotificationService {
         console.log('✅ Android notification channel created');
       } catch (error) {
         console.error('❌ Error creating notification channel:', error);
+        console.error('   This is expected if @notifee/react-native is not installed');
       }
     }
   }
