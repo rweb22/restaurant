@@ -1,0 +1,179 @@
+Snacks:
+	Veg Pakoda: 110
+	Paneer Pakoda: 150
+	Pyaaz Pakoda: 100
+	Paneer Kachcha: 130
+	Fry Paneer: 150
+	Peanut Masala: 150
+	Masala Paapad: 50
+	Fry Papad: 30
+	Plain Paapad: 20
+	Butter Toast Plain: 50
+	Dahi Kachumar: 80
+	Namkeen Kachumar: 70
+
+Tea - Coffee:
+	Tea: 20
+	Tea Kulhad: 25
+	Hot Coffee: 30
+	Hot Coffee Kulhad: 35
+	Cold Coffee: 80
+	Cold Coffee Icecream: 100
+	Hot Milk: 50
+	Black Tea: 30
+
+Salad:
+	Green Salad: 60
+	Tomato Salad: 50
+	Kheera Salad: 50
+	Pyaaz Salad: 40
+
+Juice:
+	Papaya: 30
+	Papaya Shake: 40
+	Papaya Shake Icecream: 50
+	Banana: 30
+	Banana Shake: 40
+	Banana Shake Icecream: 50
+	Mango: 30
+	Mango Shake: 40
+	Mango Shake Icecream: 50
+	Beel: 40
+	Mausami: 50
+
+Icecream:
+	Vanilla Kulhad: 50
+	Strawberry Kulhad: 60
+	Chocolate Kulhad: 60
+	Butter Scotch Kulhad: 70
+	Pista Kulhad: 80
+	American Nuts Kulhad: 90
+	Vanilla with Gulaab Jaamun: 100
+	Special Krishnam Kulhad: 120
+
+Tandoori:
+	Tandoori Roti: 13
+	Tandoori Butter Roti: 15
+	Butter Naan: 30
+	Plain Naan: 25
+	Garlic Naan: 60
+	Stuff Naan: 80
+	Lachchha Paratha: 60
+	Onion Lachchha Paratha: 70
+	Malai Tikka: 140
+	Tandoor Aloo Paratha: 80
+	Tandoor Paneer Paratha: 110
+	Special Krishnam Paneer Tikka Masala: 170
+	Missi Plain Roti: 40
+	Missi Masala Onion: 70
+
+Shahi Sabzi:
+	Matar Paneer: 160
+	Shahi Paneer (Red): 210
+	Paneer Do Pyaaza: 170
+	Kadhai Paneer: 190
+	Haandi Paneer: 200
+	Paneer Butter Masala: 220
+	Kaaju Curry: 240
+	Kaaju Paneer: 220
+	Malai Kofta: 200
+
+Mausmi Sabzi:
+	Gaazar Matar: 120
+	Gaazar Matar Masala: 130
+	Gobhi Matar: 120
+	Gobhi Masala: 130
+	Aloo Gobhi: 120
+	Aloo Gobhi Matar: 130
+
+Daal:
+	Daal Makhani: 150
+	Daal Fry: 130
+	Daal Butter:140
+	Daal Tadka Rajasthani: 130
+	Daal Tadka Punjabi: 130
+	Lahsoon Chutney: 130
+
+Chawal:
+	Veg Pulav: 140
+	Matar Pulav: 130
+	Paneer Pulav: 150
+	Plain Rice: 100
+	Zeera Rice: 120
+	Veg Biryani: 140
+
+Rajasthani Sabzi:
+	Kair Sangri: 250
+	Kaazu Sangri: 275
+	Kadhi Sangri: 150
+	Kadhi Fry: 130
+	Dum Aloo: 140
+	Chana Masala: 150
+	Aloo Pyaaz: 130
+	Aloo Matar: 130
+	Mix Veg: 150
+	Green Mix Veg: 180
+	Aloo Chhola: 120
+	Zeera Aloo: 130
+	Sev Bhaaji: 150
+	Sev Bhaaji Masala: 140
+	Sev Tamatar: 130
+	Bhindi Masala: 150
+	Gawar Fali: 140
+	Tamatar Pyaaz Chutney: 200
+	
+Paratha:
+	Sadaa Paratha: 35
+	Aloo Paratha: 60
+	Paneer Paratha: 70
+	Mix Veg Paratha: 65
+	Tava Lachchha Paratha: 80
+	Gobhi Paratha: 50
+	Aloo Pyaaz Paratha: 60
+
+Fast Food:
+	Poha: 70
+	Maggie Plain: 50
+	Maggie Veg: 70
+	Maggie Masala: 80
+	Veg Sandwich: 60
+	Cheese Sandwich: 80
+	Veg Burger: 70
+	Cheese Burger: 80
+	French Fry: 80
+	Paneer Cheese Pizza: 180
+	Spices Cheese Pizza: 200
+	Hot Cheese Pizza: 210
+	Special Krishnam Pizza: 240
+	Chow Mein: 90
+	Chilli Paneer: 160
+	Chilli Potato: 140
+	Veg Fry Rice: 130
+	Paneer Fry Rice: 150
+
+Curd:
+	Curd: 50
+	Veg Raita: 80
+	Boondi Raita: 70
+	Tadka Raita: 80
+	Veg Mix Raita: 70
+
+Lassi:
+	Sada Chhachh: 30
+	Zeera Chhachh: 35
+	Chhachh Pudina: 35
+	Chhachh Namkin: 35
+	Sweet Lassi: 50
+	Namkeen Lassi: 40
+	Shikanji: 40
+
+Roti:
+	Tava Roti Plain: 9
+	Tava Roti Butter: 12
+	Missi Roti: 40
+	Saata Roti: 80
+
+Soup:
+	Tomato Soup: 80
+	Gulaab Jamun: 20
+	Rajbhog: 30
