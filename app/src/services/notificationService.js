@@ -46,26 +46,21 @@ class NotificationService {
 
       // Create notifications for all recipients
       const notifications = await Promise.all(
-        resolvedRecipients.map(userId =>
-          Notification.create({
+        resolvedRecipients.map(async (userId) => {
+          const notification = await Notification.create({
             userId,
             template: template.template,
             title: template.title,
             message,
             data,
             orderId: data.orderId || null
-          })
-        )
-      );
+          });
 
-      // Debug: Check created notification
-      if (notifications.length > 0) {
-        logger.info('🔍 DEBUG: Created notification:');
-        logger.info(`   ID: ${notifications[0].id}`);
-        logger.info(`   createdAt (raw): ${notifications[0].createdAt}`);
-        logger.info(`   createdAt (ISO): ${notifications[0].createdAt ? notifications[0].createdAt.toISOString() : 'NULL'}`);
-        logger.info(`   toSafeObject: ${JSON.stringify(notifications[0].toSafeObject())}`);
-      }
+          // Reload to get the created_at timestamp from database
+          await notification.reload();
+          return notification;
+        })
+      );
 
       logger.info(`✅ Created ${notifications.length} notification(s) for template: ${templateName}`);
       logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
