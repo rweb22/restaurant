@@ -1,8 +1,33 @@
 import messaging from '@react-native-firebase/messaging';
 import { Platform } from 'react-native';
+import notifee, { AndroidImportance } from '@notifee/react-native';
 import api from './api';
 
 class PushNotificationService {
+  /**
+   * Create Android notification channel
+   * Required for Android 8.0+ to show notifications with sound/vibration
+   */
+  async createNotificationChannel() {
+    if (Platform.OS === 'android') {
+      try {
+        console.log('📱 Creating Android notification channel...');
+
+        await notifee.createChannel({
+          id: 'default',
+          name: 'Default Notifications',
+          importance: AndroidImportance.HIGH,
+          sound: 'default',
+          vibration: true,
+          vibrationPattern: [300, 500],
+        });
+
+        console.log('✅ Android notification channel created');
+      } catch (error) {
+        console.error('❌ Error creating notification channel:', error);
+      }
+    }
+  }
   /**
    * Get FCM push token without registering with backend
    * @returns {Promise<string|null>} - FCM push token or null if failed
@@ -56,6 +81,9 @@ class PushNotificationService {
       console.log('📱 ADMIN APP - REGISTERING FOR PUSH NOTIFICATIONS');
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('👤 User ID:', userId || 'Not provided');
+
+      // Create notification channel for Android
+      await this.createNotificationChannel();
 
       // Request permission for notifications
       const authStatus = await messaging().requestPermission();
