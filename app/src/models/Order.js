@@ -1,6 +1,7 @@
 'use strict';
 
 const { Model } = require('sequelize');
+const { serializeDate } = require('../utils/dateSerializer');
 
 module.exports = (sequelize, DataTypes) => {
   class Order extends Model {
@@ -66,8 +67,8 @@ module.exports = (sequelize, DataTypes) => {
         totalPrice: parseFloat(this.totalPrice),
         specialInstructions: this.specialInstructions,
         deliveryAddress: this.deliveryAddress,
-        createdAt: this.createdAt,
-        updatedAt: this.updatedAt
+        createdAt: serializeDate(this.createdAt),
+        updatedAt: serializeDate(this.updatedAt)
       };
     }
   }

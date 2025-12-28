@@ -1,6 +1,7 @@
 'use strict';
 
 const { Model } = require('sequelize');
+const { serializeDate } = require('../utils/dateSerializer');
 
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
@@ -63,8 +64,8 @@ module.exports = (sequelize, DataTypes) => {
         phone: this.phone,
         role: this.role,
         name: this.name,
-        createdAt: this.createdAt,
-        updatedAt: this.updatedAt
+        createdAt: serializeDate(this.createdAt),
+        updatedAt: serializeDate(this.updatedAt)
       };
     }
 

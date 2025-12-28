@@ -1,6 +1,7 @@
 'use strict';
 
 const { Model } = require('sequelize');
+const { serializeDate } = require('../utils/dateSerializer');
 
 module.exports = (sequelize, DataTypes) => {
   class Address extends Model {
@@ -33,8 +34,8 @@ module.exports = (sequelize, DataTypes) => {
         country: this.country,
         landmark: this.landmark,
         isDefault: this.isDefault,
-        createdAt: this.createdAt,
-        updatedAt: this.updatedAt
+        createdAt: serializeDate(this.createdAt),
+        updatedAt: serializeDate(this.updatedAt)
       };
     }
   }

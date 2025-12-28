@@ -30,8 +30,8 @@ module.exports = (sequelize, DataTypes) => {
         data: this.data,
         orderId: this.orderId,
         isRead: this.isRead,
-        readAt: this.readAt,
-        createdAt: this.createdAt
+        readAt: this.readAt ? this.readAt.toISOString() : null,
+        createdAt: this.createdAt ? this.createdAt.toISOString() : null
       };
     }
   }
