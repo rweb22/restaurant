@@ -276,10 +276,10 @@ export default function App() {
     responseListener.current = pushNotificationService.addNotificationResponseReceivedListener(
       (response) => {
         console.log('[App] Notification tapped:', response);
-        const data = response.notification.request.content.data;
+        const data = response.data;
 
         // Navigate based on notification data
-        if (data.orderId && navigationRef.current) {
+        if (data?.orderId && navigationRef.current) {
           navigationRef.current.navigate('OrderDetails', { orderId: data.orderId });
         }
       }
@@ -287,11 +287,11 @@ export default function App() {
 
     // Cleanup listeners on unmount
     return () => {
-      if (notificationListener.current) {
-        notificationListener.current.remove();
+      if (notificationListener.current && typeof notificationListener.current === 'function') {
+        notificationListener.current();
       }
-      if (responseListener.current) {
-        responseListener.current.remove();
+      if (responseListener.current && typeof responseListener.current === 'function') {
+        responseListener.current();
       }
     };
   }, []);
