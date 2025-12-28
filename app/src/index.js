@@ -68,7 +68,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve static files (uploaded images)
+// Serve from both 'uploads' and 'public/uploads' for flexibility
 app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static('public/uploads'));
 
 // Health check endpoint
 app.get('/health', (req, res) => {

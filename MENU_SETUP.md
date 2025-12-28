@@ -82,11 +82,20 @@ See `menu/README.md` for detailed image guidelines.
 ### Step 4: Upload Images to Server
 
 ```bash
-# Copy images to server's public directory
-scp -r menu/images/* user@server:/path/to/app/public/uploads/menu/
+# Create the uploads directory structure on server
+mkdir -p app/public/uploads/menu
 
-# Or using Docker
-docker cp menu/images/. restaurant-app:/app/public/uploads/menu/
+# Copy images to server's public directory
+cp -r menu/images/* app/public/uploads/menu/
+
+# Or if deploying to remote server
+scp -r menu/images/* user@server:/path/to/restaurant/app/public/uploads/menu/
+
+# Or using Docker (if container is already running)
+docker cp menu/images/. restaurant_app:/usr/src/app/public/uploads/menu/
+
+# Set proper permissions
+chmod -R 755 app/public/uploads
 ```
 
 ## 📊 Database Schema

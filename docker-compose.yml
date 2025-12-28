@@ -77,6 +77,8 @@ services:
     volumes:
       - ./app:/usr/src/app
       - /usr/src/app/node_modules
+      - ./app/uploads:/usr/src/app/uploads
+      - ./app/public:/usr/src/app/public
     networks:
       - restaurant_network
     depends_on:
