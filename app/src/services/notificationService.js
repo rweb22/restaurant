@@ -58,6 +58,11 @@ class NotificationService {
 
           // Reload to get the created_at timestamp from database
           await notification.reload();
+
+          // Debug logging
+          logger.debug(`🔍 After reload - ID: ${notification.id}, createdAt: ${notification.createdAt}`);
+          logger.debug(`🔍 toSafeObject: ${JSON.stringify(notification.toSafeObject())}`);
+
           return notification;
         })
       );
@@ -159,6 +164,12 @@ class NotificationService {
         }
       ]
     });
+
+    // Debug: Check first notification
+    if (rows.length > 0) {
+      logger.debug(`🔍 Fetched notification - ID: ${rows[0].id}, createdAt: ${rows[0].createdAt}`);
+      logger.debug(`🔍 toSafeObject: ${JSON.stringify(rows[0].toSafeObject())}`);
+    }
 
     return {
       notifications: rows.map(n => n.toSafeObject()),
