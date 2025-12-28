@@ -325,8 +325,57 @@ module.exports = {
       await queryInterface.bulkInsert('add_ons', addOnRecords, { transaction });
       console.log(`✅ ${addOnRecords.length} add-ons inserted`);
 
+      // 4. Insert Pictures for categories
+      const categoryPictures = categoryRows.map(cat => {
+        const categorySlug = createSlug(cat.name);
+        return {
+          entity_type: 'category',
+          entity_id: cat.id,
+          url: `/uploads/menu/${categorySlug}/category.jpg`,
+          alt_text: `${cat.name} category image`,
+          display_order: 0,
+          is_primary: true,
+          width: 800,
+          height: 600,
+          mime_type: 'image/jpeg',
+          created_at: new Date(),
+          updated_at: new Date()
+        };
+      });
+
+      await queryInterface.bulkInsert('pictures', categoryPictures, { transaction });
+      console.log(`✅ ${categoryPictures.length} category pictures inserted`);
+
+      // 5. Insert Pictures for items (only for items that have image defined)
+      const itemPictures = [];
+      itemRows.forEach((item, index) => {
+        const itemData = itemsData[index];
+        if (itemData && itemData.image) {
+          const categorySlug = createSlug(itemData.category);
+          itemPictures.push({
+            entity_type: 'item',
+            entity_id: item.id,
+            url: `/uploads/menu/${categorySlug}/${itemData.image}`,
+            alt_text: `${item.name} image`,
+            display_order: 0,
+            is_primary: true,
+            width: 600,
+            height: 600,
+            mime_type: 'image/jpeg',
+            created_at: new Date(),
+            updated_at: new Date()
+          });
+        }
+      });
+
+      if (itemPictures.length > 0) {
+        await queryInterface.bulkInsert('pictures', itemPictures, { transaction });
+        console.log(`✅ ${itemPictures.length} item pictures inserted`);
+      }
+
       await transaction.commit();
       console.log('✅ Menu data seeded successfully!');
+      console.log(`📊 Summary: ${categoryRows.length} categories, ${itemRows.length} items, ${itemSizeRecords.length} sizes, ${addOnRecords.length} add-ons, ${categoryPictures.length + itemPictures.length} pictures`);
 
     } catch (error) {
       await transaction.rollback();
@@ -339,6 +388,11 @@ module.exports = {
     const transaction = await queryInterface.sequelize.transaction();
     try {
       // Delete in reverse order of dependencies
+      // Delete pictures for categories and items
+      await queryInterface.sequelize.query(
+        `DELETE FROM pictures WHERE entity_type IN ('category', 'item');`,
+        { transaction }
+      );
       await queryInterface.bulkDelete('item_sizes', null, { transaction });
       await queryInterface.bulkDelete('items', null, { transaction });
       await queryInterface.bulkDelete('category_add_ons', null, { transaction });
