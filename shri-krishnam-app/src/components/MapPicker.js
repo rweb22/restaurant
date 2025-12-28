@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Alert, Platform } from 'react-native';
-import { Modal, Portal, Text, Button, IconButton, ActivityIndicator, Searchbar } from 'react-native-paper';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, Alert, Platform, Keyboard } from 'react-native';
+import { Modal, Portal, Text, Button, IconButton, ActivityIndicator } from 'react-native-paper';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import { colors, spacing, fontSize, borderRadius, shadows } from '../styles/theme';
+import { GOOGLE_MAPS_CONFIG } from '../constants/config';
 
 const MapPicker = ({ visible, onDismiss, onLocationSelect, initialLocation }) => {
   const [region, setRegion] = useState({
@@ -17,7 +19,8 @@ const MapPicker = ({ visible, onDismiss, onLocationSelect, initialLocation }) =>
     longitude: initialLocation?.longitude || 77.2090,
   });
   const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const googlePlacesRef = useRef(null);
 
   useEffect(() => {
     if (visible) {
@@ -97,6 +100,22 @@ const MapPicker = ({ visible, onDismiss, onLocationSelect, initialLocation }) =>
     setMarkerPosition({ latitude, longitude });
   };
 
+  const handlePlaceSelect = (data, details = null) => {
+    if (details) {
+      const { lat, lng } = details.geometry.location;
+      const newRegion = {
+        latitude: lat,
+        longitude: lng,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      };
+      setRegion(newRegion);
+      setMarkerPosition({ latitude: lat, longitude: lng });
+      setShowSearch(false);
+      Keyboard.dismiss();
+    }
+  };
+
   const handleConfirm = async () => {
     setLoading(true);
     const addressDetails = await reverseGeocode(markerPosition.latitude, markerPosition.longitude);
@@ -127,12 +146,77 @@ const MapPicker = ({ visible, onDismiss, onLocationSelect, initialLocation }) =>
             <Text variant="titleLarge" style={styles.title}>
               Pick Location
             </Text>
-            <IconButton
-              icon="close"
-              size={24}
-              onPress={onDismiss}
-            />
+            <View style={styles.headerButtons}>
+              <IconButton
+                icon="magnify"
+                size={24}
+                onPress={() => setShowSearch(!showSearch)}
+              />
+              <IconButton
+                icon="close"
+                size={24}
+                onPress={onDismiss}
+              />
+            </View>
           </View>
+
+          {/* Search Bar */}
+          {showSearch && (
+            <View style={styles.searchContainer}>
+              <GooglePlacesAutocomplete
+                ref={googlePlacesRef}
+                placeholder="Search for a place..."
+                onPress={handlePlaceSelect}
+                query={{
+                  key: GOOGLE_MAPS_CONFIG.API_KEY,
+                  language: 'en',
+                  components: 'country:in', // Restrict to India
+                }}
+                fetchDetails={true}
+                enablePoweredByContainer={false}
+                styles={{
+                  container: {
+                    flex: 0,
+                  },
+                  textInputContainer: {
+                    backgroundColor: colors.white,
+                    borderTopWidth: 0,
+                    borderBottomWidth: 0,
+                  },
+                  textInput: {
+                    height: 44,
+                    color: colors.text.primary,
+                    fontSize: fontSize.md,
+                    backgroundColor: colors.secondary[50],
+                    borderRadius: borderRadius.md,
+                  },
+                  listView: {
+                    backgroundColor: colors.white,
+                  },
+                  row: {
+                    backgroundColor: colors.white,
+                    padding: spacing.md,
+                    height: 58,
+                  },
+                  separator: {
+                    height: 1,
+                    backgroundColor: colors.secondary[100],
+                  },
+                  description: {
+                    fontSize: fontSize.sm,
+                    color: colors.text.primary,
+                  },
+                  predefinedPlacesDescription: {
+                    color: colors.primary,
+                  },
+                }}
+                textInputProps={{
+                  placeholderTextColor: colors.text.secondary,
+                  returnKeyType: 'search',
+                }}
+              />
+            </View>
+          )}
 
           {/* Map */}
           <View style={styles.mapContainer}>
@@ -205,6 +289,18 @@ const styles = StyleSheet.create({
   title: {
     fontWeight: '600',
     color: colors.text.primary,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  searchContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.secondary[100],
+    zIndex: 1,
   },
   mapContainer: {
     flex: 1,
