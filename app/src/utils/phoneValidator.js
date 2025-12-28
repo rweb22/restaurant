@@ -29,13 +29,41 @@ const formatPhoneFor2Factor = (phone) => {
 
   // Remove + if present
   let formatted = phone.replace(/^\+/, '');
-  
+
   // Ensure it starts with country code
   if (!formatted.match(/^[1-9]/)) {
     throw new Error('Phone number must include country code');
   }
 
   return formatted;
+};
+
+/**
+ * Format phone number for SMS Lab API
+ * SMS Lab expects: XXXXXXXXXX (without country code, just the mobile number)
+ * @param {string} phone - Phone number in international format (e.g., +911234567890)
+ * @returns {string} - Formatted phone number without country code
+ */
+const formatPhoneForSMSLab = (phone) => {
+  if (!phone) {
+    throw new Error('Phone number is required');
+  }
+
+  // Remove + if present
+  let formatted = phone.replace(/^\+/, '');
+
+  // Remove country code (assuming 91 for India, but works for other codes too)
+  // Extract just the mobile number (last 10 digits for Indian numbers)
+  if (formatted.startsWith('91') && formatted.length === 12) {
+    // Indian number: remove 91 prefix
+    return formatted.substring(2);
+  } else if (formatted.match(/^[1-9]\d{9,14}$/)) {
+    // For other countries, try to extract last 10 digits
+    // This is a simple heuristic and may need adjustment for different countries
+    return formatted.substring(formatted.length - 10);
+  }
+
+  throw new Error('Invalid phone number format');
 };
 
 /**
@@ -91,6 +119,7 @@ const getCountryCode = (phone) => {
 module.exports = {
   isValidPhone,
   formatPhoneFor2Factor,
+  formatPhoneForSMSLab,
   normalizePhone,
   isIndianNumber,
   getCountryCode
