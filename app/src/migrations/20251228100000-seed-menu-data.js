@@ -264,14 +264,10 @@ module.exports = {
 
       // Prepare items for bulk insert
       const itemRecords = itemsData.map((item, index) => {
-        const categorySlug = createSlug(item.category);
-        const imageUrl = item.image ? `/uploads/menu/${categorySlug}/${item.image}` : null;
-
         return {
           category_id: categoryMap[item.category],
           name: item.name,
           description: item.description,
-          image_url: imageUrl,
           is_available: true,
           dietary_tags: '["vegetarian"]',
           display_order: index,
