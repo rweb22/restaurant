@@ -22,6 +22,12 @@ const getNotifications = async (req, res) => {
 
     const result = await notificationService.getUserNotifications(userId, options);
 
+    // Debug: Log first notification being sent
+    if (result.notifications.length > 0) {
+      logger.info('🔍 DEBUG: First notification being sent to client:');
+      logger.info(`   Raw object: ${JSON.stringify(result.notifications[0], null, 2)}`);
+    }
+
     res.status(200).json({
       success: true,
       data: result

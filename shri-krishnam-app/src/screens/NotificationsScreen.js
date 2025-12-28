@@ -18,6 +18,16 @@ const NotificationsScreen = ({ navigation }) => {
 
   const notifications = notificationsData?.data?.notifications || [];
 
+  // Debug: Log first notification to check what we're receiving
+  React.useEffect(() => {
+    if (notifications.length > 0) {
+      console.log('🔍 DEBUG: First notification received:');
+      console.log('   Raw data:', JSON.stringify(notifications[0], null, 2));
+      console.log('   createdAt value:', notifications[0].createdAt);
+      console.log('   createdAt type:', typeof notifications[0].createdAt);
+    }
+  }, [notifications]);
+
   // Mark as read mutation
   const markAsReadMutation = useMutation({
     mutationFn: (id) => notificationService.markAsRead(id),
