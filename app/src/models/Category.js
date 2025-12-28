@@ -1,6 +1,7 @@
 'use strict';
 
 const { Model } = require('sequelize');
+const { serializeDate } = require('../utils/dateSerializer');
 
 module.exports = (sequelize, DataTypes) => {
   class Category extends Model {
@@ -54,8 +55,8 @@ module.exports = (sequelize, DataTypes) => {
         isAvailable: this.isAvailable,
         displayOrder: this.displayOrder,
         gstRate: this.gstRate,
-        createdAt: this.createdAt,
-        updatedAt: this.updatedAt
+        createdAt: serializeDate(this.createdAt),
+        updatedAt: serializeDate(this.updatedAt)
       };
     }
 

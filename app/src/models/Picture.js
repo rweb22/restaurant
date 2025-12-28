@@ -1,6 +1,7 @@
 'use strict';
 
 const { Model, DataTypes } = require('sequelize');
+const { serializeDate } = require('../utils/dateSerializer');
 
 class Picture extends Model {
   static associate(models) {
@@ -54,8 +55,8 @@ class Picture extends Model {
       height: this.height,
       fileSize: this.fileSize,
       mimeType: this.mimeType,
-      createdAt: this.createdAt,
-      updatedAt: this.updatedAt
+      createdAt: serializeDate(this.createdAt),
+      updatedAt: serializeDate(this.updatedAt)
     };
   }
 }
