@@ -364,6 +364,22 @@ const OrderDetailsScreen = ({ route, navigation }) => {
               ₹{parseFloat(order.totalPrice).toFixed(2)}
             </Text>
           </View>
+
+          <View style={styles.detailRow}>
+            <Text variant="bodyMedium" style={styles.label}>
+              Order Placed
+            </Text>
+            <Text variant="bodyMedium" style={styles.value}>
+              {order.createdAt ? new Date(order.createdAt).toLocaleString('en-IN', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+              }) : 'N/A'}
+            </Text>
+          </View>
         </Surface>
 
         {/* Delivery Address */}
