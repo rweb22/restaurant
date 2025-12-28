@@ -30,7 +30,7 @@
         "INTERNET",
         "ACCESS_NETWORK_STATE"
       ],
-      "googleServicesFile": "./android/app/google-services.json"
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       [

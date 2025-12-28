@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "592212202930",
+    "project_id": "shri-krishnam",
+    "storage_bucket": "shri-krishnam.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:592212202930:android:1c2749dbf2032d2467c0ab",
+        "android_client_info": {
+          "package_name": "com.shrikrishnam.admin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC0fXNNvZboAqg9VkEez5TjcV1MNYaRtAo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:592212202930:android:c103bc9bc304630b67c0ab",
+        "android_client_info": {
+          "package_name": "com.shrikrishnam.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC0fXNNvZboAqg9VkEez5TjcV1MNYaRtAo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
