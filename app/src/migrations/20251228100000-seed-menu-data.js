@@ -126,7 +126,6 @@ module.exports = {
         { category: 'Icecream', name: 'American Nuts Kulhad', price: 90, description: 'Mixed nuts ice cream in clay cup' },
         { category: 'Icecream', name: 'Vanilla with Gulaab Jaamun', price: 100, description: 'Vanilla ice cream with gulab jamun' },
         { category: 'Icecream', name: 'Special Krishnam Kulhad', price: 120, description: 'Special house ice cream' },
-      ];
 
         // Tandoori
         { category: 'Tandoori', name: 'Tandoori Roti', price: 13, description: 'Tandoor baked bread' },
