@@ -58,6 +58,15 @@ class NotificationService {
         )
       );
 
+      // Debug: Check created notification
+      if (notifications.length > 0) {
+        logger.info('🔍 DEBUG: Created notification:');
+        logger.info(`   ID: ${notifications[0].id}`);
+        logger.info(`   createdAt (raw): ${notifications[0].createdAt}`);
+        logger.info(`   createdAt (ISO): ${notifications[0].createdAt ? notifications[0].createdAt.toISOString() : 'NULL'}`);
+        logger.info(`   toSafeObject: ${JSON.stringify(notifications[0].toSafeObject())}`);
+      }
+
       logger.info(`✅ Created ${notifications.length} notification(s) for template: ${templateName}`);
       logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
