@@ -10,12 +10,14 @@ const { Op } = require('sequelize');
 class OrderService {
   /**
    * Get all orders with optional filters
+   * If userId is null or undefined in filters, get all orders (admin only)
    */
   async getAllOrders(filters = {}) {
     try {
       const where = {};
 
-      if (filters.userId) {
+      // Check for both null and undefined to prevent returning all orders when userId is undefined
+      if (filters.userId !== null && filters.userId !== undefined) {
         where.user_id = filters.userId;
       }
 
@@ -80,11 +82,13 @@ class OrderService {
 
   /**
    * Get order by ID
+   * If userId is provided, restrict to that user's orders only
    */
   async getOrderById(id, userId = null) {
     try {
       const where = { id };
-      if (userId !== null) {
+      // Check for both null and undefined to prevent bypassing user restriction
+      if (userId !== null && userId !== undefined) {
         where.user_id = userId;
       }
 

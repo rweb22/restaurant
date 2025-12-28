@@ -6,11 +6,12 @@ const logger = require('../utils/logger');
 class AddressService {
   /**
    * Get all addresses for a user
-   * If userId is null, get all addresses (admin only)
+   * If userId is null or undefined, get all addresses (admin only)
    */
   async getAllAddresses(userId = null) {
     try {
-      const where = userId !== null ? { user_id: userId } : {};
+      // Check for both null and undefined to prevent returning all addresses when userId is undefined
+      const where = (userId !== null && userId !== undefined) ? { user_id: userId } : {};
 
       const addresses = await Address.findAll({
         where,
@@ -37,11 +38,13 @@ class AddressService {
 
   /**
    * Get address by ID
+   * If userId is provided, restrict to that user's addresses only
    */
   async getAddressById(id, userId = null) {
     try {
       const where = { id };
-      if (userId !== null) {
+      // Check for both null and undefined to prevent bypassing user restriction
+      if (userId !== null && userId !== undefined) {
         where.user_id = userId;
       }
 
