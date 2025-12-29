@@ -341,20 +341,22 @@ module.exports = {
       await queryInterface.bulkInsert('pictures', categoryPictures, { transaction });
       console.log(`✅ ${categoryPictures.length} category pictures inserted`);
 
-      // 5. Insert Pictures for items (only for items that have image defined)
+      // 5. Insert Pictures for items (all items reference their category's image)
       const itemPictures = [];
       itemRows.forEach((item, index) => {
         const itemData = itemsData[index];
-        if (itemData && itemData.image) {
+        if (itemData) {
           const categorySlug = createSlug(itemData.category);
+          // All items reference their category's image
+          // Admin can replace with specific item images later
           itemPictures.push({
             entity_type: 'item',
             entity_id: item.id,
-            url: `/uploads/menu/${categorySlug}/${itemData.image}`,
+            url: `/uploads/menu/${categorySlug}/category.jpg`,
             alt_text: `${item.name} image`,
             display_order: 0,
             is_primary: true,
-            width: 600,
+            width: 800,
             height: 600,
             mime_type: 'image/jpeg',
             created_at: new Date(),
