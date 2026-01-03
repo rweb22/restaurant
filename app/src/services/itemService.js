@@ -35,15 +35,18 @@ class ItemService {
 
       include.push(categoryInclude);
 
-      // Include sizes if requested
-      if (filters.includeSizes) {
-        include.push({
-          model: ItemSize,
-          as: 'sizes',
-          attributes: ['id', 'size', 'price', 'isAvailable'],
-          required: false
-        });
-      }
+      // Always include sizes for minPrice calculation
+      // If includeSizes is true, fetch all attributes; otherwise just price
+      const sizeAttributes = filters.includeSizes
+        ? ['id', 'size', 'price', 'isAvailable']
+        : ['price']; // Minimal data for minPrice calculation
+
+      include.push({
+        model: ItemSize,
+        as: 'sizes',
+        attributes: sizeAttributes,
+        required: false
+      });
 
       // Include add-ons if requested
       if (filters.includeAddOns) {
