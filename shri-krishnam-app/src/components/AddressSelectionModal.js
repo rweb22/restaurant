@@ -80,8 +80,8 @@ const AddressSelectionModal = ({ visible, onDismiss, onAddAddress, onManageAddre
         visible={visible}
         onDismiss={onDismiss}
         contentContainerStyle={styles.modalContainer}
-        dismissable={!!selectedAddress}
-        dismissableBackButton={!!selectedAddress}
+        dismissable={true}
+        dismissableBackButton={true}
       >
         <Surface style={styles.surface} elevation={4}>
             {/* Header with Gradient */}
@@ -98,14 +98,12 @@ const AddressSelectionModal = ({ visible, onDismiss, onAddAddress, onManageAddre
                     Delivery Address
                   </Text>
                 </View>
-                {selectedAddress && (
-                  <IconButton
-                    icon="close"
-                    size={20}
-                    iconColor={colors.white}
-                    onPress={onDismiss}
-                  />
-                )}
+                <IconButton
+                  icon="close"
+                  size={20}
+                  iconColor={colors.white}
+                  onPress={onDismiss}
+                />
               </View>
             </LinearGradient>
 

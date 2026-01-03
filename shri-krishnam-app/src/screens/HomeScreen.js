@@ -32,7 +32,6 @@ const HomeScreen = ({ navigation, route }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [shouldReopenModal, setShouldReopenModal] = useState(false);
   const { getItemCount, clearCart } = useCartStore();
   const { logout, user } = useAuthStore();
   const { selectedAddress, loadDeliveryInfo, clearDeliveryInfo } = useDeliveryStore();
@@ -59,31 +58,7 @@ const HomeScreen = ({ navigation, route }) => {
 
   useEffect(() => {
     loadDeliveryInfo();
-    // Show address modal if no address is selected
-    if (!selectedAddress) {
-      setAddressModalVisible(true);
-    }
   }, []);
-
-  useEffect(() => {
-    // Show modal if address is cleared
-    if (!selectedAddress) {
-      setAddressModalVisible(true);
-    }
-  }, [selectedAddress]);
-
-  // Listen for navigation focus to check if address is selected
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      // When screen comes into focus, check if we should reopen modal
-      if (!selectedAddress || shouldReopenModal) {
-        setAddressModalVisible(true);
-        setShouldReopenModal(false);
-      }
-    });
-
-    return unsubscribe;
-  }, [navigation, selectedAddress, shouldReopenModal]);
 
   const { data: categories, isLoading: categoriesLoading, refetch: refetchCategories, isRefetching: isRefetchingCategories } = useQuery({
     queryKey: ['categories', 'available'],
@@ -309,23 +284,14 @@ const HomeScreen = ({ navigation, route }) => {
       {/* Address Selection Modal */}
       <AddressSelectionModal
         visible={addressModalVisible}
-        onDismiss={() => {
-          // Only allow dismissing if an address is selected
-          if (selectedAddress) {
-            setAddressModalVisible(false);
-          }
-        }}
+        onDismiss={() => setAddressModalVisible(false)}
         onAddAddress={() => {
-          // Close modal, set flag to reopen, and navigate to AddAddress
           setAddressModalVisible(false);
-          setShouldReopenModal(true);
           navigation.navigate('AddAddress', {
-            isFirstAddress: !selectedAddress,
             fromModal: true
           });
         }}
         onManageAddresses={() => {
-          // Close modal and navigate to AddressesTab
           setAddressModalVisible(false);
           navigation.navigate('AddressesTab');
         }}

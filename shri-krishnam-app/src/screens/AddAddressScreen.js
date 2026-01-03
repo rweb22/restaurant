@@ -14,12 +14,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import addressService from '../services/addressService';
-import useDeliveryStore from '../store/deliveryStore';
 import MapPicker from '../components/MapPicker';
 
 const AddAddressScreen = ({ navigation, route }) => {
   const queryClient = useQueryClient();
-  const { selectedAddress } = useDeliveryStore();
   const [label, setLabel] = useState('');
   const [addressLine1, setAddressLine1] = useState('');
   const [addressLine2, setAddressLine2] = useState('');
@@ -30,8 +28,6 @@ const AddAddressScreen = ({ navigation, route }) => {
   const [mapPickerVisible, setMapPickerVisible] = useState(false);
   const [selectedCoordinates, setSelectedCoordinates] = useState(null);
 
-  // Check if this is the first address (user must add one)
-  const isFirstAddress = route.params?.isFirstAddress || false;
   // Check if navigated from modal
   const fromModal = route.params?.fromModal || false;
 
@@ -63,25 +59,7 @@ const AddAddressScreen = ({ navigation, route }) => {
   });
 
   const handleBack = () => {
-    // If coming from modal, just go back (modal will reappear)
-    if (fromModal) {
-      navigation.goBack();
-      return;
-    }
-
-    // If this is the first address and user hasn't selected one yet, warn them
-    if (isFirstAddress && !selectedAddress) {
-      Alert.alert(
-        'Address Required',
-        'You need to add a delivery address to continue browsing. Are you sure you want to go back?',
-        [
-          { text: 'Stay', style: 'cancel' },
-          { text: 'Go Back', style: 'destructive', onPress: () => navigation.goBack() },
-        ]
-      );
-    } else {
-      navigation.goBack();
-    }
+    navigation.goBack();
   };
 
   const handleLocationSelect = (locationData) => {
