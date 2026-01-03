@@ -116,20 +116,33 @@ const HomeScreen = ({ navigation, route }) => {
               </Text>
             </View>
 
-            {/* Address on Right */}
-            {selectedAddress && (
-              <TouchableOpacity
-                onPress={() => setAddressModalVisible(true)}
-                activeOpacity={0.7}
-                style={styles.addressButton}
-              >
-                <Icon source="map-marker" size={16} color={colors.white} />
-                <Text variant="bodySmall" style={styles.addressText} numberOfLines={1}>
-                  {selectedAddress.label || 'Select Address'}
-                </Text>
-                <Icon source="chevron-down" size={16} color={colors.white} />
-              </TouchableOpacity>
-            )}
+            {/* Address and Dev Utils on Right */}
+            <View style={styles.rightSection}>
+              {/* Dev Utils Button (only in development) */}
+              {__DEV__ && (
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('DevUtils')}
+                  style={styles.devButton}
+                >
+                  <Icon source="tools" size={20} color={colors.white} />
+                </TouchableOpacity>
+              )}
+
+              {/* Address Button */}
+              {selectedAddress && (
+                <TouchableOpacity
+                  onPress={() => setAddressModalVisible(true)}
+                  activeOpacity={0.7}
+                  style={styles.addressButton}
+                >
+                  <Icon source="map-marker" size={16} color={colors.white} />
+                  <Text variant="bodySmall" style={styles.addressText} numberOfLines={1}>
+                    {selectedAddress.label || 'Select Address'}
+                  </Text>
+                  <Icon source="chevron-down" size={16} color={colors.white} />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
           {/* Search Bar */}
@@ -342,6 +355,16 @@ const styles = StyleSheet.create({
   greetingLabel: {
     color: colors.white,
     fontWeight: '700',
+  },
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  devButton: {
+    padding: spacing.xs,
+    borderRadius: borderRadius.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   addressButton: {
     flexDirection: 'row',

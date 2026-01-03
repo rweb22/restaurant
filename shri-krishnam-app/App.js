@@ -31,6 +31,7 @@ import OrderConfirmationScreen from './src/screens/OrderConfirmationScreen';
 import OrdersScreen from './src/screens/OrdersScreen';
 import OrderDetailsScreen from './src/screens/OrderDetailsScreen';
 import NotificationsScreen from './src/screens/NotificationsScreen';
+import DevUtilsScreen from './src/screens/DevUtilsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -352,6 +353,7 @@ export default function App() {
                 <Stack.Screen name="EditAddress" component={EditAddressScreen} />
                 <Stack.Screen name="OrderConfirmation" component={OrderConfirmationScreen} />
                 <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
+                <Stack.Screen name="DevUtils" component={DevUtilsScreen} />
               </>
             )}
           </Stack.Navigator>
