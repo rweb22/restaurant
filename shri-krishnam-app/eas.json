@@ -5,7 +5,17 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "ENABLE_FIREBASE": "true"
+      }
+    },
+    "development-no-firebase": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "ENABLE_FIREBASE": "false"
+      }
     },
     "preview": {
       "distribution": "internal",
@@ -18,7 +28,8 @@
         "APP_LOGO_TYPE": "image",
         "APP_LOGO_ICON": "food",
         "API_BASE_URL": "http://206.189.141.60:3000/api",
-        "APP_VERSION": "1.0.0"
+        "APP_VERSION": "1.0.0",
+        "ENABLE_FIREBASE": "false"
       }
     },
     "production": {
@@ -31,7 +42,8 @@
         "APP_LOGO_TYPE": "image",
         "APP_LOGO_ICON": "food",
         "API_BASE_URL": "http://206.189.141.60:3000/api",
-        "APP_VERSION": "1.0.0"
+        "APP_VERSION": "1.0.0",
+        "ENABLE_FIREBASE": "true"
       }
     }
   },

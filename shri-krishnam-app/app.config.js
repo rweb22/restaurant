@@ -1,5 +1,25 @@
 import 'dotenv/config';
 
+// Feature flags
+const ENABLE_FIREBASE = process.env.ENABLE_FIREBASE === 'true';
+
+// Base plugins (always included)
+const basePlugins = [
+  [
+    'expo-build-properties',
+    {
+      android: {
+        usesCleartextTraffic: true,
+      },
+    },
+  ],
+];
+
+// Firebase plugins (conditionally included)
+const firebasePlugins = ENABLE_FIREBASE
+  ? ['@react-native-firebase/app', '@react-native-firebase/messaging']
+  : [];
+
 export default {
   expo: {
     name: 'Shri Krishnam',
@@ -35,29 +55,19 @@ export default {
         'INTERNET',
         'ACCESS_NETWORK_STATE',
       ],
-      googleServicesFile: './google-services.json',
+      ...(ENABLE_FIREBASE && { googleServicesFile: './google-services.json' }),
       config: {
         googleMaps: {
           apiKey: process.env.GOOGLE_MAPS_API_KEY,
         },
       },
     },
-    plugins: [
-      [
-        'expo-build-properties',
-        {
-          android: {
-            usesCleartextTraffic: true,
-          },
-        },
-      ],
-      '@react-native-firebase/app',
-      '@react-native-firebase/messaging',
-    ],
+    plugins: [...basePlugins, ...firebasePlugins],
     extra: {
       eas: {
         projectId: '36941223-0688-437d-9b6e-fccea1435c54',
       },
+      ENABLE_FIREBASE: process.env.ENABLE_FIREBASE || 'false',
     },
   },
 };

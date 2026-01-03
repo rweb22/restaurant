@@ -1,6 +1,19 @@
-import messaging from '@react-native-firebase/messaging';
 import { Platform } from 'react-native';
 import api from './api';
+import features from '../config/features';
+
+// Conditionally import Firebase (only if packages are installed)
+let messaging = null;
+let notifee = null;
+let AndroidImportance = null;
+
+if (features.firebase) {
+  try {
+    messaging = require('@react-native-firebase/messaging').default;
+  } catch (error) {
+    console.warn('⚠️  @react-native-firebase/messaging not installed:', error.message);
+  }
+}
 
 class PushNotificationService {
   /**
@@ -9,6 +22,10 @@ class PushNotificationService {
    * Uses notifee for advanced channel configuration
    */
   async createNotificationChannel() {
+    if (!features.firebase) {
+      return; // Skip if Firebase is disabled
+    }
+
     if (Platform.OS === 'android') {
       try {
         console.log('📱 Creating Android notification channel...');
@@ -28,8 +45,7 @@ class PushNotificationService {
 
         console.log('✅ Android notification channel created');
       } catch (error) {
-        console.error('❌ Error creating notification channel:', error);
-        console.error('   This is expected if @notifee/react-native is not installed');
+        console.log('ℹ️  Notifee not available - this is expected in Expo Go');
       }
     }
   }
@@ -38,6 +54,11 @@ class PushNotificationService {
    * @returns {Promise<string|null>} - FCM push token or null if failed
    */
   async getPushToken() {
+    if (!features.firebase || !messaging) {
+      console.log('[getPushToken] Firebase is disabled - skipping');
+      return null;
+    }
+
     try {
       console.log('[getPushToken] Requesting Firebase Cloud Messaging token...');
 
@@ -81,6 +102,13 @@ class PushNotificationService {
    * @returns {Promise<string|null>} - FCM push token or null if failed
    */
   async registerForPushNotifications(userId = null) {
+    if (!features.firebase || !messaging) {
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('ℹ️  Firebase is disabled - push notifications unavailable');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      return null;
+    }
+
     try {
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('📱 CLIENT APP - REGISTERING FOR PUSH NOTIFICATIONS');
@@ -146,6 +174,11 @@ class PushNotificationService {
    * Remove push token from backend (on logout)
    */
   async removePushToken() {
+    if (!features.firebase || !messaging) {
+      console.log('ℹ️  Firebase is disabled - no push token to remove');
+      return;
+    }
+
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('🗑️  CLIENT APP - REMOVING PUSH TOKEN');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -171,6 +204,11 @@ class PushNotificationService {
    * @returns {Function} - Unsubscribe function
    */
   addNotificationReceivedListener(callback) {
+    if (!features.firebase || !messaging) {
+      console.log('ℹ️  Firebase is disabled - notification listener not available');
+      return () => {}; // Return no-op unsubscribe function
+    }
+
     return messaging().onMessage(async (remoteMessage) => {
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('🔔 CLIENT APP - NOTIFICATION RECEIVED (FOREGROUND)');
@@ -190,6 +228,11 @@ class PushNotificationService {
    * @returns {Function} - Unsubscribe function
    */
   addNotificationResponseReceivedListener(callback) {
+    if (!features.firebase || !messaging) {
+      console.log('ℹ️  Firebase is disabled - notification response listener not available');
+      return () => {}; // Return no-op unsubscribe function
+    }
+
     // Handle notification opened from background state
     messaging().onNotificationOpenedApp((remoteMessage) => {
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');

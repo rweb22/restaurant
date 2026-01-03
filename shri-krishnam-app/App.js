@@ -10,6 +10,7 @@ import Icon from 'react-native-paper/src/components/Icon';
 import ConfirmDialog from './src/components/ConfirmDialog';
 import pushNotificationService from './src/services/pushNotificationService';
 import notificationService from './src/services/notificationService';
+import { logFeatureFlags } from './src/config/features';
 
 // Stores
 import useAuthStore from './src/store/authStore';
@@ -236,6 +237,9 @@ export default function App() {
         console.log('[App] Starting loadAuth...');
         await loadAuth();
         console.log('[App] loadAuth completed');
+
+        // Log feature flags
+        logFeatureFlags();
 
         console.log('[App] Starting loadCart...');
         await loadCart();

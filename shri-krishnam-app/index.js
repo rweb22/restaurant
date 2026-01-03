@@ -1,19 +1,35 @@
 import { registerRootComponent } from 'expo';
-import messaging from '@react-native-firebase/messaging';
+import Constants from 'expo-constants';
 
 import App from './App';
 
-// Register background message handler
-// This MUST be called outside of any component lifecycle
-messaging().setBackgroundMessageHandler(async (remoteMessage) => {
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('🔔 BACKGROUND MESSAGE RECEIVED');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('📝 Title:', remoteMessage.notification?.title);
-  console.log('💬 Body:', remoteMessage.notification?.body);
-  console.log('📦 Data:', JSON.stringify(remoteMessage.data, null, 2));
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-});
+// Check if Firebase is enabled
+const FIREBASE_ENABLED = Constants.expoConfig?.extra?.ENABLE_FIREBASE === 'true';
+
+// Conditionally set up Firebase background message handler
+if (FIREBASE_ENABLED) {
+  try {
+    const messaging = require('@react-native-firebase/messaging').default;
+
+    // Register background message handler
+    // This MUST be called outside of any component lifecycle
+    messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🔔 BACKGROUND MESSAGE RECEIVED');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('📝 Title:', remoteMessage.notification?.title);
+      console.log('💬 Body:', remoteMessage.notification?.body);
+      console.log('📦 Data:', JSON.stringify(remoteMessage.data, null, 2));
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    });
+
+    console.log('✅ Firebase background message handler registered');
+  } catch (error) {
+    console.warn('⚠️  Firebase not available:', error.message);
+  }
+} else {
+  console.log('ℹ️  Firebase is disabled - push notifications will not work');
+}
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);
 // It also ensures that whether you load the app in Expo Go or in a native build,
