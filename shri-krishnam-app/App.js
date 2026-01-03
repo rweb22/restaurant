@@ -33,7 +33,19 @@ import NotificationsScreen from './src/screens/NotificationsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
-const queryClient = new QueryClient();
+
+// Optimized React Query configuration
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 2 * 60 * 1000, // Data is fresh for 2 minutes
+      cacheTime: 5 * 60 * 1000, // Keep unused data in cache for 5 minutes
+      retry: 1, // Only retry failed requests once
+      refetchOnWindowFocus: false, // Don't refetch when app comes to foreground
+      refetchOnReconnect: true, // Refetch when internet reconnects
+    },
+  },
+});
 
 // Custom theme based on our design
 const theme = {

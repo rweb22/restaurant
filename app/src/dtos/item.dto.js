@@ -112,6 +112,12 @@ const formatItemResponse = (item, options = {}) => {
     };
   }
 
+  // Calculate and include minPrice if sizes are present
+  if (item.sizes && item.sizes.length > 0) {
+    const prices = item.sizes.map(size => parseFloat(size.price));
+    response.minPrice = Math.min(...prices);
+  }
+
   // Include sizes if requested and present
   if (options.includeSizes && item.sizes) {
     response.sizes = item.sizes.map(size => ({
