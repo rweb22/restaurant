@@ -1,5 +1,8 @@
 'use strict';
 
+// Load environment variables first
+require('dotenv').config();
+
 const admin = require('firebase-admin');
 const path = require('path');
 const logger = require('../utils/logger');
