@@ -72,6 +72,9 @@ services:
       PAYMENT_CURRENCY: ${PAYMENT_CURRENCY:-INR}
       PAYMENT_ORDER_EXPIRY: ${PAYMENT_ORDER_EXPIRY:-900}
       PAYMENT_ORDER_NOTES_PREFIX: ${PAYMENT_ORDER_NOTES_PREFIX:-Restaurant Order}
+
+      # Firebase Cloud Messaging
+      FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-./config/firebase-service-account.json}
     ports:
       - "${PORT:-3000}:3000"
     volumes:
