@@ -29,7 +29,11 @@ export default {
         backgroundColor: '#1976D2',
       },
       edgeToEdgeEnabled: true,
-      permissions: ['INTERNET', 'ACCESS_NETWORK_STATE'],
+      permissions: [
+        'INTERNET',
+        'ACCESS_NETWORK_STATE',
+        'POST_NOTIFICATIONS', // Required for Android 13+ push notifications
+      ],
       googleServicesFile: './google-services.json',
       config: {
         googleMaps: {

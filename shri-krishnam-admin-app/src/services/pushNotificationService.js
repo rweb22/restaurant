@@ -1,8 +1,51 @@
 import messaging from '@react-native-firebase/messaging';
-import { Platform } from 'react-native';
+import { Platform, PermissionsAndroid } from 'react-native';
 import api from './api';
 
 class PushNotificationService {
+  /**
+   * Request Android 13+ notification permission
+   * Required for Android 13 (API 33) and above
+   * @returns {Promise<boolean>} - true if permission granted, false otherwise
+   */
+  async requestAndroidNotificationPermission() {
+    if (Platform.OS !== 'android') {
+      return true; // iOS handles permissions differently
+    }
+
+    try {
+      // Check Android version
+      if (Platform.Version >= 33) {
+        console.log('📱 Android 13+ detected - requesting POST_NOTIFICATIONS permission...');
+
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+          {
+            title: 'Notification Permission',
+            message: 'Allow Shri Krishnam Admin to send you notifications about orders?',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          }
+        );
+
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          console.log('✅ POST_NOTIFICATIONS permission granted');
+          return true;
+        } else {
+          console.log('❌ POST_NOTIFICATIONS permission denied');
+          return false;
+        }
+      } else {
+        console.log('ℹ️  Android < 13 - POST_NOTIFICATIONS permission not required');
+        return true; // Permission not required for Android < 13
+      }
+    } catch (error) {
+      console.error('❌ Error requesting Android notification permission:', error);
+      return false;
+    }
+  }
+
   /**
    * Create Android notification channel
    * Required for Android 8.0+ to show notifications with sound/vibration
@@ -87,10 +130,18 @@ class PushNotificationService {
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('👤 User ID:', userId || 'Not provided');
 
+      // Request Android 13+ notification permission first
+      const androidPermissionGranted = await this.requestAndroidNotificationPermission();
+      if (!androidPermissionGranted) {
+        console.log('❌ Android notification permission not granted');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        return null;
+      }
+
       // Create notification channel for Android
       await this.createNotificationChannel();
 
-      // Request permission for notifications
+      // Request permission for notifications (iOS and older Android)
       const authStatus = await messaging().requestPermission();
       const enabled =
         authStatus === messaging.AuthorizationStatus.AUTHORIZED ||

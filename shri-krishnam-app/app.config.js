@@ -54,6 +54,7 @@ export default {
         'ACCESS_FINE_LOCATION',
         'INTERNET',
         'ACCESS_NETWORK_STATE',
+        'POST_NOTIFICATIONS', // Required for Android 13+ push notifications
       ],
       ...(ENABLE_FIREBASE && { googleServicesFile: './google-services.json' }),
       config: {
