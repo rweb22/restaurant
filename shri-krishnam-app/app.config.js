@@ -35,6 +35,8 @@ export default {
         'POST_NOTIFICATIONS', // Required for Android 13+ push notifications
       ],
       googleServicesFile: './google-services.json',
+      enableProguardInReleaseBuilds: true,
+      enableShrinkResourcesInReleaseBuilds: true,
     },
     plugins: [
       '@react-native-firebase/app',

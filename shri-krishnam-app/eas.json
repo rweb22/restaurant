@@ -23,10 +23,7 @@
     },
     "production": {
       "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease",
-        "enableProguardInReleaseBuilds": true,
-        "enableShrinkResourcesInReleaseBuilds": true
+        "buildType": "apk"
       },
       "env": {
         "APP_NAME": "Shri Krishnam",
