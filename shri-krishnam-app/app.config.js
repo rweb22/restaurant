@@ -26,7 +26,6 @@ export default {
         backgroundColor: '#FF9800',
       },
       edgeToEdgeEnabled: true,
-      usesCleartextTraffic: true,
       permissions: [
         'ACCESS_COARSE_LOCATION',
         'ACCESS_FINE_LOCATION',
@@ -35,10 +34,18 @@ export default {
         'POST_NOTIFICATIONS', // Required for Android 13+ push notifications
       ],
       googleServicesFile: './google-services.json',
-      enableProguardInReleaseBuilds: true,
-      enableShrinkResourcesInReleaseBuilds: true,
     },
     plugins: [
+      [
+        'expo-build-properties',
+        {
+          android: {
+            usesCleartextTraffic: true,
+            minifyEnabled: true,
+            shrinkResources: true,
+          },
+        },
+      ],
       '@react-native-firebase/app',
       '@react-native-firebase/messaging',
     ],
