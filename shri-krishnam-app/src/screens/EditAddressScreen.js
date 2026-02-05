@@ -173,6 +173,16 @@ const EditAddressScreen = ({ navigation, route }) => {
             Pick Location on Map
           </Button>
 
+          {/* Coordinates Display */}
+          {selectedCoordinates && (
+            <Surface style={styles.coordinatesContainer} elevation={0}>
+              <IconButton icon="check-circle" size={20} iconColor="#4CAF50" />
+              <Text variant="bodySmall" style={styles.coordinatesText}>
+                Location selected: {selectedCoordinates.latitude.toFixed(6)}, {selectedCoordinates.longitude.toFixed(6)}
+              </Text>
+            </Surface>
+          )}
+
           <TextInput
             label="Label (e.g., Home, Office)"
             value={label}
@@ -326,6 +336,21 @@ const styles = StyleSheet.create({
   mapButton: {
     marginBottom: 16,
     borderColor: '#FF9800',
+  },
+  coordinatesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0fdf4',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  coordinatesText: {
+    color: '#15803d',
+    flex: 1,
   },
   input: {
     marginBottom: 16,

@@ -83,6 +83,8 @@ const createAddress = async (req, res) => {
       postalCode: req.body.postalCode,
       country: req.body.country || 'India',
       landmark: req.body.landmark,
+      latitude: req.body.latitude,
+      longitude: req.body.longitude,
       isDefault: req.body.isDefault || false
     };
 
@@ -129,6 +131,8 @@ const updateAddress = async (req, res) => {
       postalCode: req.body.postalCode,
       country: req.body.country,
       landmark: req.body.landmark,
+      latitude: req.body.latitude,
+      longitude: req.body.longitude,
       isDefault: req.body.isDefault
     };
 
