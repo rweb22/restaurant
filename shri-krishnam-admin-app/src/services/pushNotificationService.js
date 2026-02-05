@@ -1,8 +1,51 @@
 import messaging from '@react-native-firebase/messaging';
-import { Platform } from 'react-native';
+import { Platform, PermissionsAndroid } from 'react-native';
 import api from './api';
 
 class PushNotificationService {
+  /**
+   * Request Android 13+ notification permission
+   * Required for Android 13 (API 33) and above
+   * @returns {Promise<boolean>} - true if permission granted, false otherwise
+   */
+  async requestAndroidNotificationPermission() {
+    if (Platform.OS !== 'android') {
+      return true; // iOS handles permissions differently
+    }
+
+    try {
+      // Check Android version
+      if (Platform.Version >= 33) {
+        console.log('📱 Android 13+ detected - requesting POST_NOTIFICATIONS permission...');
+
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+          {
+            title: 'Notification Permission',
+            message: 'Allow Shri Krishnam Admin to send you notifications about orders?',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          }
+        );
+
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          console.log('✅ POST_NOTIFICATIONS permission granted');
+          return true;
+        } else {
+          console.log('❌ POST_NOTIFICATIONS permission denied');
+          return false;
+        }
+      } else {
+        console.log('ℹ️  Android < 13 - POST_NOTIFICATIONS permission not required');
+        return true; // Permission not required for Android < 13
+      }
+    } catch (error) {
+      console.error('❌ Error requesting Android notification permission:', error);
+      return false;
+    }
+  }
+
   /**
    * Create Android notification channel
    * Required for Android 8.0+ to show notifications with sound/vibration
@@ -87,23 +130,31 @@ class PushNotificationService {
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('👤 User ID:', userId || 'Not provided');
 
-      // Create notification channel for Android
+      // Step 1: Request Android 13+ POST_NOTIFICATIONS permission (if needed)
+      const androidPermissionGranted = await this.requestAndroidNotificationPermission();
+      if (!androidPermissionGranted) {
+        console.log('❌ Android notification permission denied');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        return null;
+      }
+
+      // Step 2: Create notification channel for Android
       await this.createNotificationChannel();
 
-      // Request permission for notifications
+      // Step 3: Request Firebase Cloud Messaging permission
       const authStatus = await messaging().requestPermission();
       const enabled =
         authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
         authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
       if (!enabled) {
-        console.log('❌ Push notification permission not granted');
+        console.log('❌ Firebase notification permission not granted');
         console.log('   Authorization status:', authStatus);
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         return null;
       }
 
-      console.log('✅ Permission granted');
+      console.log('✅ All permissions granted');
 
       // Get FCM token
       const fcmToken = await messaging().getToken();
