@@ -155,7 +155,13 @@ const formatOrderResponse = (order, includeItems = false) => {
       label: order.address.label,
       addressLine1: order.address.addressLine1,
       addressLine2: order.address.addressLine2,
+      city: order.address.city,
+      state: order.address.state,
+      postalCode: order.address.postalCode,
+      country: order.address.country,
       landmark: order.address.landmark,
+      latitude: order.address.latitude,
+      longitude: order.address.longitude,
       locationId: order.address.locationId
     };
 

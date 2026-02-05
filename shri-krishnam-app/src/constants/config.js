@@ -8,7 +8,6 @@ import {
   APP_LOGO_TYPE,
   APP_LOGO_ICON,
   APP_VERSION,
-  GOOGLE_MAPS_API_KEY,
 } from '@env';
 
 // API Configuration
@@ -24,11 +23,6 @@ export const APP_CONFIG = {
   TAGLINE: APP_TAGLINE || 'Delicious food, delivered fast',
   LOGO_TYPE: APP_LOGO_TYPE || 'image', // 'icon' or 'image' - Changed default to 'image'
   LOGO_ICON: APP_LOGO_ICON || 'food', // Material Design icon name
-};
-
-// Google Maps Configuration
-export const GOOGLE_MAPS_CONFIG = {
-  API_KEY: GOOGLE_MAPS_API_KEY || '',
 };
 
 // Storage Keys

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Card, Button, useTheme, Divider, Menu, Portal, Dialog, Chip } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Clipboard, Alert, Linking } from 'react-native';
+import { Text, Card, Button, useTheme, Divider, Menu, Portal, Dialog, Chip, IconButton } from 'react-native-paper';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import orderService from '../services/orderService';
 
@@ -81,6 +81,43 @@ export default function OrderDetailsScreen({ route, navigation }) {
     updateStatusMutation.mutate({ orderId: order.id, status: selectedStatus });
   };
 
+  const copyFullAddress = () => {
+    if (!order.address) return;
+
+    const addr = order.address;
+    let addressText = '';
+
+    if (addr.label) addressText += `${addr.label}\n`;
+    if (addr.addressLine1) addressText += `${addr.addressLine1}\n`;
+    if (addr.addressLine2) addressText += `${addr.addressLine2}\n`;
+    if (addr.landmark) addressText += `Landmark: ${addr.landmark}\n`;
+    if (addr.city) addressText += `${addr.city}`;
+    if (addr.state) addressText += `, ${addr.state}`;
+    if (addr.postalCode) addressText += ` - ${addr.postalCode}`;
+    if (addr.city || addr.state || addr.postalCode) addressText += '\n';
+    if (addr.country) addressText += `${addr.country}\n`;
+
+    // Add coordinates if available
+    if (addr.latitude && addr.longitude) {
+      addressText += `\nCoordinates: ${addr.latitude}, ${addr.longitude}`;
+      addressText += `\nGoogle Maps: https://www.google.com/maps?q=${addr.latitude},${addr.longitude}`;
+    }
+
+    Clipboard.setString(addressText.trim());
+    Alert.alert('Copied!', 'Address copied to clipboard');
+  };
+
+  const openInGoogleMaps = () => {
+    if (!order.address || !order.address.latitude || !order.address.longitude) {
+      Alert.alert('No Coordinates', 'This address does not have GPS coordinates');
+      return;
+    }
+
+    const { latitude, longitude } = order.address;
+    const url = `https://www.google.com/maps?q=${latitude},${longitude}`;
+    Linking.openURL(url);
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
@@ -149,8 +186,29 @@ export default function OrderDetailsScreen({ route, navigation }) {
         {order.address && (
           <Card style={styles.card}>
             <Card.Content>
-              <Text variant="titleMedium" style={styles.sectionTitle}>Delivery Address</Text>
-              <Text variant="bodySmall" style={styles.addressLabel}>{order.address.label}</Text>
+              <View style={styles.addressHeader}>
+                <Text variant="titleMedium" style={styles.sectionTitle}>Delivery Address</Text>
+                <View style={styles.addressActions}>
+                  <IconButton
+                    icon="content-copy"
+                    size={20}
+                    onPress={copyFullAddress}
+                    mode="contained-tonal"
+                  />
+                  {order.address.latitude && order.address.longitude && (
+                    <IconButton
+                      icon="map-marker"
+                      size={20}
+                      onPress={openInGoogleMaps}
+                      mode="contained-tonal"
+                    />
+                  )}
+                </View>
+              </View>
+
+              {order.address.label && (
+                <Text variant="bodySmall" style={styles.addressLabel}>{order.address.label}</Text>
+              )}
               <Text variant="bodyMedium">{order.address.addressLine1}</Text>
               {order.address.addressLine2 && (
                 <Text variant="bodyMedium">{order.address.addressLine2}</Text>
@@ -158,8 +216,30 @@ export default function OrderDetailsScreen({ route, navigation }) {
               {order.address.landmark && (
                 <Text variant="bodyMedium">Landmark: {order.address.landmark}</Text>
               )}
+
+              {/* Display city, state, postalCode if available */}
+              {(order.address.city || order.address.state || order.address.postalCode) && (
+                <Text variant="bodyMedium">
+                  {[order.address.city, order.address.state, order.address.postalCode].filter(Boolean).join(', ')}
+                </Text>
+              )}
+              {order.address.country && (
+                <Text variant="bodyMedium">{order.address.country}</Text>
+              )}
+
+              {/* Display coordinates if available */}
+              {order.address.latitude && order.address.longitude && (
+                <View style={styles.coordinatesContainer}>
+                  <Text variant="bodySmall" style={styles.coordinatesLabel}>GPS Coordinates:</Text>
+                  <Text variant="bodySmall" style={styles.coordinates}>
+                    {order.address.latitude}, {order.address.longitude}
+                  </Text>
+                </View>
+              )}
+
               {order.address.location && (
                 <>
+                  <Divider style={styles.divider} />
                   <Text variant="bodyMedium">
                     {order.address.location.area}, {order.address.location.city}
                   </Text>
@@ -337,6 +417,31 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     marginBottom: 4,
     fontWeight: 'bold',
+  },
+  addressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  addressActions: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  coordinatesContainer: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 4,
+  },
+  coordinatesLabel: {
+    opacity: 0.7,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  coordinates: {
+    fontFamily: 'monospace',
+    opacity: 0.8,
   },
   deliveryInfo: {
     opacity: 0.6,

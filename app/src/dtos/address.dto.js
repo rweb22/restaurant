@@ -71,6 +71,26 @@ const createAddressSchema = Joi.object({
     .messages({
       'string.max': 'Landmark must not exceed 255 characters'
     }),
+  latitude: Joi.number()
+    .min(-90)
+    .max(90)
+    .allow(null)
+    .optional()
+    .messages({
+      'number.base': 'Latitude must be a number',
+      'number.min': 'Latitude must be between -90 and 90',
+      'number.max': 'Latitude must be between -90 and 90'
+    }),
+  longitude: Joi.number()
+    .min(-180)
+    .max(180)
+    .allow(null)
+    .optional()
+    .messages({
+      'number.base': 'Longitude must be a number',
+      'number.min': 'Longitude must be between -180 and 180',
+      'number.max': 'Longitude must be between -180 and 180'
+    }),
   isDefault: Joi.boolean()
     .optional()
     .default(false)
@@ -140,6 +160,26 @@ const updateAddressSchema = Joi.object({
     .messages({
       'string.max': 'Landmark must not exceed 255 characters'
     }),
+  latitude: Joi.number()
+    .min(-90)
+    .max(90)
+    .allow(null)
+    .optional()
+    .messages({
+      'number.base': 'Latitude must be a number',
+      'number.min': 'Latitude must be between -90 and 90',
+      'number.max': 'Latitude must be between -90 and 90'
+    }),
+  longitude: Joi.number()
+    .min(-180)
+    .max(180)
+    .allow(null)
+    .optional()
+    .messages({
+      'number.base': 'Longitude must be a number',
+      'number.min': 'Longitude must be between -180 and 180',
+      'number.max': 'Longitude must be between -180 and 180'
+    }),
   isDefault: Joi.boolean()
     .optional()
     .messages({
@@ -165,6 +205,8 @@ const formatAddressResponse = (address) => {
     postalCode: address.postalCode || address.postal_code,
     country: address.country,
     landmark: address.landmark,
+    latitude: address.latitude,
+    longitude: address.longitude,
     isDefault: address.isDefault !== undefined ? address.isDefault : address.is_default,
     createdAt: address.createdAt || address.created_at,
     updatedAt: address.updatedAt || address.updated_at

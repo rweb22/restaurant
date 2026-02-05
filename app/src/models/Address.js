@@ -33,6 +33,8 @@ module.exports = (sequelize, DataTypes) => {
         postalCode: this.postalCode,
         country: this.country,
         landmark: this.landmark,
+        latitude: this.latitude,
+        longitude: this.longitude,
         isDefault: this.isDefault,
         createdAt: serializeDate(this.createdAt),
         updatedAt: serializeDate(this.updatedAt)
@@ -123,6 +125,22 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
         validate: {
           len: { args: [0, 255], msg: 'Landmark must not exceed 255 characters' }
+        }
+      },
+      latitude: {
+        type: DataTypes.DECIMAL(10, 8),
+        allowNull: true,
+        validate: {
+          min: { args: [-90], msg: 'Latitude must be between -90 and 90' },
+          max: { args: [90], msg: 'Latitude must be between -90 and 90' }
+        }
+      },
+      longitude: {
+        type: DataTypes.DECIMAL(11, 8),
+        allowNull: true,
+        validate: {
+          min: { args: [-180], msg: 'Longitude must be between -180 and 180' },
+          max: { args: [180], msg: 'Longitude must be between -180 and 180' }
         }
       },
       isDefault: {

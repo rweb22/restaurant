@@ -37,9 +37,6 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.shrikrishnam.app',
-      config: {
-        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
-      },
     },
     android: {
       package: 'com.shrikrishnam.app',
@@ -57,11 +54,6 @@ export default {
         'POST_NOTIFICATIONS', // Required for Android 13+ push notifications
       ],
       ...(ENABLE_FIREBASE && { googleServicesFile: './google-services.json' }),
-      config: {
-        googleMaps: {
-          apiKey: process.env.GOOGLE_MAPS_API_KEY,
-        },
-      },
     },
     plugins: [...basePlugins, ...firebasePlugins],
     extra: {

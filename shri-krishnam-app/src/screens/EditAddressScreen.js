@@ -48,6 +48,13 @@ const EditAddressScreen = ({ navigation, route }) => {
       setCity(address.city || '');
       setState(address.state || '');
       setPostalCode(address.postalCode || '');
+      // Load existing coordinates if available
+      if (address.latitude && address.longitude) {
+        setSelectedCoordinates({
+          latitude: address.latitude,
+          longitude: address.longitude,
+        });
+      }
     }
   }, [addressData]);
 
@@ -109,6 +116,11 @@ const EditAddressScreen = ({ navigation, route }) => {
       postalCode: postalCode.trim() || null,
       country: 'India',
       landmark: landmark.trim() || null,
+      // Include coordinates if selected from map
+      ...(selectedCoordinates && {
+        latitude: selectedCoordinates.latitude,
+        longitude: selectedCoordinates.longitude,
+      }),
     };
 
     updateAddressMutation.mutate({ id: addressId, data: addressData });
