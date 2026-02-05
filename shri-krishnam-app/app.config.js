@@ -26,6 +26,7 @@ export default {
         backgroundColor: '#FF9800',
       },
       edgeToEdgeEnabled: true,
+      usesCleartextTraffic: true,
       permissions: [
         'ACCESS_COARSE_LOCATION',
         'ACCESS_FINE_LOCATION',
@@ -36,14 +37,6 @@ export default {
       googleServicesFile: './google-services.json',
     },
     plugins: [
-      [
-        'expo-build-properties',
-        {
-          android: {
-            usesCleartextTraffic: true,
-          },
-        },
-      ],
       '@react-native-firebase/app',
       '@react-native-firebase/messaging',
     ],
