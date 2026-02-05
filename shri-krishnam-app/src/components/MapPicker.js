@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Alert, Platform, Keyboard } from 'react-native';
-import { Modal, Portal, Text, Button, IconButton, ActivityIndicator } from 'react-native-paper';
-import MapView, { Marker } from 'react-native-maps';
+import { View, StyleSheet, Alert, FlatList, TouchableOpacity, Keyboard } from 'react-native';
+import { Modal, Portal, Text, Button, IconButton, ActivityIndicator, TextInput, Divider } from 'react-native-paper';
+import MapView, { Marker, UrlTile } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import { colors, spacing, fontSize, borderRadius, shadows } from '../styles/theme';
-import { GOOGLE_MAPS_CONFIG } from '../constants/config';
 
 const MapPicker = ({ visible, onDismiss, onLocationSelect, initialLocation }) => {
   const [region, setRegion] = useState({
@@ -19,14 +17,30 @@ const MapPicker = ({ visible, onDismiss, onLocationSelect, initialLocation }) =>
     longitude: initialLocation?.longitude || 77.2090,
   });
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
-  const googlePlacesRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
+  const geocodeCacheRef = useRef({});
+  const lastGeocodeRequestRef = useRef(0);
+  const GEOCODE_THROTTLE_MS = 1000; // Respect Nominatim's 1 request/second limit
+  const MAX_CACHE_SIZE = 50; // Limit cache to 50 entries to prevent memory issues
 
   useEffect(() => {
     if (visible) {
       requestLocationPermission();
     }
   }, [visible]);
+
+  // Cleanup search timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const requestLocationPermission = async () => {
     try {
@@ -72,48 +86,194 @@ const MapPicker = ({ visible, onDismiss, onLocationSelect, initialLocation }) =>
   };
 
   const reverseGeocode = async (latitude, longitude) => {
-    try {
-      const results = await Location.reverseGeocodeAsync({
-        latitude,
-        longitude,
-      });
+    // Check cache first
+    const cacheKey = `${latitude.toFixed(6)},${longitude.toFixed(6)}`;
+    if (geocodeCacheRef.current[cacheKey]) {
+      console.log('[MapPicker] Using cached geocoding result');
+      return geocodeCacheRef.current[cacheKey];
+    }
 
-      if (results && results.length > 0) {
-        const address = results[0];
-        return {
-          addressLine1: `${address.name || ''} ${address.street || ''}`.trim(),
-          city: address.city || address.subregion || '',
-          state: address.region || '',
-          postalCode: address.postalCode || '',
-          country: address.country || 'India',
+    // Throttle requests to respect Nominatim's rate limit (1 req/sec)
+    const now = Date.now();
+    const timeSinceLastRequest = now - lastGeocodeRequestRef.current;
+    if (timeSinceLastRequest < GEOCODE_THROTTLE_MS) {
+      const waitTime = GEOCODE_THROTTLE_MS - timeSinceLastRequest;
+      console.log(`[MapPicker] Throttling geocoding request, waiting ${waitTime}ms`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    lastGeocodeRequestRef.current = Date.now();
+
+    try {
+      // Use Nominatim (OpenStreetMap's free geocoding service)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'ShriKrishnamApp/1.0', // Required by Nominatim
+          },
+          signal: controller.signal,
+        }
+      );
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Geocoding request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data && data.address) {
+        const addr = data.address;
+        const result = {
+          addressLine1: [
+            addr.house_number,
+            addr.road || addr.street,
+          ].filter(Boolean).join(' ').trim() || addr.neighbourhood || addr.suburb || 'Unknown',
+          city: addr.city || addr.town || addr.village || addr.county || '',
+          state: addr.state || '',
+          postalCode: addr.postcode || '',
+          country: addr.country || 'India',
         };
+
+        // Cache the result (with size limit)
+        const cacheKeys = Object.keys(geocodeCacheRef.current);
+        if (cacheKeys.length >= MAX_CACHE_SIZE) {
+          // Remove oldest entry (first key)
+          delete geocodeCacheRef.current[cacheKeys[0]];
+        }
+        geocodeCacheRef.current[cacheKey] = result;
+        return result;
       }
       return null;
     } catch (error) {
-      console.error('Error reverse geocoding:', error);
-      return null;
+      const isAbortError = error.name === 'AbortError';
+      console.error(`Error reverse geocoding${isAbortError ? ' (timeout)' : ''}:`, error.message);
+
+      // Fallback to expo-location if Nominatim fails
+      try {
+        console.log('[MapPicker] Falling back to expo-location for geocoding');
+        const results = await Location.reverseGeocodeAsync({
+          latitude,
+          longitude,
+        });
+
+        if (results && results.length > 0) {
+          const address = results[0];
+          const result = {
+            addressLine1: `${address.name || ''} ${address.street || ''}`.trim() || 'Unknown location',
+            city: address.city || address.subregion || '',
+            state: address.region || '',
+            postalCode: address.postalCode || '',
+            country: address.country || 'India',
+          };
+
+          // Cache the fallback result too (with size limit)
+          const cacheKeys = Object.keys(geocodeCacheRef.current);
+          if (cacheKeys.length >= MAX_CACHE_SIZE) {
+            delete geocodeCacheRef.current[cacheKeys[0]];
+          }
+          geocodeCacheRef.current[cacheKey] = result;
+          return result;
+        }
+      } catch (fallbackError) {
+        console.error('Fallback geocoding also failed:', fallbackError);
+      }
+
+      // Return a basic result with coordinates if all geocoding fails
+      return {
+        addressLine1: `Location at ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+        city: '',
+        state: '',
+        postalCode: '',
+        country: 'India',
+      };
     }
+  };
+
+  const searchPlaces = async (query) => {
+    if (!query || query.trim().length < 3) {
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      setSearchLoading(true);
+
+      // Add timeout to search request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in&addressdetails=1&limit=5`,
+        {
+          headers: {
+            'User-Agent': 'ShriKrishnamApp/1.0',
+          },
+          signal: controller.signal,
+        }
+      );
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Search request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      setSearchResults(data || []);
+    } catch (error) {
+      const isAbortError = error.name === 'AbortError';
+      console.error(`Error searching places${isAbortError ? ' (timeout)' : ''}:`, error.message);
+
+      if (!isAbortError) {
+        Alert.alert('Search Error', 'Failed to search for places. Please try again.');
+      }
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleSearchChange = (text) => {
+    setSearchQuery(text);
+
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Debounce search - wait 500ms after user stops typing
+    searchTimeoutRef.current = setTimeout(() => {
+      searchPlaces(text);
+    }, 500);
+  };
+
+  const handleSearchResultSelect = (result) => {
+    const lat = parseFloat(result.lat);
+    const lon = parseFloat(result.lon);
+
+    const newRegion = {
+      latitude: lat,
+      longitude: lon,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    };
+
+    setRegion(newRegion);
+    setMarkerPosition({ latitude: lat, longitude: lon });
+    setShowSearch(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    Keyboard.dismiss();
   };
 
   const handleMapPress = (event) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     setMarkerPosition({ latitude, longitude });
-  };
-
-  const handlePlaceSelect = (data, details = null) => {
-    if (details) {
-      const { lat, lng } = details.geometry.location;
-      const newRegion = {
-        latitude: lat,
-        longitude: lng,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      };
-      setRegion(newRegion);
-      setMarkerPosition({ latitude: lat, longitude: lng });
-      setShowSearch(false);
-      Keyboard.dismiss();
-    }
   };
 
   const handleConfirm = async () => {
@@ -163,58 +323,67 @@ const MapPicker = ({ visible, onDismiss, onLocationSelect, initialLocation }) =>
           {/* Search Bar */}
           {showSearch && (
             <View style={styles.searchContainer}>
-              <GooglePlacesAutocomplete
-                ref={googlePlacesRef}
+              <TextInput
+                mode="outlined"
                 placeholder="Search for a place..."
-                onPress={handlePlaceSelect}
-                query={{
-                  key: GOOGLE_MAPS_CONFIG.API_KEY,
-                  language: 'en',
-                  components: 'country:in', // Restrict to India
-                }}
-                fetchDetails={true}
-                enablePoweredByContainer={false}
-                styles={{
-                  container: {
-                    flex: 0,
-                  },
-                  textInputContainer: {
-                    backgroundColor: colors.white,
-                    borderTopWidth: 0,
-                    borderBottomWidth: 0,
-                  },
-                  textInput: {
-                    height: 44,
-                    color: colors.text.primary,
-                    fontSize: fontSize.md,
-                    backgroundColor: colors.secondary[50],
-                    borderRadius: borderRadius.md,
-                  },
-                  listView: {
-                    backgroundColor: colors.white,
-                  },
-                  row: {
-                    backgroundColor: colors.white,
-                    padding: spacing.md,
-                    height: 58,
-                  },
-                  separator: {
-                    height: 1,
-                    backgroundColor: colors.secondary[100],
-                  },
-                  description: {
-                    fontSize: fontSize.sm,
-                    color: colors.text.primary,
-                  },
-                  predefinedPlacesDescription: {
-                    color: colors.primary,
-                  },
-                }}
-                textInputProps={{
-                  placeholderTextColor: colors.text.secondary,
-                  returnKeyType: 'search',
-                }}
+                value={searchQuery}
+                onChangeText={handleSearchChange}
+                style={styles.searchInput}
+                left={<TextInput.Icon icon="magnify" />}
+                right={
+                  searchQuery ? (
+                    <TextInput.Icon
+                      icon="close"
+                      onPress={() => {
+                        setSearchQuery('');
+                        setSearchResults([]);
+                      }}
+                    />
+                  ) : null
+                }
               />
+
+              {/* Search Results */}
+              {searchLoading && (
+                <View style={styles.searchLoadingContainer}>
+                  <ActivityIndicator size="small" />
+                  <Text variant="bodySmall" style={styles.searchLoadingText}>
+                    Searching...
+                  </Text>
+                </View>
+              )}
+
+              {!searchLoading && searchResults.length > 0 && (
+                <View style={styles.searchResultsContainer}>
+                  <FlatList
+                    data={searchResults}
+                    keyExtractor={(item) => item.place_id.toString()}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={styles.searchResultItem}
+                        onPress={() => handleSearchResultSelect(item)}
+                      >
+                        <IconButton icon="map-marker" size={20} />
+                        <View style={styles.searchResultText}>
+                          <Text variant="bodyMedium" numberOfLines={1}>
+                            {item.display_name}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
+                    ItemSeparatorComponent={() => <Divider />}
+                    style={styles.searchResultsList}
+                  />
+                </View>
+              )}
+
+              {!searchLoading && searchQuery.length >= 3 && searchResults.length === 0 && (
+                <View style={styles.noResultsContainer}>
+                  <Text variant="bodySmall" style={styles.noResultsText}>
+                    No results found
+                  </Text>
+                </View>
+              )}
             </View>
           )}
 
@@ -225,7 +394,14 @@ const MapPicker = ({ visible, onDismiss, onLocationSelect, initialLocation }) =>
               region={region}
               onPress={handleMapPress}
               onRegionChangeComplete={setRegion}
+              mapType="none"
             >
+              {/* OpenStreetMap Tiles */}
+              <UrlTile
+                urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                maximumZ={19}
+                flipY={false}
+              />
               <Marker
                 coordinate={markerPosition}
                 draggable
@@ -247,6 +423,9 @@ const MapPicker = ({ visible, onDismiss, onLocationSelect, initialLocation }) =>
 
           {/* Footer */}
           <View style={styles.footer}>
+            <Text variant="bodySmall" style={styles.instruction}>
+              🗺️ Using OpenStreetMap (Free & Open Source)
+            </Text>
             <Text variant="bodyMedium" style={styles.instruction}>
               Tap on the map or drag the marker to select your location
             </Text>
@@ -296,11 +475,53 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
     backgroundColor: colors.white,
     borderBottomWidth: 1,
     borderBottomColor: colors.secondary[100],
-    zIndex: 1,
+    maxHeight: '50%',
+  },
+  searchInput: {
+    backgroundColor: colors.white,
+  },
+  searchLoadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  searchLoadingText: {
+    color: colors.text.secondary,
+  },
+  searchResultsContainer: {
+    marginTop: spacing.sm,
+    maxHeight: 250,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.secondary[100],
+  },
+  searchResultsList: {
+    flexGrow: 0,
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+  },
+  searchResultText: {
+    flex: 1,
+    marginLeft: spacing.xs,
+  },
+  noResultsContainer: {
+    padding: spacing.md,
+    alignItems: 'center',
+  },
+  noResultsText: {
+    color: colors.text.secondary,
   },
   mapContainer: {
     flex: 1,

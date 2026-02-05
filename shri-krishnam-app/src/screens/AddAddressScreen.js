@@ -111,6 +111,11 @@ const AddAddressScreen = ({ navigation, route }) => {
       postalCode: postalCode.trim() || null,
       country: 'India',
       landmark: landmark.trim() || null,
+      // Include coordinates if selected from map
+      ...(selectedCoordinates && {
+        latitude: selectedCoordinates.latitude,
+        longitude: selectedCoordinates.longitude,
+      }),
     };
 
     console.log('[AddAddress] Validation passed! Creating address with data:', addressData);

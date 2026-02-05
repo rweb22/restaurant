@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "592212202930",
-    "project_id": "shri-krishnam",
-    "storage_bucket": "shri-krishnam.firebasestorage.app"
+    "project_number": "872159182697",
+    "project_id": "shri-krishnam-b258c",
+    "storage_bucket": "shri-krishnam-b258c.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:592212202930:android:c103bc9bc304630b67c0ab",
+        "mobilesdk_app_id": "1:872159182697:android:7b288f40827687086bc7f8",
         "android_client_info": {
           "package_name": "com.shrikrishnam.app"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyC0fXNNvZboAqg9VkEez5TjcV1MNYaRtAo"
+          "current_key": "AIzaSyBzUQGgMmAa8cY8XuFQBUn4YzTqw69WbfI"
         }
       ],
       "services": {

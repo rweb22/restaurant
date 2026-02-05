@@ -17,9 +17,6 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.shrikrishnam.app',
-      config: {
-        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
-      },
     },
     android: {
       package: 'com.shrikrishnam.app',
@@ -36,11 +33,6 @@ export default {
         'ACCESS_NETWORK_STATE',
       ],
       googleServicesFile: './google-services.json',
-      config: {
-        googleMaps: {
-          apiKey: process.env.GOOGLE_MAPS_API_KEY,
-        },
-      },
     },
     plugins: [
       [
