@@ -416,9 +416,6 @@ const MapPicker = ({ visible, onDismiss, onLocationSelect, initialLocation }) =>
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Text variant="bodySmall" style={styles.instruction}>
-              🗺️ Using OpenStreetMap (Free & Open Source)
-            </Text>
             <Text variant="bodyMedium" style={styles.instruction}>
               Tap on the map or drag the marker to select your location
             </Text>
