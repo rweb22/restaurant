@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Alert, FlatList, TouchableOpacity, Keyboard } from 'react-native';
 import { Modal, Portal, Text, Button, IconButton, ActivityIndicator, TextInput, Divider } from 'react-native-paper';
-import MapView, { Marker, UrlTile } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { colors, spacing, fontSize, borderRadius, shadows } from '../styles/theme';
 
@@ -394,14 +394,8 @@ const MapPicker = ({ visible, onDismiss, onLocationSelect, initialLocation }) =>
               region={region}
               onPress={handleMapPress}
               onRegionChangeComplete={setRegion}
-              mapType="none"
+              provider={PROVIDER_DEFAULT}
             >
-              {/* OpenStreetMap Tiles */}
-              <UrlTile
-                urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-                maximumZ={19}
-                flipY={false}
-              />
               <Marker
                 coordinate={markerPosition}
                 draggable
