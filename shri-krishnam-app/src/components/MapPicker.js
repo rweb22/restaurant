@@ -1,21 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Alert, FlatList, TouchableOpacity, Keyboard } from 'react-native';
 import { Modal, Portal, Text, Button, IconButton, ActivityIndicator, TextInput, Divider } from 'react-native-paper';
-import MapView, { Marker } from 'react-native-maps';
+import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { colors, spacing, fontSize, borderRadius, shadows } from '../styles/theme';
 
 const MapPicker = ({ visible, onDismiss, onLocationSelect, initialLocation }) => {
-  const [region, setRegion] = useState({
-    latitude: initialLocation?.latitude || 28.6139, // Default to Delhi
-    longitude: initialLocation?.longitude || 77.2090,
-    latitudeDelta: 0.01,
-    longitudeDelta: 0.01,
-  });
   const [markerPosition, setMarkerPosition] = useState({
     latitude: initialLocation?.latitude || 28.6139,
     longitude: initialLocation?.longitude || 77.2090,
   });
+  const webViewRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -65,23 +60,44 @@ const MapPicker = ({ visible, onDismiss, onLocationSelect, initialLocation }) =>
         accuracy: Location.Accuracy.High,
       });
 
-      const newRegion = {
+      const newPosition = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
       };
 
-      setRegion(newRegion);
-      setMarkerPosition({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
+      setMarkerPosition(newPosition);
+      updateMapCenter(newPosition);
     } catch (error) {
       console.error('Error getting current location:', error);
       Alert.alert('Error', 'Failed to get current location');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateMapCenter = (position) => {
+    if (webViewRef.current) {
+      webViewRef.current.injectJavaScript(`
+        if (typeof map !== 'undefined' && typeof marker !== 'undefined') {
+          map.setView([${position.latitude}, ${position.longitude}], 16);
+          marker.setLatLng([${position.latitude}, ${position.longitude}]);
+        }
+        true;
+      `);
+    }
+  };
+
+  const handleMapMessage = (event) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === 'markerMoved') {
+        setMarkerPosition({
+          latitude: data.latitude,
+          longitude: data.longitude,
+        });
+      }
+    } catch (error) {
+      console.error('Error parsing map message:', error);
     }
   };
 
@@ -256,24 +272,17 @@ const MapPicker = ({ visible, onDismiss, onLocationSelect, initialLocation }) =>
     const lat = parseFloat(result.lat);
     const lon = parseFloat(result.lon);
 
-    const newRegion = {
+    const newPosition = {
       latitude: lat,
       longitude: lon,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
     };
 
-    setRegion(newRegion);
-    setMarkerPosition({ latitude: lat, longitude: lon });
+    setMarkerPosition(newPosition);
+    updateMapCenter(newPosition);
     setShowSearch(false);
     setSearchQuery('');
     setSearchResults([]);
     Keyboard.dismiss();
-  };
-
-  const handleMapPress = (event) => {
-    const { latitude, longitude } = event.nativeEvent.coordinate;
-    setMarkerPosition({ latitude, longitude });
   };
 
   const handleConfirm = async () => {
@@ -389,18 +398,60 @@ const MapPicker = ({ visible, onDismiss, onLocationSelect, initialLocation }) =>
 
           {/* Map */}
           <View style={styles.mapContainer}>
-            <MapView
+            <WebView
+              ref={webViewRef}
+              source={{ html: `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+                  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                  <style>
+                    body { margin: 0; padding: 0; }
+                    #map { width: 100%; height: 100vh; }
+                  </style>
+                </head>
+                <body>
+                  <div id="map"></div>
+                  <script>
+                    var map = L.map('map').setView([${markerPosition.latitude}, ${markerPosition.longitude}], 16);
+
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                      attribution: '© OpenStreetMap',
+                      maxZoom: 19
+                    }).addTo(map);
+
+                    var marker = L.marker([${markerPosition.latitude}, ${markerPosition.longitude}], {
+                      draggable: true
+                    }).addTo(map);
+
+                    marker.on('dragend', function(e) {
+                      var position = marker.getLatLng();
+                      window.ReactNativeWebView.postMessage(JSON.stringify({
+                        type: 'markerMoved',
+                        latitude: position.lat,
+                        longitude: position.lng
+                      }));
+                    });
+
+                    map.on('click', function(e) {
+                      marker.setLatLng(e.latlng);
+                      window.ReactNativeWebView.postMessage(JSON.stringify({
+                        type: 'markerMoved',
+                        latitude: e.latlng.lat,
+                        longitude: e.latlng.lng
+                      }));
+                    });
+                  </script>
+                </body>
+                </html>
+              ` }}
               style={styles.map}
-              region={region}
-              onPress={handleMapPress}
-              onRegionChangeComplete={setRegion}
-            >
-              <Marker
-                coordinate={markerPosition}
-                draggable
-                onDragEnd={(e) => setMarkerPosition(e.nativeEvent.coordinate)}
-              />
-            </MapView>
+              onMessage={handleMapMessage}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+            />
 
             {/* Current Location Button */}
             <IconButton
