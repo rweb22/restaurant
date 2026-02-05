@@ -4,16 +4,7 @@ import 'dotenv/config';
 const ENABLE_FIREBASE = process.env.ENABLE_FIREBASE === 'true';
 
 // Base plugins (always included)
-const basePlugins = [
-  [
-    'expo-build-properties',
-    {
-      android: {
-        usesCleartextTraffic: true,
-      },
-    },
-  ],
-];
+const basePlugins = [];
 
 // Firebase plugins (conditionally included)
 const firebasePlugins = ENABLE_FIREBASE
