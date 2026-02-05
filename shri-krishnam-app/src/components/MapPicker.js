@@ -407,7 +407,7 @@ const MapPicker = ({ visible, onDismiss, onLocationSelect, initialLocation }) =>
               icon="crosshairs-gps"
               mode="contained"
               containerColor={colors.white}
-              iconColor={colors.primary}
+              iconColor={colors.primary[500]}
               size={24}
               style={styles.gpsButton}
               onPress={getCurrentLocation}
