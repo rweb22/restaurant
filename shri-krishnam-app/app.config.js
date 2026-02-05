@@ -34,11 +34,6 @@ export default {
         'POST_NOTIFICATIONS', // Required for Android 13+ push notifications
       ],
       googleServicesFile: './google-services.json',
-      config: {
-        googleMaps: {
-          apiKey: process.env.GOOGLE_MAPS_API_KEY || 'YOUR_GOOGLE_MAPS_API_KEY_HERE',
-        },
-      },
     },
     plugins: [
       [
