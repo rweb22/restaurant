@@ -23,7 +23,7 @@
     },
     "production": {
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "apk"
       },
       "env": {
         "APP_NAME": "Shri Krishnam",
